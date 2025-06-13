@@ -1,0 +1,215 @@
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { AIComment } from '../types';
+
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+
+if (!API_KEY) {
+  console.warn('Gemini API key not found. AI features will use mock data.');
+}
+
+class GeminiService {
+  private genAI: GoogleGenerativeAI | null = null;
+  private model: any = null;
+
+  constructor() {
+    if (API_KEY) {
+      this.genAI = new GoogleGenerativeAI(API_KEY);
+      this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    }
+  }
+
+  /**
+   * 投稿内容を分析してAI情景描写を生成
+   */
+  async generateAIDescription(title: string, userComment: string): Promise<string> {
+    if (!this.model) {
+      return this.getFallbackDescription();
+    }
+
+    const prompt = `
+以下の空港写真投稿について、詩的で美しい情景描写を日本語で生成してください。
+
+タイトル: "${title}"
+投稿者コメント: "${userComment}"
+
+要求事項:
+- 100-150文字程度
+- 空港の美しさや旅の情緒を表現
+- 詩的で芸術的な表現を使用
+- 建築美、光の効果、人間ドラマを織り交ぜる
+- 読者の感性に訴える美しい日本語
+
+例: "朝の光が建物全体を包み込んで、まるで光の聖堂のような神秘的な空間が広がります。旅立ちの高揚感と建築の美しさが重なる、特別な瞬間です。"
+`;
+
+    try {
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+      return response.text().trim();
+    } catch (error) {
+      console.error('AI Description generation failed:', error);
+      return this.getFallbackDescription();
+    }
+  }
+
+  /**
+   * 投稿に対するAIコメント群を生成
+   */
+  async generateAIComments(title: string, userComment: string, aiDescription: string): Promise<AIComment[]> {
+    if (!this.model) {
+      return this.getFallbackComments();
+    }
+
+    const commentPrompt = this.createCommentPrompt(title, userComment, aiDescription);
+    const questionPrompt = this.createQuestionPrompt(title, userComment, aiDescription);
+    const observationPrompt = this.createObservationPrompt(title, userComment, aiDescription);
+
+    try {
+      const [commentResult, questionResult, observationResult] = await Promise.all([
+        this.model.generateContent(commentPrompt),
+        this.model.generateContent(questionPrompt),
+        this.model.generateContent(observationPrompt)
+      ]);
+
+      const commentResponse = await commentResult.response;
+      const questionResponse = await questionResult.response;
+      const observationResponse = await observationResult.response;
+
+      return [
+        {
+          id: Date.now().toString(),
+          type: 'comment',
+          content: commentResponse.text().trim(),
+          createdAt: new Date().toISOString()
+        },
+        {
+          id: (Date.now() + 1).toString(),
+          type: 'question',
+          content: questionResponse.text().trim(),
+          createdAt: new Date(Date.now() + 60000).toISOString()
+        },
+        {
+          id: (Date.now() + 2).toString(),
+          type: 'observation',
+          content: observationResponse.text().trim(),
+          createdAt: new Date(Date.now() + 120000).toISOString()
+        }
+      ];
+    } catch (error) {
+      console.error('AI Comments generation failed:', error);
+      return this.getFallbackComments();
+    }
+  }
+
+  private createCommentPrompt(title: string, userComment: string, aiDescription: string): string {
+    return `
+以下の空港写真投稿に対して、感動的で洞察に富んだコメントを日本語で生成してください。
+
+タイトル: "${title}"
+投稿者コメント: "${userComment}"
+AI情景描写: "${aiDescription}"
+
+要求事項:
+- 100-150文字程度
+- 投稿者の感性や視点を称賛
+- 写真の美的価値について言及
+- 空港や旅行への深い理解を示す
+- 温かみのある敬語で表現
+- 投稿者の体験に共感を示す
+
+例: この写真から漂ってくる雰囲気が本当に特別ですね。空港特有の時間の流れと人々の感情が織りなす瞬間を、見事に切り取られていると思います。
+`;
+  }
+
+  private createQuestionPrompt(title: string, userComment: string, aiDescription: string): string {
+    return `
+以下の空港写真投稿に対して、対話を促す興味深い質問を日本語で生成してください。
+
+タイトル: "${title}"
+投稿者コメント: "${userComment}"
+AI情景描写: "${aiDescription}"
+
+要求事項:
+- 100-150文字程度
+- 投稿者の体験をより深く聞き出す質問
+- 撮影時の感情や状況について尋ねる
+- 写真に込められた想いを探る
+- 丁寧で親しみやすい口調
+- 投稿者が答えたくなるような質問
+
+例: この写真を撮影された時、周りにはどのような音や匂い、空気感がありましたか？五感で感じた空港の雰囲気についても詳しく聞かせてください。
+`;
+  }
+
+  private createObservationPrompt(title: string, userComment: string, aiDescription: string): string {
+    return `
+以下の空港写真投稿に対して、新しい視点や気づきを提供する観察コメントを日本語で生成してください。
+
+タイトル: "${title}"
+投稿者コメント: "${userComment}"
+AI情景描写: "${aiDescription}"
+
+要求事項:
+- 100-150文字程度
+- 文化的、社会学的、心理学的な視点
+- 建築や空間デザインの専門的観察
+- 現代社会における空港の意味
+- 知的で洞察に富んだ内容
+- 投稿者が気づかなかった新しい価値を提示
+
+例: この写真には現代の旅行文化の本質が凝縮されていますね。グローバル化が進む中で、空港が果たす役割の重要性を視覚的に表現した作品だと感じます。
+`;
+  }
+
+  private getFallbackDescription(): string {
+    const descriptions = [
+      "朝の光が建物全体を包み込んで、まるで光の聖堂のような神秘的な空間が広がります。旅立ちの高揚感と建築の美しさが重なる特別な瞬間です。",
+      "空港の幾何学的な美しさと、そこを行き交う人々の有機的な動きが織りなす現代のアートです。機能美と人間性が調和した空間の詩的表現です。",
+      "夕日に染まった雲海と機体のシルエットが、旅への憧れと冒険心を呼び覚まします。空の舞台で繰り広げられる、壮大な物語の一場面です。",
+      "静寂の中に漂う期待感と緊張感が、空港という特別な場所の魅力を物語ります。時間が止まったような美しい瞬間の切り取りです。"
+    ];
+    return descriptions[Math.floor(Math.random() * descriptions.length)];
+  }
+
+  private getFallbackComments(): AIComment[] {
+    return [
+      {
+        id: Date.now().toString(),
+        type: 'comment',
+        content: 'この写真から感じる光と影のコントラストが、まさに旅の始まりと終わりを象徴しているように思えます。空港という場所が持つ独特の時間の流れを見事に捉えていますね。',
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: (Date.now() + 1).toString(),
+        type: 'question',
+        content: 'この瞬間を撮影された時、周りにはどのような音が聞こえていましたか？空港特有の音の風景も、この写真の物語の一部のような気がします。',
+        createdAt: new Date(Date.now() + 60000).toISOString()
+      },
+      {
+        id: (Date.now() + 2).toString(),
+        type: 'observation',
+        content: '建築の幾何学的な美しさと、そこを行き交う人々の有機的な動きの対比が印象的です。現代の空港デザインが目指す「機能美」の本質を表現した一枚だと感じます。',
+        createdAt: new Date(Date.now() + 120000).toISOString()
+      }
+    ];
+  }
+
+  /**
+   * API接続状態をチェック
+   */
+  isApiAvailable(): boolean {
+    return !!API_KEY && !!this.model;
+  }
+
+  /**
+   * API使用状況を取得
+   */
+  getApiStatus(): { available: boolean; provider: string } {
+    return {
+      available: this.isApiAvailable(),
+      provider: this.isApiAvailable() ? 'Gemini AI' : 'Mock Data'
+    };
+  }
+}
+
+export const geminiService = new GeminiService();
