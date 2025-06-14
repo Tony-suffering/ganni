@@ -1,7 +1,7 @@
 import { Post, Tag, AIComment } from '../types';
 
 export const mockTags: Tag[] = [
-  { id: '1', name: '国際線ターミナル', category: 'terminal', color: '#0072f5' },
+  { id: '1', name: 'あああ', category: 'terminal', color: '#0072f5' },
   { id: '2', name: '離陸', category: 'aircraft', color: '#efb23b' },
   { id: '3', name: '待合室', category: 'terminal', color: '#7cc7ff' },
   { id: '4', name: '夕焼け', category: 'atmosphere', color: '#f2c464' },

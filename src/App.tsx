@@ -99,7 +99,9 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ProtectedRoute>
+        <AppContent />
+      </ProtectedRoute>
     </AuthProvider>
   );
 }

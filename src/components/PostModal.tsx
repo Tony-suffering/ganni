@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Calendar, Tag as TagIcon, MessageCircle, Sparkles, HelpCircle, Eye } from 'lucide-react';
 import { Post } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface PostModalProps {
   post: Post | null;
@@ -12,11 +13,12 @@ interface PostModalProps {
 export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [scrollPosition, setScrollPosition] = useState(0);
+  const [newComment, setNewComment] = useState('');
 
   const commentTypeLabels = {
-    comment: { icon: MessageCircle, label: 'AIコメント', color: 'text-blue-600', bgColor: 'bg-blue-50' },
-    question: { icon: HelpCircle, label: 'AI質問', color: 'text-green-600', bgColor: 'bg-green-50' },
-    observation: { icon: Eye, label: 'AI観察', color: 'text-purple-600', bgColor: 'bg-purple-50' }
+    comment: { icon: MessageCircle, label: 'へい！', color: 'text-blue-600', bgColor: 'bg-blue-50' },
+    question: { icon: HelpCircle, label: '質問や！', color: 'text-green-600', bgColor: 'bg-green-50' },
+    observation: { icon: Eye, label: 'やるやん', color: 'text-purple-600', bgColor: 'bg-purple-50' }
   };
 
   const formatDate = (dateString: string) => {
@@ -67,6 +69,20 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose }) =
     setScrollPosition(0);
   }, [post?.id]);
 
+  const handleCommentSubmit = async (e) => {
+    e.preventDefault();
+    if (!newComment.trim()) return;
+    // Supabaseにinsert
+    await supabase.from('comments').insert({
+      post_id: post.id,
+      user_id: user.id,
+      content: newComment,
+    });
+    setNewComment('');
+    // コメント一覧を再取得
+    fetchComments();
+  };
+
   return (
     <AnimatePresence>
       {isOpen && post && (
@@ -86,16 +102,16 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose }) =
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header with image and title overlay */}
-            <div className="relative flex-shrink-0">
+            <div className="relative flex-shrink-0 ">
               <img
                 src={post.imageUrl}
                 alt={post.aiDescription}
-                className="w-full h-64 md:h-80 object-cover"
+                className="w-full h-30 md:h-40 object-cover"
               />
               <button
                 onClick={onClose}
                 className="absolute top-4 right-4 p-2 bg-white/90 backdrop-blur-sm rounded-full text-neutral-600 hover:text-neutral-800 hover:bg-white transition-all duration-200"
-              >
+              > 
                 <X className="w-6 h-6" />
               </button>
               <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
@@ -215,6 +231,17 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose }) =
                   </div>
                 )}
 
+// コメント投稿フォーム
+<form onSubmit={handleCommentSubmit} className="mt-4 flex">
+  <input
+    type="text"
+    value={newComment}
+    onChange={e => setNewComment(e.target.value)}
+    className="flex-1 border rounded p-2"
+    placeholder="コメントを書く"
+  />
+  <button type="submit" className="ml-2 px-4 py-2 bg-blue-500 text-white rounded">送信</button>
+</form>
                 {/* Footer info */}
                 <div className="flex items-center justify-between pt-6 border-t border-neutral-200">
                   <div className="flex items-center space-x-2 text-sm text-neutral-500">

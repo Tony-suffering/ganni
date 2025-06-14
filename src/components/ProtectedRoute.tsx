@@ -31,44 +31,25 @@ export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
     )
   }
 
-  if (!user) {
-    if (fallback) {
-      return <>{fallback}</>
-    }
+  // 認証状態に関係なくコンテンツを表示
+  return (
+    <>
+      {children}
+      {!user && (
+        <>
+          <LoginModal
+            isOpen={showLoginModal}
+            onClose={() => setShowLoginModal(false)}
+            onSwitchToRegister={switchToRegister}
+          />
 
-    return (
-      <>
-        <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-2xl font-display font-semibold text-neutral-900 mb-4">
-              ログインが必要です
-            </h2>
-            <p className="text-neutral-600 mb-6">
-              この機能を使用するにはログインしてください
-            </p>
-            <button
-              onClick={() => setShowLoginModal(true)}
-              className="px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
-            >
-              ログイン
-            </button>
-          </div>
-        </div>
-
-        <LoginModal
-          isOpen={showLoginModal}
-          onClose={() => setShowLoginModal(false)}
-          onSwitchToRegister={switchToRegister}
-        />
-
-        <RegisterModal
-          isOpen={showRegisterModal}
-          onClose={() => setShowRegisterModal(false)}
-          onSwitchToLogin={switchToLogin}
-        />
-      </>
-    )
-  }
-
-  return <>{children}</>
+          <RegisterModal
+            isOpen={showRegisterModal}
+            onClose={() => setShowRegisterModal(false)}
+            onSwitchToLogin={switchToLogin}
+          />
+        </>
+      )}
+    </>
+  )
 }

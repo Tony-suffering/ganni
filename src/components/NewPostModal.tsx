@@ -32,6 +32,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const modalContentRef = useRef<HTMLDivElement>(null);
   const [scrollPosition, setScrollPosition] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
   const { 
     generateDescription, 
@@ -227,7 +228,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                     </div>
                     <span className="text-neutral-300">•</span>
                     <span className="text-sm text-neutral-600">
-                      AIがあなたの投稿に独創的なコメントと質問を生成します
+                      AIがあなたの投稿にお笑い芸人のようなコメントと質問を生成します
                     </span>
                   </div>
                 </div>
@@ -255,7 +256,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="例: 光の聖堂 - 羽田空港の朝"
+                    placeholder="例: LAへ旅立つ飛行機"
                     className="w-full px-4 py-3 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all duration-200"
                     required
                     maxLength={100}
