@@ -52,7 +52,7 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onClick, index }) => {
       <div className="p-5 md:p-6">
         <div className="flex items-center space-x-3 mb-4">
           <img
-            src={post.author.avatar}
+            src={post.author.avatar || 'https://ui-avatars.com/api/?name=User&background=0072f5&color=fff'}
             alt={post.author.name}
             className="w-8 h-8 rounded-full object-cover"
           />
@@ -93,18 +93,6 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onClick, index }) => {
                 {tag.name}
               </span>
             ))}
-          </div>
-          <div className="flex items-center space-x-3 flex-shrink-0 ml-2">
-            {post.aiComments && post.aiComments.length > 0 && (
-              <div className="flex items-center space-x-1 text-sm text-accent-600">
-                <MessageCircle className="w-4 h-4" />
-                <span>{post.aiComments.length}</span>
-              </div>
-            )}
-            <button className="flex items-center space-x-1 text-sm text-primary-500 hover:text-primary-600 transition-colors">
-              <Eye className="w-4 h-4" />
-              <span className="hidden sm:inline">詳細</span>
-            </button>
           </div>
         </div>
       </div>

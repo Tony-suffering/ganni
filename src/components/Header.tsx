@@ -59,23 +59,13 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
               <div>
                 <h1 className="text-xl font-display font-semibold text-neutral-900">
-                  Airport Moments
+                  突っ込みAI芸人
                 </h1>
-                <p className="text-xs text-neutral-500 -mt-1">空港の瞬間を切り取る</p>
+                <p className="text-xs text-neutral-500 -mt-1">AIがボケに突っ込む！</p>
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row items-center w-full sm:w-auto space-y-2 sm:space-y-0 sm:space-x-4">
-              <AIStatusIndicator />
-              
-              {/* Demo Mode Indicator */}
-              {isDemo && (
-                <div className="flex items-center space-x-2 px-3 py-1.5 bg-orange-100 text-orange-700 rounded-full text-sm">
-                  <span>🚧</span>
-                  <span>デモモード</span>
-                </div>
-              )}
-              
               <div className="relative w-full sm:w-auto">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-400" />
                 <input

@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Calendar, Tag as TagIcon, MessageCircle, Sparkles, HelpCircle, Eye } from 'lucide-react';
 import { Post } from '../types';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
 
 interface PostModalProps {
   post: Post | null;
@@ -14,6 +15,9 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose }) =
   const contentRef = useRef<HTMLDivElement>(null);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [newComment, setNewComment] = useState('');
+  const [comments, setComments] = useState<any[]>([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const { user } = useAuth();
 
   const commentTypeLabels = {
     comment: { icon: MessageCircle, label: 'へい！', color: 'text-blue-600', bgColor: 'bg-blue-50' },
@@ -69,17 +73,37 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose }) =
     setScrollPosition(0);
   }, [post?.id]);
 
-  const handleCommentSubmit = async (e) => {
+  // コメント一覧取得
+  const fetchComments = async () => {
+    if (!post) return;
+    setLoadingComments(true);
+    const { data, error } = await supabase
+      .from('comments')
+      .select('id, content, created_at, user_id, profiles (name, avatar_url)')
+      .eq('post_id', post.id)
+      .order('created_at', { ascending: true });
+    if (!error && data) {
+      setComments(data);
+    }
+    setLoadingComments(false);
+  };
+
+  useEffect(() => {
+    if (isOpen && post) {
+      fetchComments();
+    }
+  }, [isOpen, post?.id]);
+
+  // コメント投稿
+  const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
-    // Supabaseにinsert
+    if (!newComment.trim() || !user || !post) return;
     await supabase.from('comments').insert({
       post_id: post.id,
       user_id: user.id,
       content: newComment,
     });
     setNewComment('');
-    // コメント一覧を再取得
     fetchComments();
   };
 
@@ -146,7 +170,7 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose }) =
               {/* Author info */}
               <div className="flex items-center space-x-4 mb-6">
                 <img
-                  src={post.author.avatar}
+                  src={post.author.avatar || 'https://ui-avatars.com/api/?name=User&background=0072f5&color=fff'}
                   alt={post.author.name}
                   className="w-12 h-12 rounded-full object-cover"
                 />
@@ -231,17 +255,51 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose }) =
                   </div>
                 )}
 
-// コメント投稿フォーム
-<form onSubmit={handleCommentSubmit} className="mt-4 flex">
-  <input
-    type="text"
-    value={newComment}
-    onChange={e => setNewComment(e.target.value)}
-    className="flex-1 border rounded p-2"
-    placeholder="コメントを書く"
-  />
-  <button type="submit" className="ml-2 px-4 py-2 bg-blue-500 text-white rounded">送信</button>
-</form>
+                {/* コメント一覧 */}
+                <div className="mt-10">
+                  <h3 className="text-lg font-semibold mb-4">コメント</h3>
+                  {loadingComments ? (
+                    <div className="text-neutral-500">読み込み中...</div>
+                  ) : comments.length === 0 ? (
+                    <div className="text-neutral-400">まだコメントはありません</div>
+                  ) : (
+                    <ul className="space-y-4">
+                      {comments.map((c) => (
+                        <li key={c.id} className="flex items-start space-x-3">
+                          <img
+                            src={c.profiles?.avatar_url || 'https://ui-avatars.com/api/?name=User&background=0072f5&color=fff'}
+                            alt={c.profiles?.name || 'ユーザー'}
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-neutral-900">{c.profiles?.name || 'ユーザー'}</div>
+                            <div className="text-xs text-neutral-500 mb-1">{new Date(c.created_at).toLocaleString('ja-JP')}</div>
+                            <div className="text-neutral-800 text-base break-words">{c.content}</div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {/* コメント投稿フォーム */}
+                  {user && (
+                    <form onSubmit={handleCommentSubmit} className="mt-6 flex items-center space-x-2">
+                      <input
+                        type="text"
+                        value={newComment}
+                        onChange={e => setNewComment(e.target.value)}
+                        className="flex-1 border border-neutral-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="コメントを書く..."
+                        maxLength={200}
+                        required
+                      />
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+                      >投稿</button>
+                    </form>
+                  )}
+                </div>
+
                 {/* Footer info */}
                 <div className="flex items-center justify-between pt-6 border-t border-neutral-200">
                   <div className="flex items-center space-x-2 text-sm text-neutral-500">

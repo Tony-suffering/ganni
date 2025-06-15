@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Upload, Sparkles, Tag as TagIcon, Type, MessageCircle, HelpCircle, Eye, Wifi, WifiOff } from 'lucide-react';
-import { Tag } from '../types';
+import { Tag, AIComment } from '../types';
 import { useAI } from '../hooks/useAI';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -144,7 +144,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
       let imageUrl = imagePreview;
 
       // AIコメントを生成
-      let aiComments = [];
+      let aiComments: AIComment[] = [];
       try {
         aiComments = await generateComments(
           formData.title, 
@@ -153,6 +153,15 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
         );
       } catch (error) {
         console.warn('AI comments generation failed, proceeding without them:', error);
+      }
+      // ダミーコメントを必ず1件以上付与
+      if (!aiComments || aiComments.length === 0) {
+        aiComments = [{
+          id: Date.now().toString(),
+          type: 'comment',
+          content: 'AIコメントを生成できませんでしたが、あなたの投稿は素晴らしいです！',
+          createdAt: new Date().toISOString()
+        }];
       }
 
       const postData = {
@@ -172,7 +181,6 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
       // データベースに保存
       onSubmit(postData);
       onClose();
-      
       // Reset form
       setSelectedImage(null);
       setImagePreview('');
