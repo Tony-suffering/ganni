@@ -62,14 +62,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Check if we're in demo mode
       if (!import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL === 'https://demo.supabase.co') {
         console.log('Demo mode: Skipping user profile update')
-        return
-      }
+          return
+        }
 
       const { error } = await supabase
-        .from('users')
+          .from('profiles')
         .upsert({
           id: user.id,
-          email: user.email,
           name: user.user_metadata?.name || user.email?.split('@')[0] || '',
           avatar_url: user.user_metadata?.avatar_url || '',
           updated_at: new Date().toISOString(),

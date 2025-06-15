@@ -2,8 +2,8 @@ export interface Post {
   id: string;
   title: string;
   imageUrl: string;
-  aiDescription: string;
   userComment: string;
+  aiDescription: string;
   tags: Tag[];
   createdAt: string;
   updatedAt: string;
@@ -11,12 +11,12 @@ export interface Post {
     name: string;
     avatar: string;
   };
-  aiComments?: AIComment[];
+  aiComments: AIComment[];
 }
 
 export interface AIComment {
   id: string;
-  type: 'comment' | 'question' | 'observation';
+  type: string;
   content: string;
   createdAt: string;
 }
@@ -24,7 +24,7 @@ export interface AIComment {
 export interface Tag {
   id: string;
   name: string;
-  category: 'terminal' | 'aircraft' | 'people' | 'atmosphere' | 'architecture';
+  category: string;
   color: string;
 }
 
@@ -38,10 +38,7 @@ export interface User {
   email: string;
   name: string;
   avatar_url?: string;
-  bio?: string;
-  role: 'admin' | 'editor' | 'user';
-  created_at: string;
-  updated_at: string;
+  role: 'user' | 'admin';
 }
 
 export interface AuthUser {
@@ -50,5 +47,137 @@ export interface AuthUser {
   user_metadata?: {
     name?: string;
     avatar_url?: string;
+  };
+}
+
+// Supabase Database Types
+export interface Database {
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          id: string;
+          name: string;
+          avatar_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id: string;
+          name: string;
+          avatar_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          avatar_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      posts: {
+        Row: {
+          id: string;
+          title: string;
+          image_url: string;
+          user_comment: string;
+          ai_description: string;
+          created_at: string;
+          updated_at: string;
+          author_id: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          image_url: string;
+          user_comment: string;
+          ai_description: string;
+          created_at?: string;
+          updated_at?: string;
+          author_id: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          image_url?: string;
+          user_comment?: string;
+          ai_description?: string;
+          created_at?: string;
+          updated_at?: string;
+          author_id?: string;
+        };
+      };
+      tags: {
+        Row: {
+          id: string;
+          name: string;
+          category: string;
+          color: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          category: string;
+          color: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          category?: string;
+          color?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      post_tags: {
+        Row: {
+          id: string;
+          post_id: string;
+          tag_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          post_id: string;
+          tag_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          post_id?: string;
+          tag_id?: string;
+          created_at?: string;
+        };
+      };
+      ai_comments: {
+        Row: {
+          id: string;
+          post_id: string;
+          type: string;
+          content: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          post_id: string;
+          type: string;
+          content: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          post_id?: string;
+          type?: string;
+          content?: string;
+          created_at?: string;
+        };
+      };
+    };
   };
 }
