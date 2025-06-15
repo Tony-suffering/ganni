@@ -63,21 +63,21 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onClick, index }) => {
         </div>
 
         {/* Title */}
-        <h3 className="text-lg font-display font-semibold text-neutral-900 mb-3 line-clamp-2 leading-tight">
+        <h3 className="text-base sm:text-lg font-display font-semibold text-neutral-900 mb-3 line-clamp-2 leading-tight break-words">
           {post.title}
         </h3>
 
         <div className="space-y-3">
           {/* AI Description */}
           <div className="bg-neutral-50 p-3 rounded-lg">
-            <p className="text-sm text-neutral-600 italic leading-relaxed line-clamp-3">
+            <p className="text-sm text-neutral-600 italic leading-relaxed line-clamp-3 break-words">
               "{post.aiDescription.slice(0, 120)}..."
             </p>
           </div>
 
           {/* User Comment */}
           <div className="min-h-[3rem]">
-            <p className="text-sm text-neutral-700 line-clamp-3 leading-relaxed">
+            <p className="text-sm text-neutral-700 line-clamp-3 leading-relaxed break-words">
               {post.userComment}
             </p>
           </div>

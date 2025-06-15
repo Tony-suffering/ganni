@@ -44,7 +44,7 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 scroll-smooth">
+    <div className="min-h-screen bg-neutral-50 scroll-smooth w-full overflow-x-hidden">
       <Header
         onNewPost={() => setIsNewPostOpen(true)}
         onToggleFilter={() => setIsFilterOpen(!isFilterOpen)}
