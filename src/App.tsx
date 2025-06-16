@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Header } from './components/Header';
 import { FilterPanel } from './components/FilterPanel';
 import { MasonryGrid } from './components/MasonryGrid';
@@ -10,6 +11,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import { usePosts } from './hooks/usePosts';
 import { mockTags } from './data/mockData';
 import { Post, FilterOptions } from './types';
+import { ProfileEdit } from './pages/ProfileEdit';
+import { Settings } from './pages/Settings';
 
 function AppContent() {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -53,12 +56,26 @@ function AppContent() {
       />
 
       <main className="scroll-container">
-        <MasonryGrid
-          posts={posts}
-          onPostClick={setSelectedPost}
-          hasNextPage={hasNextPage}
-          onLoadMore={loadMore}
-        />
+        <Routes>
+          <Route path="/" element={
+            <MasonryGrid
+              posts={posts}
+              onPostClick={setSelectedPost}
+              hasNextPage={hasNextPage}
+              onLoadMore={loadMore}
+            />
+          } />
+          <Route path="/profile-edit" element={
+            <ProtectedRoute>
+              <ProfileEdit />
+            </ProtectedRoute>
+          } />
+          <Route path="/settings" element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          } />
+        </Routes>
       </main>
 
       <FilterPanel
@@ -99,9 +116,9 @@ function AppContent() {
 function App() {
   return (
     <AuthProvider>
-      <ProtectedRoute>
+      <BrowserRouter>
         <AppContent />
-      </ProtectedRoute>
+      </BrowserRouter>
     </AuthProvider>
   );
 }

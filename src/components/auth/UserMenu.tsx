@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { User, Settings, LogOut, ChevronDown } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
+import { Link } from 'react-router-dom';
 
 export function UserMenu() {
   const [isOpen, setIsOpen] = useState(false)
@@ -67,41 +68,41 @@ export function UserMenu() {
               <p className="text-xs text-neutral-500">{isDemo ? 'demo@example.com' : user?.email}</p>
             </div>
 
-            <div className="py-1">
+            <Link
+              to="/profile-edit"
+              className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              <User className="w-4 h-4" />
+              <span>プロフィール</span>
+            </Link>
+
+            <Link
+              to="/settings"
+              className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              <Settings className="w-4 h-4" />
+              <span>設定</span>
+            </Link>
+
+            <hr className="my-1 border-neutral-100" />
+
+            {!isDemo && (
               <button
-                className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
-                onClick={() => setIsOpen(false)}
+                className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                onClick={handleSignOut}
               >
-                <User className="w-4 h-4" />
-                <span>プロフィール</span>
+                <LogOut className="w-4 h-4" />
+                <span>ログアウト</span>
               </button>
-
-              <button
-                className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                <Settings className="w-4 h-4" />
-                <span>設定</span>
-              </button>
-
-              <hr className="my-1 border-neutral-100" />
-
-              {!isDemo && (
-                <button
-                  className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                  onClick={handleSignOut}
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span>ログアウト</span>
-                </button>
-              )}
-              
-              {isDemo && (
-                <div className="px-4 py-2 text-xs text-orange-600 bg-orange-50">
-                  デモモードで動作中
-                </div>
-              )}
-            </div>
+            )}
+            
+            {isDemo && (
+              <div className="px-4 py-2 text-xs text-orange-600 bg-orange-50">
+                デモモードで動作中
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

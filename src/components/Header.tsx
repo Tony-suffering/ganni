@@ -6,6 +6,7 @@ import { UserMenu } from './auth/UserMenu';
 import { LoginModal } from './auth/LoginModal';
 import { RegisterModal } from './auth/RegisterModal';
 import { useAuth } from '../contexts/AuthContext';
+import { Link } from 'react-router-dom';
 
 interface HeaderProps {
   onNewPost: () => void;
@@ -54,15 +55,17 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between h-auto sm:h-16 space-y-2 sm:space-y-0">
             <div className="flex items-center space-x-3">
-              <div className="p-2 bg-primary-500 rounded-xl">
-                <Plane className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-display font-semibold text-neutral-900">
-                  突っ込みAI芸人
-                </h1>
-                <p className="text-xs text-neutral-500 -mt-1">AIがボケに突っ込む！</p>
-              </div>
+              <Link to="/" className="flex items-center space-x-3 group focus:outline-none">
+                <div className="p-2 bg-primary-500 rounded-xl group-hover:bg-primary-600 transition-colors">
+                  <Plane className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-display font-semibold text-neutral-900 group-hover:text-primary-600 transition-colors">
+                    AIツッコミ芸人
+                  </h1>
+                  <p className="text-xs text-neutral-500 -mt-1">笑わしたる！</p>
+                </div>
+              </Link>
             </div>
 
             <div className="flex flex-col sm:flex-row items-center w-full sm:w-auto space-y-2 sm:space-y-0 sm:space-x-4">
