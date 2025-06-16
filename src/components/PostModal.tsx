@@ -13,7 +13,6 @@ interface PostModalProps {
 
 export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose }) => {
   const contentRef = useRef<HTMLDivElement>(null);
-  const [scrollPosition, setScrollPosition] = useState(0);
   const [newComment, setNewComment] = useState('');
   const [comments, setComments] = useState<any[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
@@ -42,36 +41,6 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose }) =
       minute: '2-digit'
     });
   };
-
-  // Save and restore scroll position
-  useEffect(() => {
-    const contentElement = contentRef.current;
-    
-    const handleScroll = () => {
-      if (contentElement) {
-        setScrollPosition(contentElement.scrollTop);
-      }
-    };
-
-    if (contentElement && isOpen && post) {
-      contentElement.addEventListener('scroll', handleScroll, { passive: true });
-      // Restore scroll position
-      setTimeout(() => {
-        if (contentElement) {
-          contentElement.scrollTop = scrollPosition;
-        }
-      }, 100);
-      
-      return () => {
-        contentElement.removeEventListener('scroll', handleScroll);
-      };
-    }
-  }, [isOpen, scrollPosition, post]);
-
-  // Reset scroll position when post changes
-  useEffect(() => {
-    setScrollPosition(0);
-  }, [post?.id]);
 
   // コメント一覧取得
   const fetchComments = async () => {
@@ -114,7 +83,7 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose }) =
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4"
           onClick={onClose}
         >
           <motion.div
@@ -122,7 +91,7 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose }) =
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-            className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+            className="bg-white rounded-3xl max-w-2xl w-full max-h-[95vh] overflow-hidden flex flex-col shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header with image and title overlay */}
@@ -165,7 +134,7 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose }) =
             {/* Content area with improved readability */}
             <div 
               ref={contentRef}
-              className="flex-1 p-6 md:p-8 overflow-y-auto scroll-container"
+              className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto scroll-smooth overscroll-contain"
             >
               {/* Author info */}
               <div className="flex items-center space-x-4 mb-6">
@@ -263,18 +232,18 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose }) =
                   ) : comments.length === 0 ? (
                     <div className="text-neutral-400">まだコメントはありません</div>
                   ) : (
-                    <ul className="space-y-4">
+                    <ul className="space-y-4 pb-4">
                       {comments.map((c) => (
                         <li key={c.id} className="flex items-start space-x-3">
                           <img
                             src={c.profiles?.avatar_url || 'https://ui-avatars.com/api/?name=User&background=0072f5&color=fff'}
                             alt={c.profiles?.name || 'ユーザー'}
-                            className="w-8 h-8 rounded-full object-cover"
+                            className="w-10 h-10 rounded-full object-cover"
                           />
                           <div>
                             <div className="text-sm font-medium text-neutral-900">{c.profiles?.name || 'ユーザー'}</div>
                             <div className="text-xs text-neutral-500 mb-1">{new Date(c.created_at).toLocaleString('ja-JP')}</div>
-                            <div className="text-neutral-800 text-base break-words">{c.content}</div>
+                            <div className="text-neutral-800 text-base break-words py-1 px-2 bg-neutral-100 rounded-lg max-w-xs sm:max-w-md">{c.content}</div>
                           </div>
                         </li>
                       ))}
@@ -282,19 +251,19 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose }) =
                   )}
                   {/* コメント投稿フォーム */}
                   {user && (
-                    <form onSubmit={handleCommentSubmit} className="mt-6 flex items-center space-x-2">
+                    <form onSubmit={handleCommentSubmit} className="mt-6 flex items-center space-x-2 w-full">
                       <input
                         type="text"
                         value={newComment}
                         onChange={e => setNewComment(e.target.value)}
-                        className="flex-1 border border-neutral-200 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        className="flex-1 border border-neutral-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary-500 text-base"
                         placeholder="コメントを書く..."
                         maxLength={200}
                         required
                       />
                       <button
                         type="submit"
-                        className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors"
+                        className="px-5 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors text-base font-semibold"
                       >投稿</button>
                     </form>
                   )}
