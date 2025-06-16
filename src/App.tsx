@@ -7,12 +7,13 @@ import { MasonryGrid } from './components/MasonryGrid';
 import { PostModal } from './components/PostModal';
 import { NewPostModal } from './components/NewPostModal';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { AuthProvider } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { usePosts } from './hooks/usePosts';
 import { mockTags } from './data/mockData';
 import { Post, FilterOptions } from './types';
 import { ProfileEdit } from './pages/ProfileEdit';
 import { Settings } from './pages/Settings';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 function AppContent() {
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
@@ -24,7 +25,8 @@ function AppContent() {
     sortBy: 'newest'
   });
 
-  const { posts, loading, hasNextPage, loadMore, addPost, filterPosts } = usePosts();
+  const { loading: authLoading } = useAuth();
+  const { posts, loading: postsLoading, hasNextPage, loadMore, addPost, filterPosts } = usePosts();
 
   React.useEffect(() => {
     filterPosts(filters, searchQuery);
@@ -34,7 +36,7 @@ function AppContent() {
     addPost(postData);
   };
 
-  if (loading) {
+  if (authLoading || postsLoading) {
     return (
       <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
         <motion.div
@@ -115,11 +117,13 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <AppContent />
-      </BrowserRouter>
-    </AuthProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppContent />
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

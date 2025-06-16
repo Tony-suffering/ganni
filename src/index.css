@@ -56,6 +56,29 @@
     min-height: 100px;
     max-height: 300px;
   }
+
+  html.dark body {
+    background-color: #0f172a;
+    color: #f1f5f9;
+  }
+  html.dark .bg-white {
+    background-color: #1e293b !important;
+  }
+  html.dark .bg-neutral-50 {
+    background-color: #334155 !important;
+  }
+  html.dark .text-neutral-900 {
+    color: #f1f5f9 !important;
+  }
+  html.dark .text-neutral-800 {
+    color: #e2e8f0 !important;
+  }
+  html.dark .text-neutral-700 {
+    color: #cbd5e1 !important;
+  }
+  html.dark .shadow-lg, html.dark .shadow-2xl {
+    box-shadow: 0 4px 24px 0 rgba(0,0,0,0.7) !important;
+  }
 }
 
 @layer utilities {

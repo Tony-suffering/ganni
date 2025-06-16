@@ -3,9 +3,11 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Mail, Lock } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 
 export const Settings: React.FC = () => {
   const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const [settings, setSettings] = useState({
     theme: 'light',
@@ -23,10 +25,13 @@ export const Settings: React.FC = () => {
         .eq('user_id', user.id)
         .single()
         .then(({ data }) => {
-          if (data) setSettings(data);
+          if (data) {
+            setSettings(data);
+            if (data.theme) setTheme(data.theme);
+          }
         });
     }
-  }, [user]);
+  }, [user, setTheme]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -34,6 +39,9 @@ export const Settings: React.FC = () => {
       setSettings({ ...settings, [name]: (e.target as HTMLInputElement).checked });
     } else {
       setSettings({ ...settings, [name]: value });
+      if (name === 'theme') {
+        setTheme(value as 'light' | 'dark');
+      }
     }
   };
 
