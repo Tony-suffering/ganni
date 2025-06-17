@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload } from 'lucide-react';
+import VoiceInputButton from "../components/VoiceInputButton";
 
 export const ProfileEdit: React.FC = () => {
   const { user } = useAuth();
@@ -97,23 +98,51 @@ export const ProfileEdit: React.FC = () => {
             onChange={handleAvatarChange}
           />
         </div>
-        <div className="flex-1 w-full space-y-4">
+        <div className="flex-1 space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">名前</label>
-            <input name="name" value={profile.name} onChange={handleChange} placeholder="名前" className="input w-full" maxLength={32} />
+            <div className="flex items-center space-x-2">
+              <input name="name" value={profile.name} onChange={handleChange} placeholder="名前" className="input w-full" maxLength={32} />
+              <VoiceInputButton
+                onResult={t => setProfile(prev => ({ ...prev, name: prev.name + t }))}
+                className="ml-2"
+                recordSeconds={10}
+              />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">自己紹介</label>
-            <textarea name="bio" value={profile.bio} onChange={handleChange} placeholder="自己紹介" className="input w-full" maxLength={160} rows={3} />
+            <div className="flex items-center space-x-2">
+              <textarea name="bio" value={profile.bio} onChange={handleChange} placeholder="自己紹介" className="input w-full" maxLength={160} rows={3} />
+              <VoiceInputButton
+                onResult={t => setProfile(prev => ({ ...prev, bio: prev.bio + t }))}
+                className="ml-2"
+                recordSeconds={10}
+              />
+            </div>
           </div>
           <div className="flex gap-4">
             <div className="flex-1">
               <label className="block text-sm font-medium mb-1">場所</label>
-              <input name="location" value={profile.location} onChange={handleChange} placeholder="例: 東京" className="input w-full" maxLength={32} />
+              <div className="flex items-center space-x-2">
+                <input name="location" value={profile.location} onChange={handleChange} placeholder="例: 東京" className="input w-full" maxLength={32} />
+                <VoiceInputButton
+                  onResult={t => setProfile(prev => ({ ...prev, location: prev.location + t }))}
+                  className="ml-2"
+                  recordSeconds={10}
+                />
+              </div>
             </div>
             <div className="flex-1">
               <label className="block text-sm font-medium mb-1">ウェブサイト</label>
-              <input name="website" value={profile.website} onChange={handleChange} placeholder="https://" className="input w-full" maxLength={64} />
+              <div className="flex items-center space-x-2">
+                <input name="website" value={profile.website} onChange={handleChange} placeholder="https://" className="input w-full" maxLength={64} />
+                <VoiceInputButton
+                  onResult={t => setProfile(prev => ({ ...prev, website: prev.website + t }))}
+                  className="ml-2"
+                  recordSeconds={10}
+                />
+              </div>
             </div>
           </div>
         </div>

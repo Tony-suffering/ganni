@@ -14,7 +14,7 @@ class GeminiService {
   constructor() {
     if (API_KEY) {
       this.genAI = new GoogleGenerativeAI(API_KEY);
-      this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
     }
   }
 
@@ -27,16 +27,17 @@ class GeminiService {
     }
 
     const prompt = `
-以下の写真投稿について、お笑い芸人のようなコメントを生成してください。
+以下の投稿について、とにかく褒めまくる、AIの視点から独自の意見を出しつつも、コメントに寄り添った、暖かい、元気のでる文章を書いてください
+関西弁で書いてください
 
 タイトル: "${title}"
 投稿者コメント: "${userComment}"
 
 要求事項:
-- 100文字程度
-- お笑い芸人のようなコメントを生成
+- 150文字程度
+- とにかく褒めまくる、AIの視点から独自の意見を出しつつも、コメントに寄り添った、暖かい、元気のでる文章を書いてください
 
-例: "なんでやねん、わろたｗｗｗ"
+例: 
 
 
 `;

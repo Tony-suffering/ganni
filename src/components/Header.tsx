@@ -56,14 +56,12 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="flex flex-col sm:flex-row items-center justify-between h-auto sm:h-16 space-y-2 sm:space-y-0">
             <div className="flex items-center space-x-3">
               <Link to="/" className="flex items-center space-x-3 group focus:outline-none">
-                <div className="p-2 bg-primary-500 rounded-xl group-hover:bg-primary-600 transition-colors">
-                  <Plane className="w-6 h-6 text-white" />
-                </div>
+                <img src="/1.png" alt="ロゴ" className="w-6 h-6 object-contain" />
                 <div>
                   <h1 className="text-xl font-display font-semibold text-neutral-900 group-hover:text-primary-600 transition-colors">
                     AIツッコミ芸人
                   </h1>
-                  <p className="text-xs text-neutral-500 -mt-1">笑わしたる！</p>
+                  <p className="text-xs text-neutral-900 -mt-1">笑わしたる！</p>
                 </div>
               </Link>
             </div>

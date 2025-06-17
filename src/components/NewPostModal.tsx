@@ -4,6 +4,8 @@ import { X, Upload, Sparkles, Tag as TagIcon, Type, MessageCircle, HelpCircle, E
 import { Tag, AIComment } from '../types';
 import { useAI } from '../hooks/useAI';
 import { useAuth } from '../contexts/AuthContext';
+import VoiceInputButton from "./VoiceInputButton";
+import { analyzeImageWithGemini } from "../lib/gemini";
 
 interface NewPostModalProps {
   isOpen: boolean;
@@ -138,23 +140,37 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
 
     try {
       setIsLoading(true);
-
-      // 画像をアップロード（実際の実装では画像アップロードサービスを使用）
-      // 今回はBase64データURLをそのまま使用
       let imageUrl = imagePreview;
+      let aiDescription = formData.aiDescription;
+      if (selectedImage && !aiDescription) {
+        const fileToBase64 = (file: File): Promise<string> => {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve((reader.result as string).split(",")[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+        };
+        const base64 = await fileToBase64(selectedImage);
+        try {
+          aiDescription = await analyzeImageWithGemini(base64);
+        } catch (err) {
+          // ダミー説明文
+          aiDescription = "この写真は素晴らしい瞬間を捉えています！空港の雰囲気や旅の高揚感が伝わってきます。";
+        }
+        setFormData(prev => ({ ...prev, aiDescription }));
+      }
 
-      // AIコメントを生成
       let aiComments: AIComment[] = [];
       try {
         aiComments = await generateComments(
-          formData.title, 
-          formData.userComment, 
-          formData.aiDescription
+          formData.title,
+          formData.userComment,
+          aiDescription
         );
       } catch (error) {
         console.warn('AI comments generation failed, proceeding without them:', error);
       }
-      // ダミーコメントを必ず1件以上付与
       if (!aiComments || aiComments.length === 0) {
         aiComments = [{
           id: Date.now().toString(),
@@ -163,11 +179,10 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
           createdAt: new Date().toISOString()
         }];
       }
-
       const postData = {
         title: formData.title,
         imageUrl: imageUrl,
-        aiDescription: formData.aiDescription,
+        aiDescription: aiDescription,
         userComment: formData.userComment,
         tags: tags.filter(tag => formData.selectedTags.includes(tag.id)),
         author: {
@@ -177,11 +192,8 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
         },
         aiComments: aiComments
       };
-
-      // データベースに保存
       onSubmit(postData);
       onClose();
-      // Reset form
       setSelectedImage(null);
       setImagePreview('');
       setFormData({
@@ -258,17 +270,23 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                 <div>
                   <label className="flex items-center text-sm font-medium text-neutral-700 mb-3">
                     <Type className="w-4 h-4 mr-2" />
-                    タイトル <span className="text-red-500 ml-1">*</span>
+                    ひと言マイクにつぶやいて！ <span className="text-red-500 ml-1">*</span>
                   </label>
-                  <input
-                    type="text"
-                    value={formData.title}
-                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="例: LAへ旅立つ飛行機"
-                    className="w-full px-4 py-3 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all duration-200"
-                    required
-                    maxLength={100}
-                  />
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      value={formData.title}
+                      onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="例: LAへ旅立つ飛行機"
+                      className="w-full px-4 py-3 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all duration-200"
+                      required
+                      maxLength={100}
+                    />
+                    <VoiceInputButton
+                      onResult={t => setFormData(prev => ({ ...prev, title: prev.title + t }))}
+                      className="ml-2 p-3 rounded-full bg-primary-500 text-white hover:bg-primary-600 shadow-lg text-xl"
+                    />
+                  </div>
                   <div className="text-xs text-neutral-500 mt-1">
                     文字数: {formData.title.length}/100
                   </div>
@@ -310,6 +328,22 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                       >
                         <X className="w-4 h-4" />
                       </button>
+                      {/* 画像AI説明文表示 */}
+                      <div className="mt-4 p-4 bg-indigo-50 rounded-xl border border-indigo-200">
+                        <div className="font-semibold text-indigo-800 mb-1 flex items-center">
+                          <Sparkles className="w-5 h-5 mr-2" />
+                          この画像のAI説明
+                        </div>
+                        {isLoading && !formData.aiDescription ? (
+                          <div className="text-indigo-500">AIが画像を分析中...</div>
+                        ) : (
+                          <div className="text-indigo-900 text-base whitespace-pre-line min-h-[2em]">
+                            {formData.aiDescription
+                              ? formData.aiDescription
+                              : <span className="text-red-500">（まだAI説明はありません。画像分析に失敗した場合はAPIキーやネットワークを確認してください）</span>}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                   <input
@@ -326,15 +360,23 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                   <label className="block text-sm font-medium text-neutral-700 mb-3">
                     あなたの感想・体験 <span className="text-red-500 ml-1">*</span>
                   </label>
-                  <textarea
-                    ref={textareaRef}
-                    value={formData.userComment}
-                    onChange={handleTextareaChange}
-                    placeholder="この写真を撮った時の感想や体験を教えてください..."
-                    className="auto-resize-textarea w-full px-4 py-3 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all duration-200 scroll-container"
-                    style={{ minHeight: '100px' }}
-                    required
-                  />
+                  <div className="flex items-center space-x-2">
+                    <textarea
+                      ref={textareaRef}
+                      value={formData.userComment}
+                      onChange={handleTextareaChange}
+                      placeholder="この写真を撮った時の感想や体験を教えてください..."
+                      className="auto-resize-textarea w-full px-4 py-3 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all duration-200 scroll-container"
+                      style={{ minHeight: '100px' }}
+                      required
+                    />
+                    <VoiceInputButton
+                      onResult={t => setFormData(prev => ({ ...prev, userComment: prev.userComment + t }))}
+                      className="ml-2"
+                      recordSeconds={10}
+                    />
+                  </div>
+                  <div className="text-xs text-primary-600 mt-1 font-semibold">マイクで話すだけで入力できます！</div>
                   <div className="text-xs text-neutral-500 mt-1">
                     文字数: {formData.userComment.length}
                   </div>
@@ -406,7 +448,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                   <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-200">
                     <h4 className="flex items-center text-lg font-semibold text-indigo-900 mb-3">
                       <Sparkles className="w-5 h-5 mr-2" />
-                      AI応答プレビュー
+                      投稿してからまた開いたら見れるよ！
                     </h4>
                     <div className="space-y-3">
                       <div className="flex items-center space-x-2 text-sm">

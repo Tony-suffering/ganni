@@ -4,6 +4,7 @@ import { X, User, Calendar, Tag as TagIcon, MessageCircle, Sparkles, HelpCircle,
 import { Post } from '../types';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import VoiceInputButton from "./VoiceInputButton";
 
 interface PostModalProps {
   post: Post | null;
@@ -261,12 +262,17 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose }) =
                         maxLength={200}
                         required
                       />
+                      <VoiceInputButton
+                        onResult={t => setNewComment(newComment + t)}
+                        className="ml-2 p-3 rounded-full bg-primary-500 text-white hover:bg-primary-600 shadow-lg text-xl"
+                      />
                       <button
                         type="submit"
                         className="px-5 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors text-base font-semibold"
                       >投稿</button>
                     </form>
                   )}
+                  <div className="text-xs text-primary-600 mt-1 font-semibold">マイクで話すだけでコメントできます！</div>
                 </div>
 
                 {/* Footer info */}
