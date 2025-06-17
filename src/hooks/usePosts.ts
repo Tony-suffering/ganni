@@ -30,20 +30,8 @@ export const usePosts = () => {
         .select(`
           *,
           profiles:author_id (name, avatar_url),
-          post_tags (
-            tags (
-              id,
-              name,
-              category,
-              color
-            )
-          ),
-          ai_comments (
-            id,
-            type,
-            content,
-            created_at
-          )
+          post_tags ( tags ( id, name, category, color ) ),
+          ai_comments ( id, type, content, created_at )
         `)
         .order('created_at', { ascending: false });
 
@@ -74,7 +62,9 @@ export const usePosts = () => {
       setFilteredPosts(formattedPosts.slice(0, POSTS_PER_PAGE));
       setLoading(false);
     } catch (e) {
-      setError('Supabase fetch failed');
+      setError('投稿の読み込みに失敗しました。');
+      console.error(e);
+      // フォールバックとしてモックデータを表示
       setPosts(mockPosts);
       setFilteredPosts(mockPosts.slice(0, POSTS_PER_PAGE));
       setLoading(false);
@@ -84,18 +74,11 @@ export const usePosts = () => {
   useEffect(() => {
     fetchPosts();
 
-    // Subscribe to real-time updates
     const subscription = supabase
       .channel('posts_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'posts'
-        },
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' },
         () => {
-          fetchPosts(); // Refresh posts when changes occur
+          fetchPosts(); // 変更があったら投稿を再取得
         }
       )
       .subscribe();
@@ -107,111 +90,76 @@ export const usePosts = () => {
 
   const loadMore = useCallback(() => {
     if (!hasNextPage || loading) return;
-
-    const startIndex = page * POSTS_PER_PAGE;
-    const endIndex = startIndex + POSTS_PER_PAGE;
-    const newPosts = posts.slice(startIndex, endIndex);
-
+    const newPosts = posts.slice(page * POSTS_PER_PAGE, (page + 1) * POSTS_PER_PAGE);
     if (newPosts.length > 0) {
       setFilteredPosts(prev => [...prev, ...newPosts]);
       setPage(prev => prev + 1);
     }
-
-    if (endIndex >= posts.length) {
+    if ((page + 1) * POSTS_PER_PAGE >= posts.length) {
       setHasNextPage(false);
     }
   }, [page, posts, hasNextPage, loading]);
 
   const addPost = useCallback(async (newPost: Omit<Post, 'id' | 'createdAt' | 'updatedAt'>) => {
-    try {
-      // 1. ユーザーID取得
-      const { data: userData, error: userError } = await supabase.auth.getUser();
-      if (userError || !userData?.user?.id) {
-        alert('ユーザー情報の取得に失敗しました。再ログインしてください。');
-        throw userError || new Error('No user');
-      }
-      const userId = userData.user.id;
-
-      // 2. 画像アップロード
-      const imageFile = await fetch(newPost.imageUrl).then(r => r.blob());
-      const imageName = `${Date.now()}-${Math.random().toString(36).substring(7)}`;
-      const { data: imageData, error: imageError } = await supabase.storage
-        .from('post-images')
-        .upload(imageName, imageFile);
-      if (imageError) {
-        alert('画像アップロードに失敗しました: ' + imageError.message);
-        throw imageError;
-      }
-
-      // 3. 公開URL取得
-      const { data: publicUrlData } = supabase.storage
-        .from('post-images')
-        .getPublicUrl(imageName);
-      const publicUrl = publicUrlData.publicUrl;
-
-      // 4. postsテーブルにinsert
-      const { data: postData, error: postError } = await supabase
-        .from('posts')
-        .insert({
-          title: newPost.title,
-          image_url: publicUrl,
-          user_comment: newPost.userComment,
-          ai_description: newPost.aiDescription,
-          author_id: userId
-        })
-        .select()
-        .single();
-      if (postError) {
-        alert('投稿の保存に失敗しました: ' + postError.message);
-        throw postError;
-      }
-
-      // 5. post_tagsテーブルにinsert
-      if (newPost.tags.length > 0) {
-        const { error: tagError } = await supabase
-          .from('post_tags')
-          .insert(
-            newPost.tags.map(tag => ({
-              post_id: postData.id,
-              tag_id: tag.id
-            }))
-          );
-        if (tagError) {
-          alert('タグの保存に失敗しました: ' + tagError.message);
-          throw tagError;
-        }
-      }
-
-      // 6. ai_commentsテーブルにinsert
-      if (newPost.aiComments && newPost.aiComments.length > 0) {
-        const { error: commentError } = await supabase
-          .from('ai_comments')
-          .insert(
-            newPost.aiComments.map(comment => ({
-              post_id: postData.id,
-              type: comment.type,
-              content: comment.content
-            }))
-          );
-        if (commentError) {
-          alert('AIコメントの保存に失敗しました: ' + commentError.message);
-          throw commentError;
-        }
-      }
-
-      // 7. 投稿後に再取得
-      await fetchPosts();
-    } catch (error) {
-      setError('投稿に失敗しました');
-      console.error('投稿エラー:', error);
-      throw error;
+    // 1. ユーザーID取得
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('ユーザーが認証されていません。再ログインしてください。');
     }
+    const userId = user.id;
+
+    // 2. 画像アップロード
+    const imageFile = await fetch(newPost.imageUrl).then(r => r.blob());
+    const imageName = `${userId}/${Date.now()}`;
+    const { error: imageError } = await supabase.storage.from('post-images').upload(imageName, imageFile);
+    if (imageError) {
+      console.error('画像アップロードエラー:', imageError);
+      throw new Error('画像アップロードに失敗しました。');
+    }
+
+    // 3. 公開URL取得
+    const { data: publicUrlData } = supabase.storage.from('post-images').getPublicUrl(imageName);
+    const publicUrl = publicUrlData.publicUrl;
+
+    // 4. postsテーブルにinsert
+    const { data: postData, error: postError } = await supabase
+      .from('posts')
+      .insert({
+        title: newPost.title,
+        image_url: publicUrl,
+        user_comment: newPost.userComment,
+        ai_description: newPost.aiDescription,
+        author_id: userId // 👈 ログインユーザーのIDを正しく設定
+      })
+      .select()
+      .single();
+
+    if (postError) {
+      console.error('投稿保存エラー:', postError);
+      throw postError; // エラーをそのまま投げて呼び出し元で処理
+    }
+
+    // 5. 関連テーブルにinsert
+    if (newPost.tags.length > 0) {
+        const { error: tagError } = await supabase.from('post_tags').insert(
+            newPost.tags.map(tag => ({ post_id: postData.id, tag_id: tag.id }))
+        );
+        if (tagError) console.error('タグ保存エラー:', tagError); // エラーは記録するが処理は止めない
+    }
+
+    if (newPost.aiComments && newPost.aiComments.length > 0) {
+        const { error: commentError } = await supabase.from('ai_comments').insert(
+            newPost.aiComments.map(comment => ({ post_id: postData.id, type: comment.type, content: comment.content }))
+        );
+        if (commentError) console.error('AIコメント保存エラー:', commentError);
+    }
+
+    // 7. 投稿後に再取得
+    await fetchPosts();
   }, [fetchPosts]);
 
   const filterPosts = useCallback((filters: FilterOptions, searchQuery: string) => {
     let filtered = [...posts];
-
-    // Search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(post =>
@@ -221,21 +169,14 @@ export const usePosts = () => {
         post.tags.some(tag => tag.name.toLowerCase().includes(query))
       );
     }
-
-    // Tag filters
     if (filters.tags.length > 0) {
-      filtered = filtered.filter(post =>
-        post.tags.some(tag => filters.tags.includes(tag.id))
-      );
+      filtered = filtered.filter(post => post.tags.some(tag => filters.tags.includes(tag.id)));
     }
-
-    // Sort
     switch (filters.sortBy) {
       case 'oldest':
         filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
         break;
       case 'popular':
-        // Sort by number of AI comments
         filtered.sort((a, b) => (b.aiComments?.length || 0) - (a.aiComments?.length || 0));
         break;
       case 'newest':
@@ -243,7 +184,6 @@ export const usePosts = () => {
         filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         break;
     }
-
     setFilteredPosts(filtered.slice(0, POSTS_PER_PAGE));
     setPage(1);
     setHasNextPage(filtered.length > POSTS_PER_PAGE);

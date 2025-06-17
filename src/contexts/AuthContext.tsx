@@ -81,13 +81,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     },
     // 新規登録関数を実装
     signUp: async (email, password, data) => {
-        const { error } = await supabase.auth.signUp({
+        const { data: signUpData, error } = await supabase.auth.signUp({
             email,
             password,
             options: {
                 data, // ここで { name: 'Taro' } のようなユーザーメタデータを渡す
             },
         });
+        if (!error && signUpData?.user) {
+            // 認証ユーザー作成成功時、profilesテーブルに追加
+            const userId = signUpData.user.id;
+            const name = data.name || '';
+            const avatar_url = data.avatar_url || null;
+            await supabase.from('profiles').insert({
+                id: userId,
+                name,
+                avatar_url
+            });
+        }
         return { error };
     },
   };
