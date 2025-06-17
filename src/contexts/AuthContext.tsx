@@ -8,8 +8,9 @@ interface AuthContextType {
   user: User | null;
   signOut: () => Promise<void>;
   loading: boolean;
-  // ログイン機能を追加
   signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  // 新規登録機能を追加
+  signUp: (email: string, password: string, data: { [key: string]: any }) => Promise<{ error: AuthError | null }>;
 }
 
 // AuthProviderコンポーネントが受け取るpropsの型を定義
@@ -71,13 +72,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     },
     loading,
-    // ログイン関数を実装
     signIn: async (email, password) => {
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       return { error };
+    },
+    // 新規登録関数を実装
+    signUp: async (email, password, data) => {
+        const { error } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+                data, // ここで { name: 'Taro' } のようなユーザーメタデータを渡す
+            },
+        });
+        return { error };
     },
   };
 
