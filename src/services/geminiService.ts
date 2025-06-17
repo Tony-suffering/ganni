@@ -14,7 +14,7 @@ class GeminiService {
   constructor() {
     if (API_KEY) {
       this.genAI = new GoogleGenerativeAI(API_KEY);
-      this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+      this.model = this.genAI.getGenerativeModel({ model: "gemini-1.5-pro(-latest)" });
     }
   }
 
@@ -207,3 +207,13 @@ AI情景描写: "${aiDescription}"
 }
 
 export const geminiService = new GeminiService();
+
+export async function analyzeImageAndComment(imageUrl: string) {
+  const res = await fetch('/functions/v1/analyzeImage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageUrl }),
+  });
+  if (!res.ok) throw new Error('画像認識に失敗しました');
+  return await res.json(); // { labels, comment }
+}

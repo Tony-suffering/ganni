@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Calendar, Tag as TagIcon, MessageCircle, Sparkles, HelpCircle, Eye } from 'lucide-react';
 import { Post } from '../types';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../supabase';
 import { useAuth } from '../contexts/AuthContext';
 import VoiceInputButton from "./VoiceInputButton";
 

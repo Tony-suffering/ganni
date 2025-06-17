@@ -1,175 +1,101 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { User, Session, AuthError } from '@supabase/supabase-js'
-import { supabase } from '../lib/supabase'
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { Session, User, AuthError } from '@supabase/supabase-js';
+import { supabase } from '../supabase';
 
+// Contextで提供する値の型を定義
 interface AuthContextType {
-  user: User | null
-  session: Session | null
-  loading: boolean
-  signUp: (email: string, password: string, userData?: any) => Promise<{ error: AuthError | null }>
-  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
-  signOut: () => Promise<{ error: AuthError | null }>
-  resetPassword: (email: string) => Promise<{ error: AuthError | null }>
-  updateProfile: (data: any) => Promise<{ error: AuthError | null }>
+  session: Session | null;
+  user: User | null;
+  signOut: () => Promise<void>;
+  loading: boolean;
+  // ログイン機能を追加
+  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
-}
-
+// AuthProviderコンポーネントが受け取るpropsの型を定義
 interface AuthProviderProps {
-  children: ReactNode
+  children: ReactNode;
 }
 
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+// Contextを作成
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+/**
+ * アプリケーション全体に認証状態を提供するプロバイダーコンポーネント
+ */
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
-
-      // Update user profile in database when user signs in
-      if (event === 'SIGNED_IN' && session?.user) {
-        await updateUserProfile(session.user)
+    // 最初に現在のセッションを非同期で取得
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        setSession(session);
+        setUser(session?.user ?? null);
+      } catch (error) {
+        console.error("Error getting initial session:", error);
+      } finally {
+        setLoading(false);
       }
-    })
+    };
 
-    return () => subscription.unsubscribe()
-  }, [])
+    getInitialSession();
 
-  const updateUserProfile = async (user: User) => {
-    try {
-      // Check if we're in demo mode
-      if (!import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL === 'https://demo.supabase.co') {
-        console.log('Demo mode: Skipping user profile update')
-          return
-        }
-
-      const { error } = await supabase
-          .from('profiles')
-        .upsert({
-          id: user.id,
-          name: user.user_metadata?.name || user.email?.split('@')[0] || '',
-          avatar_url: user.user_metadata?.avatar_url || '',
-          updated_at: new Date().toISOString(),
-        })
-        .select()
-
-      if (error) {
-        console.error('Error updating user profile:', error)
+    // 認証状態の変化を監視するリスナーを設定
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error updating user profile:', error)
-    }
-  }
+    );
 
-  const signUp = async (email: string, password: string, userData?: any) => {
-    // Check if we're in demo mode
-    if (!import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL === 'https://demo.supabase.co') {
-      return { error: { message: 'デモモードではアカウント作成はできません。実際のSupabaseプロジェクトに接続してください。' } }
-    }
+    // コンポーネントがアンマウントされるときにリスナーを解除
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name: userData?.name || email.split('@')[0],
-          ...userData,
-        },
-      },
-    })
-
-    return { error }
-  }
-
-  const signIn = async (email: string, password: string) => {
-    // Check if we're in demo mode
-    if (!import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL === 'https://demo.supabase.co') {
-      return { error: { message: 'デモモードではログインできません。実際のSupabaseプロジェクトに接続してください。' } }
-    }
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-
-    return { error }
-  }
-
-  const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    return { error }
-  }
-
-  const resetPassword = async (email: string) => {
-    // Check if we're in demo mode
-    if (!import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL === 'https://demo.supabase.co') {
-      return { error: { message: 'デモモードではパスワードリセットはできません。' } }
-    }
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    })
-    return { error }
-  }
-
-  const updateProfile = async (data: any) => {
-    // Check if we're in demo mode
-    if (!import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL === 'https://demo.supabase.co') {
-      return { error: { message: 'デモモードではプロフィール更新はできません。' } }
-    }
-
-    const { error } = await supabase.auth.updateUser({
-      data,
-    })
-
-    if (!error && user) {
-      // Also update the users table
-      const { error: dbError } = await supabase
-        .from('users')
-        .update({
-          ...data,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id)
-
-      return { error: dbError }
-    }
-
-    return { error }
-  }
-
+  // Contextに渡す値
   const value = {
-    user,
     session,
+    user,
+    signOut: async () => {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error("Error signing out:", error);
+      }
+    },
     loading,
-    signUp,
-    signIn,
-    signOut,
-    resetPassword,
-    updateProfile,
-  }
+    // ログイン関数を実装
+    signIn: async (email, password) => {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { error };
+    },
+  };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
+  return (
+    <AuthContext.Provider value={value}>
+      {/* 認証状態のチェックが終わるまで子要素を表示しない */}
+      {!loading && children}
+    </AuthContext.Provider>
+  );
+};
+
+/**
+ * 認証情報に簡単にアクセスするためのカスタムフック
+ */
+export const useAuth = (): AuthContextType => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

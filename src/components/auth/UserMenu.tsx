@@ -1,40 +1,60 @@
-import React, { useState, useRef, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { User, Settings, LogOut, ChevronDown } from 'lucide-react'
-import { useAuth } from '../../contexts/AuthContext'
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 
+// Supabaseのuser.user_metadataの型を定義しておくと、コードが安全で分かりやすくなります
+interface CustomUserMetadata {
+  name?: string;
+  avatar_url?: string;
+}
+
 export function UserMenu() {
-  const [isOpen, setIsOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
-  const { user, signOut } = useAuth()
-  
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const { user, signOut } = useAuth();
+
+  // Viteの環境変数をチェックして、デモモードかどうかを判定します
   const isDemo = !import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL === 'https://demo.supabase.co';
 
+  // メニューの外側をクリックしたときにメニューを閉じるエフェクト
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
+        setIsOpen(false);
       }
-    }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
+  // ログアウト処理
   const handleSignOut = async () => {
-    await signOut()
-    setIsOpen(false)
-  }
+    await signOut();
+    setIsOpen(false); // メニューを閉じる
+  };
 
-  const getDisplayName = () => {
-    if (isDemo) return 'デモユーザー'
-    return user?.user_metadata?.name || user?.email?.split('@')[0] || 'ユーザー'
-  }
+  // 型安全にユーザーメタデータを取得
+  const userMetadata = user?.user_metadata as CustomUserMetadata | undefined;
 
-  const getAvatarUrl = () => {
-    if (isDemo) return 'https://ui-avatars.com/api/?name=Demo&background=ff6b35&color=fff'
-    return user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(getDisplayName())}&background=0072f5&color=fff`
+  // 表示名を取得する関数
+  const getDisplayName = (): string => {
+    if (isDemo) return 'デモユーザー';
+    return userMetadata?.name || user?.email?.split('@')[0] || 'ユーザー';
+  };
+
+  // アバター画像のURLを取得する関数
+  const getAvatarUrl = (): string => {
+    if (isDemo) return 'https://ui-avatars.com/api/?name=Demo&background=ff6b35&color=fff';
+    const displayName = getDisplayName();
+    // ui-avatars.comは日本語も扱えるようにエンコードします
+    return userMetadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=0072f5&color=fff`;
+  };
+
+  // ログインしていない場合（かつデモモードでない場合）は何も表示しない
+  if (!user && !isDemo) {
+    return null;
   }
 
   return (
@@ -46,7 +66,7 @@ export function UserMenu() {
         <img
           src={getAvatarUrl()}
           alt={getDisplayName()}
-          className="w-8 h-8 rounded-full object-cover border border-neutral-200"
+          className="w-8 h-8 rounded-full object-cover border-2 border-neutral-200"
         />
         <span className="text-sm font-medium text-neutral-700 hidden sm:inline">
           {getDisplayName()}
@@ -60,52 +80,54 @@ export function UserMenu() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-neutral-200 py-2 z-50"
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-lg border border-neutral-200/70 py-1 z-50"
           >
-            <div className="px-4 py-3 border-b border-neutral-100">
-              <p className="text-sm font-medium text-neutral-900">{getDisplayName()}</p>
-              <p className="text-xs text-neutral-500">{isDemo ? 'demo@example.com' : user?.email}</p>
+            <div className="px-3 py-2 border-b border-neutral-100">
+              <p className="text-sm font-semibold text-neutral-900 truncate">{getDisplayName()}</p>
+              <p className="text-xs text-neutral-500 truncate">{isDemo ? 'demo@example.com' : user?.email}</p>
+            </div>
+            
+            <div className="py-1">
+              <Link
+                to="/profile-edit"
+                className="flex items-center space-x-3 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                <User className="w-4 h-4 text-neutral-500" />
+                <span>プロフィール</span>
+              </Link>
+
+              <Link
+                to="/settings"
+                className="flex items-center space-x-3 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                <Settings className="w-4 h-4 text-neutral-500" />
+                <span>設定</span>
+              </Link>
             </div>
 
-            <Link
-              to="/profile-edit"
-              className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
-              onClick={() => setIsOpen(false)}
-            >
-              <User className="w-4 h-4" />
-              <span>プロフィール</span>
-            </Link>
+            <hr className="border-neutral-100" />
 
-            <Link
-              to="/settings"
-              className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
-              onClick={() => setIsOpen(false)}
-            >
-              <Settings className="w-4 h-4" />
-              <span>設定</span>
-            </Link>
-
-            <hr className="my-1 border-neutral-100" />
-
-            {!isDemo && (
-              <button
-                className="flex items-center space-x-3 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                onClick={handleSignOut}
-              >
-                <LogOut className="w-4 h-4" />
-                <span>ログアウト</span>
-              </button>
-            )}
-            
-            {isDemo && (
-              <div className="px-4 py-2 text-xs text-orange-600 bg-orange-50">
-                デモモードで動作中
+            {!isDemo ? (
+              <div className="py-1">
+                <button
+                  className="flex items-center space-x-3 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>ログアウト</span>
+                </button>
+              </div>
+            ) : (
+              <div className="px-3 py-2 text-xs text-orange-600 bg-orange-50">
+                デモモードではログアウトできません
               </div>
             )}
           </motion.div>
         )}
       </AnimatePresence>
     </div>
-  )
+  );
 }

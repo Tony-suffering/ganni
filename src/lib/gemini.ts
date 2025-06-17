@@ -9,7 +9,7 @@ export async function analyzeImageWithGemini(base64Image: string): Promise<strin
   const pureBase64 = base64Image.replace(/^data:image\/\w+;base64,/, "");
 
   const url =
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=AIzaSyAaNAp3cJzMc9_WloRU57EAvIJyycqgA8o" +
+    "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key=" +
     apiKey;
 
   const body = {

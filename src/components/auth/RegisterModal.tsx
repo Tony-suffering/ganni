@@ -105,7 +105,7 @@ export function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModa
         resetForm()
       }
     } catch (error) {
-      setError('予期しないエラーが発生しました')
+      setError('')
     } finally {
       setIsLoading(false)
     }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Post, FilterOptions, Database, Tag, AIComment } from '../types';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../supabase';
 import { mockPosts } from '../data/mockData';
 
 type PostWithRelations = Database['public']['Tables']['posts']['Row'] & {
