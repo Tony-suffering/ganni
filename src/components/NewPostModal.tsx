@@ -5,7 +5,7 @@ import { Tag, AIComment } from '../types';
 import { useAI } from '../hooks/useAI';
 import { useAuth } from '../contexts/AuthContext';
 import VoiceInputButton from "./VoiceInputButton";
-import { analyzeImageWithGemini } from "../lib/gemini";
+import { generateImageAIComments } from "../lib/gemini";
 
 interface NewPostModalProps {
   isOpen: boolean;
@@ -27,7 +27,8 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
     title: '',
     userComment: '',
     selectedTags: [] as string[],
-    aiDescription: ''
+    aiDescription: '',
+    aiComments: [] as AIComment[]
   });
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -96,13 +97,22 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
     }
   }, [isOpen, formData.userComment]);
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setSelectedImage(file);
       const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
+      reader.onload = async (e) => {
+        const base64 = e.target?.result as string;
+        setImagePreview(base64);
+        // 画像AIコメント生成
+        try {
+          const { description, comments } = await generateImageAIComments(base64);
+          setFormData(prev => ({ ...prev, aiDescription: description, aiComments: comments }));
+        } catch (err) {
+          // 失敗時は空
+          setFormData(prev => ({ ...prev, aiDescription: '', aiComments: [] }));
+        }
       };
       reader.readAsDataURL(file);
     }
@@ -142,42 +152,23 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
       setIsLoading(true);
       let imageUrl = imagePreview;
       let aiDescription = formData.aiDescription;
-      if (selectedImage && !aiDescription) {
-        const fileToBase64 = (file: File): Promise<string> => {
-          return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve((reader.result as string).split(",")[1]);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-          });
-        };
-        const base64 = await fileToBase64(selectedImage);
+      let aiComments: AIComment[] = formData.aiComments || [];
+      if (aiComments.length === 0 && selectedImage) {
         try {
-          aiDescription = await analyzeImageWithGemini(base64);
+          const { description, comments } = await generateImageAIComments(imagePreview);
+          aiComments = comments;
+          if (!aiDescription) {
+            aiDescription = description;
+            setFormData(prev => ({ ...prev, aiDescription }));
+          }
         } catch (err) {
-          // ダミー説明文
-          aiDescription = "この写真は素晴らしい瞬間を捉えています！空港の雰囲気や旅の高揚感が伝わってきます。";
+          aiComments = [{
+            id: Date.now().toString(),
+            type: 'comment',
+            content: 'AIコメントを生成できませんでしたが、あなたの投稿は素晴らしいです！',
+            createdAt: new Date().toISOString()
+          }];
         }
-        setFormData(prev => ({ ...prev, aiDescription }));
-      }
-
-      let aiComments: AIComment[] = [];
-      try {
-        aiComments = await generateComments(
-          formData.title,
-          formData.userComment,
-          aiDescription
-        );
-      } catch (error) {
-        console.warn('AI comments generation failed, proceeding without them:', error);
-      }
-      if (!aiComments || aiComments.length === 0) {
-        aiComments = [{
-          id: Date.now().toString(),
-          type: 'comment',
-          content: 'AIコメントを生成できませんでしたが、あなたの投稿は素晴らしいです！',
-          createdAt: new Date().toISOString()
-        }];
       }
       const postData = {
         title: formData.title,
@@ -200,7 +191,8 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
         title: '',
         userComment: '',
         selectedTags: [],
-        aiDescription: ''
+        aiDescription: '',
+        aiComments: []
       });
       setScrollPosition(0);
     } catch (error) {
