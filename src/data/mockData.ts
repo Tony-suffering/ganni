@@ -1,18 +1,18 @@
 import { Post, Tag, AIComment } from '../types';
 
 export const mockTags: Tag[] = [
-  { id: '1', name: 'あああ', category: 'terminal', color: '#0072f5' },
-  { id: '2', name: '離陸', category: 'aircraft', color: '#efb23b' },
-  { id: '3', name: '待合室', category: 'terminal', color: '#7cc7ff' },
-  { id: '4', name: '夕焼け', category: 'atmosphere', color: '#f2c464' },
-  { id: '5', name: '建築美', category: 'architecture', color: '#36abff' },
-  { id: '6', name: '旅行者', category: 'people', color: '#ba7c25' },
-  { id: '7', name: '滑走路', category: 'aircraft', color: '#005bc4' },
-  { id: '8', name: '夜景', category: 'atmosphere', color: '#334155' },
-  { id: '9', name: 'アート', category: 'architecture', color: '#6366f1' },
-  { id: '10', name: '静寂', category: 'atmosphere', color: '#8b5cf6' },
-  { id: '11', name: '感動', category: 'atmosphere', color: '#ef4444' },
-  { id: '12', name: '未来', category: 'architecture', color: '#10b981' },
+  { id: '1', name: '風景', category: 'nature', color: '#36abff' },
+  { id: '2', name: '人物', category: 'people', color: '#efb23b' },
+  { id: '3', name: '建物', category: 'architecture', color: '#7cc7ff' },
+  { id: '4', name: '食べ物', category: 'food', color: '#f2c464' },
+  { id: '5', name: '旅行', category: 'travel', color: '#10b981' },
+  { id: '6', name: '自然', category: 'nature', color: '#8b5cf6' },
+  { id: '7', name: '夜景', category: 'night', color: '#334155' },
+  { id: '8', name: 'アート', category: 'art', color: '#6366f1' },
+  { id: '9', name: '動物', category: 'animal', color: '#ba7c25' },
+  { id: '10', name: 'スポーツ', category: 'sports', color: '#ef4444' },
+  { id: '11', name: 'イベント', category: 'event', color: '#f59e42' },
+  { id: '12', name: '日常', category: 'life', color: '#005bc4' },
 ];
 
 const generateAIComments = (): AIComment[] => [
@@ -47,7 +47,8 @@ export const mockPosts: Post[] = [
     createdAt: '2024-01-15T08:30:00Z',
     updatedAt: '2024-01-15T08:30:00Z',
     author: { name: '田中 航', avatar: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=100' },
-    aiComments: generateAIComments()
+    aiComments: generateAIComments(),
+    imageAIDescription: '',
   },
   {
     id: '2',
@@ -72,7 +73,8 @@ export const mockPosts: Post[] = [
         content: 'この写真を撮られた時の気温や風はどうでしたか？夕方の空港での撮影は、時間との勝負もありそうですが、どのようにしてこの完璧なタイミングを捉えたのでしょう？',
         createdAt: new Date(Date.now() - 1200000).toISOString()
       }
-    ]
+    ],
+    imageAIDescription: '',
   },
   {
     id: '3',
@@ -91,7 +93,8 @@ export const mockPosts: Post[] = [
         content: '深夜の空港は昼間とは全く違う表情を見せますね。静寂の中にある緊張感と期待感が、写真からも伝わってきます。',
         createdAt: new Date(Date.now() - 4500000).toISOString()
       }
-    ]
+    ],
+    imageAIDescription: '',
   },
   {
     id: '4',
@@ -103,7 +106,8 @@ export const mockPosts: Post[] = [
     createdAt: '2024-01-12T22:00:00Z',
     updatedAt: '2024-01-12T22:00:00Z',
     author: { name: '鈴木 麗奈', avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100' },
-    aiComments: generateAIComments()
+    aiComments: generateAIComments(),
+    imageAIDescription: '',
   },
   {
     id: '5',
@@ -122,7 +126,8 @@ export const mockPosts: Post[] = [
         content: 'この朝の風景を撮影する際、どのような心境でシャッターを切られましたか？人々の動きの中に何か特別なリズムを感じ取られたのでしょうか？',
         createdAt: new Date(Date.now() - 5400000).toISOString()
       }
-    ]
+    ],
+    imageAIDescription: '',
   },
   {
     id: '6',
@@ -147,6 +152,7 @@ export const mockPosts: Post[] = [
         content: '空港カフェは世界中どこでも似たような雰囲気がありますが、それぞれに独特の物語があるものです。この写真からは、静かな満足感が伝わってきます。',
         createdAt: new Date(Date.now() - 3600000).toISOString()
       }
-    ]
+    ],
+    imageAIDescription: '',
   }
 ];

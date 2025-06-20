@@ -24,10 +24,29 @@ const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({ onResult, className
     setRecording(true);
     setLoading(false);
     chunksRef.current = [];
+
+    // APIキーチェック
+    if (!import.meta.env.VITE_GOOGLE_SPEECH_API_KEY) {
+      setError("Google Speech-to-Text APIキーが設定されていません。");
+      setRecording(false);
+      return;
+    }
+
+    // MediaRecorderサポートチェック
+    if (typeof window.MediaRecorder === "undefined") {
+      setError("このブラウザは音声録音に対応していません。");
+      setRecording(false);
+      return;
+    }
+
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
-      const mediaRecorder = new MediaRecorder(stream);
+      let mimeType = "audio/webm";
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = "";
+      }
+      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) chunksRef.current.push(e.data);
@@ -36,7 +55,7 @@ const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({ onResult, className
         setRecording(false);
         setLoading(true);
         try {
-          const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+          const audioBlob = new Blob(chunksRef.current, { type: mimeType || undefined });
           const reader = new FileReader();
           reader.onloadend = async () => {
             const base64Audio = (reader.result as string).split(",")[1];
@@ -105,21 +124,31 @@ const VoiceInputButton: React.FC<VoiceInputButtonProps> = ({ onResult, className
   };
 
   return (
-    <div className={className ? className : "ml-2 p-2 rounded bg-gray-200 hover:bg-gray-300"}>
+    <div className={className ? className : "ml-2 flex items-center"}>
       {!recording && !loading && (
-        <button type="button" onClick={startRecording} className="px-3 py-2 rounded-full bg-primary-500 text-white hover:bg-primary-600 shadow-lg text-xl">
-          <span role="img" aria-label="マイク">🎤</span> 録音開始
+        <button
+          type="button"
+          onClick={startRecording}
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-primary-500 hover:bg-primary-600 shadow-lg text-white text-2xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-400"
+          title="マイクで入力"
+        >
+          <span role="img" aria-label="マイク">🎤</span>
         </button>
       )}
       {recording && (
-        <button type="button" onClick={stopRecording} className="px-3 py-2 rounded-full bg-red-500 text-white shadow-lg text-xl animate-pulse">
-          ⏹️ 録音停止（{recordSeconds}秒まで）
+        <button
+          type="button"
+          onClick={stopRecording}
+          className="w-10 h-10 flex items-center justify-center rounded-full bg-red-500 text-white text-2xl animate-pulse shadow-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-400"
+          title="録音停止"
+        >
+          <span role="img" aria-label="停止">⏹️</span>
         </button>
       )}
       {loading && (
-        <span className="ml-2 text-primary-600 animate-pulse">認識中...</span>
+        <span className="ml-2 text-primary-600 animate-pulse text-sm">認識中...</span>
       )}
-      {error && <div className="text-xs text-red-600 mt-1">{error}</div>}
+      {error && <div className="text-xs text-red-600 mt-1 ml-2">{error}</div>}
     </div>
   );
 };

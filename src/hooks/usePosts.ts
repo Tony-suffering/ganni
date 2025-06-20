@@ -37,26 +37,46 @@ export const usePosts = () => {
 
       if (error || !data) throw error || new Error('No data');
 
-      const formattedPosts = (data as PostWithRelations[]).map(post => ({
-        id: post.id,
-        title: post.title,
-        imageUrl: post.image_url,
-        userComment: post.user_comment,
-        aiDescription: post.ai_description,
-        tags: (post.post_tags ?? []).map(pt => pt.tags),
-        createdAt: post.created_at,
-        updatedAt: post.updated_at,
-        author: {
-          name: post.profiles?.name ?? '',
-          avatar: post.profiles?.avatar_url ?? ''
-        },
-        aiComments: (post.ai_comments ?? []).map(comment => ({
-          id: comment.id,
-          type: comment.type,
-          content: comment.content,
-          createdAt: comment.created_at
-        }))
-      }));
+      // 追加: いいね情報取得
+      // 1. 全投稿IDリスト
+      const postIds = (data as PostWithRelations[]).map(post => post.id);
+      // 2. likesテーブルから件数取得
+      const { data: likesData, error: likesError } = await supabase
+        .from('likes')
+        .select('post_id, user_id');
+      if (likesError) throw likesError;
+      // 3. ログインユーザー取得
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+
+      // 4. 投稿ごとにlikeCount, likedByCurrentUserを付与
+      const formattedPosts = (data as PostWithRelations[]).map(post => {
+        const postLikes = (likesData ?? []).filter(like => like.post_id === post.id);
+        const likeCount = postLikes.length;
+        const likedByCurrentUser = !!currentUser && postLikes.some(like => like.user_id === currentUser.id);
+        return {
+          id: post.id,
+          title: post.title,
+          imageUrl: post.image_url,
+          userComment: post.user_comment,
+          aiDescription: post.ai_description,
+          imageAIDescription: (post as any).imageAIDescription || '',
+          tags: (post.post_tags ?? []).map(pt => pt.tags),
+          createdAt: post.created_at,
+          updatedAt: post.updated_at,
+          author: {
+            name: post.profiles?.name ?? '',
+            avatar: post.profiles?.avatar_url ?? ''
+          },
+          aiComments: (post.ai_comments ?? []).map(comment => ({
+            id: comment.id,
+            type: comment.type,
+            content: comment.content,
+            createdAt: comment.created_at
+          })),
+          likeCount,
+          likedByCurrentUser
+        };
+      });
 
       setPosts(formattedPosts);
       setFilteredPosts(formattedPosts.slice(0, POSTS_PER_PAGE));
@@ -100,7 +120,7 @@ export const usePosts = () => {
     }
   }, [page, posts, hasNextPage, loading]);
 
-  const addPost = useCallback(async (newPost: Omit<Post, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addPost = useCallback(async (newPostInput: Omit<Post, 'id' | 'createdAt' | 'updatedAt'>) => {
     // 1. ユーザーID取得
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) {
@@ -109,7 +129,7 @@ export const usePosts = () => {
     const userId = user.id;
 
     // 2. 画像アップロード
-    const imageFile = await fetch(newPost.imageUrl).then(r => r.blob());
+    const imageFile = await fetch(newPostInput.imageUrl).then(r => r.blob());
     const imageName = `${userId}/${Date.now()}`;
     const { error: imageError } = await supabase.storage.from('post-images').upload(imageName, imageFile);
     if (imageError) {
@@ -125,11 +145,12 @@ export const usePosts = () => {
     const { data: postData, error: postError } = await supabase
       .from('posts')
       .insert({
-        title: newPost.title,
+        title: newPostInput.title,
         image_url: publicUrl,
-        user_comment: newPost.userComment,
-        ai_description: newPost.aiDescription,
-        author_id: userId // 👈 ログインユーザーのIDを正しく設定
+        user_comment: newPostInput.userComment ?? '',
+        ai_description: newPostInput.aiDescription,
+        author_id: userId // ログインユーザーのIDを正しく設定
+        // imageAIDescriptionはDBに保存しない
       })
       .select()
       .single();
@@ -140,22 +161,40 @@ export const usePosts = () => {
     }
 
     // 5. 関連テーブルにinsert
-    if (newPost.tags.length > 0) {
-        const { error: tagError } = await supabase.from('post_tags').insert(
-            newPost.tags.map(tag => ({ post_id: postData.id, tag_id: tag.id }))
-        );
-        if (tagError) console.error('タグ保存エラー:', tagError); // エラーは記録するが処理は止めない
+    if (newPostInput.tags.length > 0) {
+      await supabase.from('post_tags').insert(
+        newPostInput.tags.map(tag => ({ post_id: postData.id, tag_id: tag.id }))
+      );
     }
 
-    if (newPost.aiComments && newPost.aiComments.length > 0) {
-        const { error: commentError } = await supabase.from('ai_comments').insert(
-            newPost.aiComments.map(comment => ({ post_id: postData.id, type: comment.type, content: comment.content }))
-        );
-        if (commentError) console.error('AIコメント保存エラー:', commentError);
+    if (newPostInput.aiComments && newPostInput.aiComments.length > 0) {
+      await supabase.from('ai_comments').insert(
+        newPostInput.aiComments.map(comment => ({ post_id: postData.id, type: comment.type, content: comment.content }))
+      );
     }
 
-    // 7. 投稿後に再取得
+    // 投稿データを返す
+    const newPost: Post = {
+      id: postData.id,
+      title: postData.title,
+      imageUrl: publicUrl,
+      userComment: postData.user_comment,
+      aiDescription: postData.ai_description,
+      imageAIDescription: newPostInput.imageAIDescription || '',
+      tags: newPostInput.tags,
+      createdAt: postData.created_at,
+      updatedAt: postData.updated_at,
+      author: {
+        name: user.user_metadata?.name || user.email?.split('@')[0] || 'ユーザー',
+        avatar: user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.name || user.email?.split('@')[0] || 'ユーザー')}&background=0072f5&color=fff`
+      },
+      aiComments: newPostInput.aiComments || [],
+      likeCount: 0,
+      likedByCurrentUser: false
+    };
     await fetchPosts();
+    setTimeout(fetchPosts, 500);
+    return newPost;
   }, [fetchPosts]);
 
   const filterPosts = useCallback((filters: FilterOptions, searchQuery: string) => {
@@ -165,19 +204,15 @@ export const usePosts = () => {
       filtered = filtered.filter(post =>
         post.title.toLowerCase().includes(query) ||
         post.userComment.toLowerCase().includes(query) ||
-        post.aiDescription.toLowerCase().includes(query) ||
-        post.tags.some(tag => tag.name.toLowerCase().includes(query))
+        post.aiDescription.toLowerCase().includes(query)
       );
-    }
-    if (filters.tags.length > 0) {
-      filtered = filtered.filter(post => post.tags.some(tag => filters.tags.includes(tag.id)));
     }
     switch (filters.sortBy) {
       case 'oldest':
         filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
         break;
       case 'popular':
-        filtered.sort((a, b) => (b.aiComments?.length || 0) - (a.aiComments?.length || 0));
+        filtered.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
         break;
       case 'newest':
       default:
@@ -189,6 +224,60 @@ export const usePosts = () => {
     setHasNextPage(filtered.length > POSTS_PER_PAGE);
   }, [posts]);
 
+  // 投稿編集
+  const updatePost = useCallback(async (postId: string, updates: Partial<Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author'>>) => {
+    // 1. postsテーブル更新
+    const { error: postError } = await supabase.from('posts').update({
+      title: updates.title,
+      user_comment: updates.userComment,
+      ai_description: updates.aiDescription
+    }).eq('id', postId);
+    if (postError) throw postError;
+
+    // 2. タグ更新（post_tags）
+    if (updates.tags) {
+      // 既存タグ削除
+      await supabase.from('post_tags').delete().eq('post_id', postId);
+      // 新タグ挿入
+      if (updates.tags.length > 0) {
+        await supabase.from('post_tags').insert(updates.tags.map(tag => ({ post_id: postId, tag_id: tag.id })));
+      }
+    }
+    // 3. AIコメント更新（全削除→再挿入）
+    if (updates.aiComments) {
+      await supabase.from('ai_comments').delete().eq('post_id', postId);
+      if (updates.aiComments.length > 0) {
+        await supabase.from('ai_comments').insert(updates.aiComments.map(comment => ({ post_id: postId, type: comment.type, content: comment.content })));
+      }
+    }
+    await fetchPosts();
+  }, [fetchPosts]);
+
+  // 投稿削除
+  const deletePost = useCallback(async (postId: string) => {
+    // 関連テーブルも削除
+    await supabase.from('ai_comments').delete().eq('post_id', postId);
+    await supabase.from('post_tags').delete().eq('post_id', postId);
+    await supabase.from('posts').delete().eq('id', postId);
+    await fetchPosts();
+  }, [fetchPosts]);
+
+  // いいね追加
+  const likePost = useCallback(async (postId: string) => {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) return;
+    await supabase.from('likes').insert({ post_id: postId, user_id: user.id });
+    await fetchPosts();
+  }, [fetchPosts]);
+
+  // いいね解除
+  const unlikePost = useCallback(async (postId: string) => {
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) return;
+    await supabase.from('likes').delete().eq('post_id', postId).eq('user_id', user.id);
+    await fetchPosts();
+  }, [fetchPosts]);
+
   return {
     posts: filteredPosts,
     loading,
@@ -198,5 +287,9 @@ export const usePosts = () => {
     addPost,
     filterPosts,
     refetch: fetchPosts,
+    updatePost,
+    deletePost,
+    likePost,
+    unlikePost,
   };
 };

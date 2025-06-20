@@ -9,13 +9,18 @@ interface MasonryGridProps {
   onPostClick: (post: Post) => void;
   hasNextPage: boolean;
   onLoadMore: () => void;
+  likePost: (postId: string) => void;
+  unlikePost: (postId: string) => void;
 }
 
-export const MasonryGrid: React.FC<MasonryGridProps> = ({
+export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = ({
   posts,
   onPostClick,
   hasNextPage,
-  onLoadMore
+  onLoadMore,
+  likePost,
+  unlikePost,
+  loading = false
 }) => {
   const { ref, inView } = useInView({
     threshold: 0,
@@ -36,6 +41,15 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
     });
     return cols;
   }, [posts]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 min-h-[50vh]">
+        <div className="w-12 h-12 mb-4 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <div className="text-neutral-500">読み込み中...</div>
+      </div>
+    );
+  }
 
   if (posts.length === 0) {
     return (
@@ -63,6 +77,8 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
                 post={post}
                 onClick={() => onPostClick(post)}
                 index={columnIndex * Math.ceil(posts.length / 3) + index}
+                likePost={likePost}
+                unlikePost={unlikePost}
               />
             ))}
           </div>
@@ -77,6 +93,8 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
             post={post}
             onClick={() => onPostClick(post)}
             index={index}
+            likePost={likePost}
+            unlikePost={unlikePost}
           />
         ))}
       </div>
@@ -84,10 +102,8 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({
       {/* Load More Trigger */}
       {hasNextPage && (
         <div ref={ref} className="flex justify-center py-8">
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full"
+          <div
+            className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"
           />
         </div>
       )}

@@ -28,7 +28,8 @@ async function analyzeImageWithVisionAPI(base64Image: string): Promise<string[]>
 export async function generateImageAIDescription(labels: string[]): Promise<string> {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
   if (!apiKey) throw new Error('Gemini APIキーが設定されていません。');
-  const prompt = `以下の特徴を持つ画像について、日本語で500文字程度で詳しく説明してください。\n特徴: ${labels.join('、')}`;
+  const prompt = `以下の特徴を持つ画像について、日本語で100文字以内で簡単に説明してください。いいところを具体的に挙げて、その画像の特徴を説明してください。
+  : ${labels.join('、')}`;
   const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=" + apiKey;
   const body = {
     contents: [

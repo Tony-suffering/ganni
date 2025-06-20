@@ -4,6 +4,7 @@ export interface Post {
   imageUrl: string;
   userComment: string;
   aiDescription: string;
+  imageAIDescription: string;
   tags: Tag[];
   createdAt: string;
   updatedAt: string;
@@ -12,6 +13,8 @@ export interface Post {
     avatar: string;
   };
   aiComments: AIComment[];
+  likeCount: number;
+  likedByCurrentUser: boolean;
 }
 
 export interface AIComment {

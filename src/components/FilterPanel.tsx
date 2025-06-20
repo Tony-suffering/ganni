@@ -112,7 +112,7 @@ export const FilterPanel: React.FC<FilterPanelProps> = ({
                   >
                     <option value="newest">新しい順</option>
                     <option value="oldest">古い順</option>
-                    <option value="popular">人気順（AI応答数）</option>
+                    <option value="popular">人気順（いいね数）</option>
                   </select>
                 </div>
 

@@ -21,24 +21,20 @@ class GeminiService {
   /**
    * 投稿内容を分析してAI情景描写を生成
    */
-  async generateAIDescription(title: string, userComment: string): Promise<string> {
+  async generateAIDescription(title: string, userComment: string, imageAIDescription?: string): Promise<string> {
     if (!this.model) {
       return this.getFallbackDescription();
     }
 
     const prompt = `
-以下の投稿について、とにかく褒めまくる、AIの視点から独自の意見を出しつつも、コメントに寄り添った、暖かい、元気のでる文章を書いてください
-関西弁で書いてください
+以下の投稿について、AIの視点から独自の意見を出しつつも、コメントに寄り添った、暖かい、元気のでる文章を書く、高度な推測機能で、ありきたりにならないで、固有名詞をかなり多めに使って新しい情報を与えてください
+
 
 タイトル: "${title}"
 投稿者コメント: "${userComment}"
+${imageAIDescription ? `画像AI説明: "${imageAIDescription}"` : ''}
 
-要求事項:
-- 150文字程度
-- とにかく褒めまくる、AIの視点から独自の意見を出しつつも、コメントに寄り添った、暖かい、元気のでる文章を書いてください
-
-例: 
-
+要求事項:300文字程度
 
 `;
 
@@ -103,55 +99,49 @@ class GeminiService {
 
   private createCommentPrompt(title: string, userComment: string, aiDescription: string): string {
     return `
-以下の投稿に対して、笑える返答をしてください。
+以下の投稿に対して、笑える返答を固有名詞や芸能人の名前をたくさん出して、面白い推測、邪推もいれてコメント。
 
 タイトル: "${title}"
 投稿者コメント: "${userComment}"
 AI情景描写: "${aiDescription}"
 
-要求事項:
-- 50文字程度
-- 投稿者の感性や視点を称賛
-- 投稿者の体験に共感を示す
+300文字
 
-例: お前おもろいやつやけどセンスはあるな！
 `;
   }
 
   private createQuestionPrompt(title: string, userComment: string, aiDescription: string): string {
     return `
-以下の空港写真投稿に対して、対話を促す興味深い質問を日本語で生成してください。
+以下の写真投稿に対して、対話を促しまた投稿したくなるような興味深い質問を、固有名詞と推測を多めに使って日本語で生成してください。
 
 タイトル: "${title}"
 投稿者コメント: "${userComment}"
 AI情景描写: "${aiDescription}"
 
 要求事項:
-- 50文字程度
+- 200文字程度
 - 投稿者の体験をより深く聞き出す質問
 - 撮影時の感情や状況について尋ねる
 - 丁寧で親しみやすい口調
-- 投稿者が答えたくなるような質問
+　まと投稿してくださいと必ず最後に言う（毎回パターンを変えて）
 
-例: この写真を撮影された時、周りにはどのような音や匂い、空気感がありましたか？五感で感じた空港の雰囲気についても詳しく聞かせてください。
 `;
   }
 
   private createObservationPrompt(title: string, userComment: string, aiDescription: string): string {
     return `
-以下の空港写真投稿に対して、新しい視点や気づきを提供する観察コメントを日本語で生成してください。
+以下の投稿に対して、次の投稿を期待するようなコメントを、固有名詞と推測を多めに使って日本語で生成してください。
 
 タイトル: "${title}"
 投稿者コメント: "${userComment}"
 AI情景描写: "${aiDescription}"
 
 要求事項:
-- 50文字程度
-
+- 200文字程度
 - 知的で洞察に富んだ内容
 - 投稿者が気づかなかった新しい価値を提示
+- 固有名詞と推測を多めに使って
 
-例: この写真には現代の旅行文化の本質が凝縮されていますね。グローバル化が進む中で、空港が果たす役割の重要性を視覚的に表現した作品だと感じます。
 `;
   }
 

@@ -3,7 +3,6 @@ import { supabase } from '../supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Upload } from 'lucide-react';
-import VoiceInputButton from "../components/VoiceInputButton";
 
 export const ProfileEdit: React.FC = () => {
   const { user } = useAuth();
@@ -11,9 +10,6 @@ export const ProfileEdit: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState({
     name: '',
-    bio: '',
-    location: '',
-    website: '',
     avatar_url: ''
   });
   const [avatarPreview, setAvatarPreview] = useState('');
@@ -65,30 +61,36 @@ export const ProfileEdit: React.FC = () => {
       .from('profiles')
       .update(profile)
       .eq('id', user.id);
+    await supabase.auth.updateUser({
+      data: {
+        name: profile.name,
+        avatar_url: profile.avatar_url
+      }
+    });
     setSaving(false);
     setMessage(error ? 'プロフィールの更新に失敗しました' : 'プロフィールを更新しました');
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-2xl shadow-lg mt-8">
-      <button onClick={() => navigate(-1)} className="flex items-center text-sm text-neutral-500 hover:text-primary-500 mb-4">
+    <div className="max-w-md mx-auto p-8 bg-white rounded-2xl shadow-lg mt-12 flex flex-col items-center">
+      <button onClick={() => navigate(-1)} className="flex items-center text-sm text-neutral-500 hover:text-primary-500 mb-6 self-start">
         <ArrowLeft className="w-4 h-4 mr-1" /> 戻る
       </button>
-      <h2 className="text-2xl font-bold mb-6 text-neutral-900">プロフィール編集</h2>
-      <div className="flex flex-col sm:flex-row items-center gap-8 mb-8">
-        <div className="relative">
+      <h2 className="text-3xl font-bold mb-8 text-neutral-900 text-center">プロフィール編集</h2>
+      <div className="flex flex-col items-center mb-8 w-full">
+        <div className="relative mb-4">
           <img
             src={avatarPreview || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name || 'User')}&background=0072f5&color=fff`}
             alt="avatar"
-            className="w-32 h-32 rounded-full object-cover border-4 border-primary-100 shadow"
+            className="w-40 h-40 rounded-full object-cover border-4 border-primary-100 shadow-lg"
           />
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="absolute bottom-2 right-2 p-2 bg-primary-500 text-white rounded-full shadow hover:bg-primary-600"
+            className="absolute bottom-3 right-3 p-3 bg-primary-500 text-white rounded-full shadow hover:bg-primary-600 border-2 border-white"
             title="アバター画像を変更"
           >
-            <Upload className="w-5 h-5" />
+            <Upload className="w-6 h-6" />
           </button>
           <input
             type="file"
@@ -98,65 +100,19 @@ export const ProfileEdit: React.FC = () => {
             onChange={handleAvatarChange}
           />
         </div>
-        <div className="flex-1 space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">名前</label>
-            <div className="flex items-center space-x-2">
-              <input name="name" value={profile.name} onChange={handleChange} placeholder="名前" className="input w-full" maxLength={32} />
-              <VoiceInputButton
-                onResult={t => setProfile(prev => ({ ...prev, name: prev.name + t }))}
-                className="ml-2"
-                recordSeconds={10}
-              />
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">自己紹介</label>
-            <div className="flex items-center space-x-2">
-              <textarea name="bio" value={profile.bio} onChange={handleChange} placeholder="自己紹介" className="input w-full" maxLength={160} rows={3} />
-              <VoiceInputButton
-                onResult={t => setProfile(prev => ({ ...prev, bio: prev.bio + t }))}
-                className="ml-2"
-                recordSeconds={10}
-              />
-            </div>
-          </div>
-          <div className="flex gap-4">
-            <div className="flex-1">
-              <label className="block text-sm font-medium mb-1">場所</label>
-              <div className="flex items-center space-x-2">
-                <input name="location" value={profile.location} onChange={handleChange} placeholder="例: 東京" className="input w-full" maxLength={32} />
-                <VoiceInputButton
-                  onResult={t => setProfile(prev => ({ ...prev, location: prev.location + t }))}
-                  className="ml-2"
-                  recordSeconds={10}
-                />
-              </div>
-            </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium mb-1">ウェブサイト</label>
-              <div className="flex items-center space-x-2">
-                <input name="website" value={profile.website} onChange={handleChange} placeholder="https://" className="input w-full" maxLength={64} />
-                <VoiceInputButton
-                  onResult={t => setProfile(prev => ({ ...prev, website: prev.website + t }))}
-                  className="ml-2"
-                  recordSeconds={10}
-                />
-              </div>
-            </div>
-          </div>
+        <div className="w-full flex flex-col items-center">
+          <label className="block text-lg font-medium mb-2">名前</label>
+          <input name="name" value={profile.name} onChange={handleChange} placeholder="名前" className="input w-full text-center text-xl py-3 px-4 rounded-xl border border-neutral-200 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all duration-200" maxLength={32} />
         </div>
       </div>
-      <div className="flex justify-end items-center gap-4">
-        {message && <span className="text-sm text-primary-600">{message}</span>}
-        <button
-          onClick={handleSave}
-          className="btn-primary px-8 py-2 text-base"
-          disabled={saving}
-        >
-          {saving ? '保存中...' : '保存'}
-        </button>
-      </div>
+      {message && <span className={`text-sm mt-2 ${message.includes('失敗') ? 'text-red-600' : 'text-primary-600'}`}>{message}</span>}
+      <button
+        onClick={handleSave}
+        className="mt-8 w-full py-3 text-lg bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-xl font-semibold shadow-lg hover:from-primary-600 hover:to-accent-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={saving}
+      >
+        {saving ? '保存中...' : '保存'}
+      </button>
     </div>
   );
 }; 

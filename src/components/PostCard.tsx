@@ -1,15 +1,20 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { User, Eye, MessageCircle } from 'lucide-react';
+import { User, Eye, MessageCircle, Trash2, Heart } from 'lucide-react';
 import { Post } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../supabase';
 
 interface PostCardProps {
   post: Post;
   onClick: () => void;
   index: number;
+  likePost: (postId: string) => void;
+  unlikePost: (postId: string) => void;
 }
 
-export const PostCard: React.FC<PostCardProps> = ({ post, onClick, index }) => {
+export const PostCard: React.FC<PostCardProps> = ({ post, onClick, index, likePost, unlikePost }) => {
+  const { user } = useAuth();
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('ja-JP', {
@@ -17,6 +22,24 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onClick, index }) => {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (window.confirm('本当にこの投稿を削除しますか？')) {
+      await supabase.from('posts').delete().eq('id', post.id);
+      // 投稿一覧の再取得はusePosts側で自動反映される想定
+    }
+  };
+
+  const handleLike = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user) return;
+    if (post.likedByCurrentUser) {
+      unlikePost(post.id);
+    } else {
+      likePost(post.id);
+    }
   };
 
   return (
@@ -46,13 +69,22 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onClick, index }) => {
               {tag.name}
             </span>
           ))}
+          {user && (user.user_metadata?.name === post.author.name || (user.email && post.author.name && user.email.split('@')[0] === post.author.name)) && (
+            <button
+              onClick={handleDelete}
+              className="ml-2 p-2 rounded-full bg-white/80 hover:bg-red-100 text-red-500 shadow transition-colors"
+              title="投稿を削除"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
 
       <div className="p-5 md:p-6">
         <div className="flex items-center space-x-3 mb-4">
           <img
-            src={post.author.avatar || 'https://ui-avatars.com/api/?name=User&background=0072f5&color=fff'}
+            src={post.author.avatar && post.author.avatar !== '' ? post.author.avatar : `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author.name || 'ユーザー')}&background=0072f5&color=fff`}
             alt={post.author.name}
             className="w-8 h-8 rounded-full object-cover"
           />
@@ -94,6 +126,15 @@ export const PostCard: React.FC<PostCardProps> = ({ post, onClick, index }) => {
               </span>
             ))}
           </div>
+          {/* いいねボタン */}
+          <button
+            onClick={handleLike}
+            className={`flex items-center space-x-1 px-2 py-1 rounded-full transition-colors ${post.likedByCurrentUser ? 'bg-pink-100 text-pink-600' : 'bg-neutral-100 text-neutral-500'} hover:bg-pink-200`}
+            title={post.likedByCurrentUser ? 'いいねを取り消す' : 'いいね'}
+          >
+            <Heart className={`w-5 h-5 ${post.likedByCurrentUser ? 'fill-pink-500' : 'fill-none'}`} />
+            <span className="text-sm font-semibold">{post.likeCount}</span>
+          </button>
         </div>
       </div>
     </motion.div>

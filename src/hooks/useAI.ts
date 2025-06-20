@@ -3,7 +3,7 @@ import { geminiService } from '../services/geminiService';
 import { AIComment } from '../types';
 
 interface UseAIReturn {
-  generateDescription: (title: string, userComment: string) => Promise<string>;
+  generateDescription: (title: string, userComment: string, imageAIDescription?: string) => Promise<string>;
   generateComments: (title: string, userComment: string, aiDescription: string) => Promise<AIComment[]>;
   isGeneratingDescription: boolean;
   isGeneratingComments: boolean;
@@ -14,10 +14,10 @@ export const useAI = (): UseAIReturn => {
   const [isGeneratingDescription, setIsGeneratingDescription] = useState(false);
   const [isGeneratingComments, setIsGeneratingComments] = useState(false);
 
-  const generateDescription = async (title: string, userComment: string): Promise<string> => {
+  const generateDescription = async (title: string, userComment: string, imageAIDescription?: string): Promise<string> => {
     setIsGeneratingDescription(true);
     try {
-      const description = await geminiService.generateAIDescription(title, userComment);
+      const description = await geminiService.generateAIDescription(title, userComment, imageAIDescription);
       return description;
     } catch (error) {
       console.error('Failed to generate AI description:', error);

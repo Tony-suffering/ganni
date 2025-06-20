@@ -97,15 +97,6 @@ export function UserMenu() {
                 <User className="w-4 h-4 text-neutral-500" />
                 <span>プロフィール</span>
               </Link>
-
-              <Link
-                to="/settings"
-                className="flex items-center space-x-3 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                <Settings className="w-4 h-4 text-neutral-500" />
-                <span>設定</span>
-              </Link>
             </div>
 
             <hr className="border-neutral-100" />

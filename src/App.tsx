@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { ErrorBoundary } from 'react-error-boundary';
 
 // Providers and Hooks
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -47,6 +48,8 @@ function AppContent() {
     loadMore,
     addPost,
     filterPosts,
+    likePost,
+    unlikePost,
   } = usePosts();
 
   // フィルターや検索クエリが変更された時に投稿を再フィルタリング
@@ -61,17 +64,14 @@ function AppContent() {
   if (authLoading) { // postsLoadingよりもauthLoadingを優先
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full"
-        />
+        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
   // 新しい投稿データを処理する関数
-  const handleNewPost = (postData: any) => {
-    addPost(postData);
+  const handleNewPost = async (postData: any) => {
+    const newPost = await addPost(postData);
+    setSelectedPost(newPost);
   };
 
   // ユーザーがログインしている場合の表示
@@ -82,7 +82,6 @@ function AppContent() {
         onToggleFilter={() => setIsFilterOpen(!isFilterOpen)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        isLoggedIn={true}
       />
 
       <main>
@@ -95,7 +94,9 @@ function AppContent() {
                 onPostClick={setSelectedPost}
                 hasNextPage={hasNextPage}
                 onLoadMore={loadMore}
-                isLoading={postsLoading}
+                loading={postsLoading}
+                likePost={likePost}
+                unlikePost={unlikePost}
               />
             }
           />
@@ -116,6 +117,8 @@ function AppContent() {
         post={selectedPost}
         isOpen={!!selectedPost}
         onClose={() => setSelectedPost(null)}
+        likePost={likePost}
+        unlikePost={unlikePost}
       />
 
       {/* NewPostModalはProtectedRouteでラップする必要はありません */}
@@ -135,11 +138,25 @@ function AppContent() {
  */
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </Router>
+    <ErrorBoundary FallbackComponent={ErrorFallback}>
+      <BrowserRouter>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
+  );
+}
+
+// --- ✅ エラー発生時に表示される UI ---
+function ErrorFallback({ error }: { error: Error }) {
+  return (
+    <div className="min-h-screen p-6 bg-red-100 text-red-800 flex flex-col items-center justify-center">
+      <h2 className="text-xl font-bold mb-2">アプリでエラーが発生しました</h2>
+      <pre className="bg-white p-4 border border-red-300 rounded whitespace-pre-wrap">
+        {error.message}
+      </pre>
+    </div>
   );
 }
 

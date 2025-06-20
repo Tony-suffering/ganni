@@ -26,9 +26,11 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
   const [formData, setFormData] = useState({
     title: '',
     userComment: '',
-    selectedTags: [] as string[],
     aiDescription: '',
-    aiComments: [] as AIComment[]
+    imageAIDescription: '',
+    textAIDescription: '',
+    aiComments: [] as AIComment[],
+    tags: [] as Tag[],
   });
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -106,12 +108,12 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
         const base64 = e.target?.result as string;
         setImagePreview(base64);
         // 画像AIコメント生成
+        setFormData(prev => ({ ...prev, imageAIDescription: '', aiComments: [] })); // まず空に
         try {
           const { description, comments } = await generateImageAIComments(base64);
-          setFormData(prev => ({ ...prev, aiDescription: description, aiComments: comments }));
+          setFormData(prev => ({ ...prev, imageAIDescription: description || 'AI説明の生成に失敗しました', aiComments: comments || [] }));
         } catch (err) {
-          // 失敗時は空
-          setFormData(prev => ({ ...prev, aiDescription: '', aiComments: [] }));
+          setFormData(prev => ({ ...prev, imageAIDescription: 'AI説明の生成に失敗しました', aiComments: [] }));
         }
       };
       reader.readAsDataURL(file);
@@ -123,23 +125,23 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
       alert('タイトルと感想を入力してからAI生成を実行してください');
       return;
     }
-
     try {
-      const description = await generateDescription(formData.title, formData.userComment);
-      setFormData(prev => ({ ...prev, aiDescription: description }));
+      const description = await generateDescription(formData.title, formData.userComment, formData.imageAIDescription);
+      setFormData(prev => ({ ...prev, textAIDescription: description }));
     } catch (error) {
-      console.error('AI description generation failed:', error);
-      alert('AI描写生成中にエラーが発生しました。しばらく時間を置いてから再試行してください。');
+      alert('AI描写生成中にエラーが発生しました。');
     }
   };
 
-  const handleTagToggle = (tagId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      selectedTags: prev.selectedTags.includes(tagId)
-        ? prev.selectedTags.filter(id => id !== tagId)
-        : [...prev.selectedTags, tagId]
-    }));
+  // タグ選択ハンドラ
+  const handleTagToggle = (tag: Tag) => {
+    setFormData(prev => {
+      const exists = prev.tags.some(t => t.id === tag.id);
+      return {
+        ...prev,
+        tags: exists ? prev.tags.filter(t => t.id !== tag.id) : [...prev.tags, tag]
+      };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -152,36 +154,29 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
       setIsLoading(true);
       let imageUrl = imagePreview;
       let aiDescription = formData.aiDescription;
-      let aiComments: AIComment[] = formData.aiComments || [];
-      if (aiComments.length === 0 && selectedImage) {
-        try {
-          const { description, comments } = await generateImageAIComments(imagePreview);
-          aiComments = comments;
-          if (!aiDescription) {
-            aiDescription = description;
-            setFormData(prev => ({ ...prev, aiDescription }));
-          }
-        } catch (err) {
-          aiComments = [{
-            id: Date.now().toString(),
-            type: 'comment',
-            content: 'AIコメントを生成できませんでしたが、あなたの投稿は素晴らしいです！',
-            createdAt: new Date().toISOString()
-          }];
-        }
+      // 1. AI説明文がなければ生成
+      if (!aiDescription) {
+        aiDescription = await generateDescription(formData.title, formData.userComment, formData.imageAIDescription);
+        setFormData(prev => ({ ...prev, aiDescription }));
       }
+      // 2. AIコメントが未生成の場合のみ生成
+      let aiComments = formData.aiComments && formData.aiComments.length > 0
+        ? formData.aiComments
+        : await generateComments(formData.title, formData.userComment, aiDescription);
+      // 3. 投稿データ作成
       const postData = {
         title: formData.title,
         imageUrl: imageUrl,
         aiDescription: aiDescription,
+        imageAIDescription: formData.imageAIDescription,
         userComment: formData.userComment,
-        tags: tags.filter(tag => formData.selectedTags.includes(tag.id)),
         author: {
           id: user.id,
           name: user.user_metadata?.name || user.email?.split('@')[0] || 'ユーザー',
           avatar: user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.name || user.email?.split('@')[0] || 'ユーザー')}&background=0072f5&color=fff`
         },
-        aiComments: aiComments
+        aiComments: aiComments,
+        tags: formData.tags
       };
       onSubmit(postData);
       onClose();
@@ -190,9 +185,11 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
       setFormData({
         title: '',
         userComment: '',
-        selectedTags: [],
         aiDescription: '',
-        aiComments: []
+        imageAIDescription: '',
+        textAIDescription: '',
+        aiComments: [],
+        tags: []
       });
       setScrollPosition(0);
     } catch (error) {
@@ -227,22 +224,6 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                   <h2 className="text-2xl font-display font-semibold text-neutral-900">
                     新しい投稿
                   </h2>
-                  <div className="flex items-center space-x-2 mt-1">
-                    <div className="flex items-center space-x-1">
-                      {apiStatus.available ? (
-                        <Wifi className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <WifiOff className="w-4 h-4 text-orange-500" />
-                      )}
-                      <span className="text-sm text-neutral-600">
-                        {apiStatus.provider}
-                      </span>
-                    </div>
-                    <span className="text-neutral-300">•</span>
-                    <span className="text-sm text-neutral-600">
-                      AIがあなたの投稿にお笑い芸人のようなコメントと質問を生成します
-                    </span>
-                  </div>
                 </div>
                 <button
                   onClick={onClose}
@@ -262,21 +243,17 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                 <div>
                   <label className="flex items-center text-sm font-medium text-neutral-700 mb-3">
                     <Type className="w-4 h-4 mr-2" />
-                    ひと言マイクにつぶやいて！ <span className="text-red-500 ml-1">*</span>
+                    タイトルを書いてください <span className="text-red-500 ml-1">*</span>
                   </label>
                   <div className="flex items-center space-x-2">
                     <input
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="例: LAへ旅立つ飛行機"
+                      placeholder="例: 今日のランチは美味しかった！"
                       className="w-full px-4 py-3 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all duration-200"
                       required
                       maxLength={100}
-                    />
-                    <VoiceInputButton
-                      onResult={t => setFormData(prev => ({ ...prev, title: prev.title + t }))}
-                      className="ml-2 p-3 rounded-full bg-primary-500 text-white hover:bg-primary-600 shadow-lg text-xl"
                     />
                   </div>
                   <div className="text-xs text-neutral-500 mt-1">
@@ -320,21 +297,19 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                       >
                         <X className="w-4 h-4" />
                       </button>
-                      {/* 画像AI説明文表示 */}
-                      <div className="mt-4 p-4 bg-indigo-50 rounded-xl border border-indigo-200">
-                        <div className="font-semibold text-indigo-800 mb-1 flex items-center">
-                          <Sparkles className="w-5 h-5 mr-2" />
+                      {/* 画像AI説明 */}
+                      <div>
+                        <h3 className="flex items-center text-lg font-display font-semibold text-indigo-900 mb-4">
+                          <Sparkles className="w-5 h-5 mr-2 text-indigo-500" />
                           この画像のAI説明
+                        </h3>
+                        <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-2xl">
+                          <p className="text-neutral-700 italic leading-relaxed text-base">
+                            {formData.imageAIDescription
+                              ? `"${formData.imageAIDescription}"`
+                              : 'あと数秒で表示されるので少し待っててね！'}
+                          </p>
                         </div>
-                        {isLoading && !formData.aiDescription ? (
-                          <div className="text-indigo-500">AIが画像を分析中...</div>
-                        ) : (
-                          <div className="text-indigo-900 text-base whitespace-pre-line min-h-[2em]">
-                            {formData.aiDescription
-                              ? formData.aiDescription
-                              : <span className="text-red-500">（まだAI説明はありません。画像分析に失敗した場合はAPIキーやネットワークを確認してください）</span>}
-                          </div>
-                        )}
                       </div>
                     </div>
                   )}
@@ -362,23 +337,18 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                       style={{ minHeight: '100px' }}
                       required
                     />
-                    <VoiceInputButton
-                      onResult={t => setFormData(prev => ({ ...prev, userComment: prev.userComment + t }))}
-                      className="ml-2"
-                      recordSeconds={10}
-                    />
                   </div>
-                  <div className="text-xs text-primary-600 mt-1 font-semibold">マイクで話すだけで入力できます！</div>
+                  <div className="text-xs text-primary-600 mt-1 font-semibold"></div>
                   <div className="text-xs text-neutral-500 mt-1">
                     文字数: {formData.userComment.length}
                   </div>
                 </div>
 
-                {/* AI Description */}
+                {/* AIコメンテーター */}
                 <div>
                   <div className="flex items-center justify-between mb-3">
                     <label className="block text-sm font-medium text-neutral-700">
-                      AI情景描写
+                      AIコメンテーター
                     </label>
                     <button
                       type="button"
@@ -390,7 +360,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                       <span>{isGeneratingDescription ? '生成中...' : 'AI生成'}</span>
                     </button>
                   </div>
-                  <div className="bg-gradient-to-r from-primary-50 to-accent-50 p-4 rounded-xl min-h-[100px] flex items-center">
+                  <div className="mt-4 p-4 bg-gradient-to-r from-primary-50 to-accent-50 rounded-xl min-h-[100px] flex items-center">
                     {isGeneratingDescription ? (
                       <div className="flex items-center space-x-3 text-primary-600">
                         <motion.div
@@ -398,40 +368,13 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                           className="w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full"
                         />
-                        <span className="text-sm">AIが情景描写を生成中です...</span>
+                        <span className="text-sm">AIコメンテーターがコメントを生成中です...</span>
                       </div>
                     ) : (
                       <p className="text-sm text-neutral-700 italic">
-                        {formData.aiDescription || 'タイトルと感想を入力してから「AI生成」ボタンを押してください'}
+                        {formData.textAIDescription || 'タイトルと感想を入力してから「AI生成」ボタンを押してください'}
                       </p>
                     )}
-                  </div>
-                </div>
-
-                {/* Tags */}
-                <div>
-                  <label className="flex items-center text-sm font-medium text-neutral-700 mb-3">
-                    <TagIcon className="w-4 h-4 mr-2" />
-                    タグ選択
-                  </label>
-                  <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto scroll-container p-2 border border-neutral-200 rounded-xl">
-                    {tags.map((tag) => (
-                      <button
-                        key={tag.id}
-                        type="button"
-                        onClick={() => handleTagToggle(tag.id)}
-                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 flex-shrink-0 ${
-                          formData.selectedTags.includes(tag.id)
-                            ? 'text-white'
-                            : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
-                        }`}
-                        style={{
-                          backgroundColor: formData.selectedTags.includes(tag.id) ? tag.color : undefined
-                        }}
-                      >
-                        {tag.name}
-                      </button>
-                    ))}
                   </div>
                 </div>
 
@@ -461,6 +404,26 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                     </p>
                   </div>
                 )}
+
+                {/* タグ選択 */}
+                <div>
+                  <label className="block text-sm font-medium text-neutral-700 mb-3">
+                    タグを選択（複数可）
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map(tag => (
+                      <button
+                        type="button"
+                        key={tag.id}
+                        onClick={() => handleTagToggle(tag)}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 flex-shrink-0 ${formData.tags.some(t => t.id === tag.id) ? 'text-white' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'}`}
+                        style={{ backgroundColor: formData.tags.some(t => t.id === tag.id) ? tag.color : undefined }}
+                      >
+                        {tag.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
 
                 {/* Submit Button */}
                 <div className="flex justify-end space-x-3 pt-4 border-t border-neutral-200">
