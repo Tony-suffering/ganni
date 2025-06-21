@@ -207,7 +207,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center"
           onClick={onClose}
         >
           <motion.div
@@ -215,30 +215,30 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-            className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] m-4 overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex-shrink-0 p-6 border-b border-neutral-200">
+            {/* Modal Header */}
+            <div className="flex-shrink-0 p-4 sm:p-6 border-b border-neutral-200">
               <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-2xl font-display font-semibold text-neutral-900">
-                    新しい投稿
-                  </h2>
-                </div>
+                <h2 className="text-2xl font-display font-semibold text-neutral-900">
+                  新しい投稿
+                </h2>
                 <button
                   onClick={onClose}
                   className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
                 >
-                  <X className="w-6 h-6" />
+                  <X className="w-5 sm:w-6 h-5 sm:h-6" />
                 </button>
               </div>
             </div>
 
+            {/* Scrollable Modal Content */}
             <div 
               ref={modalContentRef}
-              className="flex-1 overflow-y-auto scroll-container p-6"
+              className="flex-1 overflow-y-auto scroll-container p-4 sm:p-6"
             >
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form id="new-post-form" onSubmit={handleSubmit} className="space-y-6">
                 {/* Title */}
                 <div>
                   <label className="flex items-center text-sm font-medium text-neutral-700 mb-3">
@@ -250,10 +250,9 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                       type="text"
                       value={formData.title}
                       onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="例: 今日のランチは美味しかった！"
-                      className="w-full px-4 py-3 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all duration-200"
+                      className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="例：夕焼けと飛行機雲"
                       required
-                      maxLength={100}
                     />
                   </div>
                   <div className="text-xs text-neutral-500 mt-1">
@@ -424,34 +423,28 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                     ))}
                   </div>
                 </div>
-
-                {/* Submit Button */}
-                <div className="flex justify-end space-x-3 pt-4 border-t border-neutral-200">
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="px-6 py-3 text-neutral-600 border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors"
-                  >
-                    キャンセル
-                  </button>
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    type="submit"
-                    disabled={!selectedImage || !formData.userComment.trim() || !formData.title.trim() || isGeneratingComments}
-                    className="px-6 py-3 bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-xl font-medium hover:from-primary-600 hover:to-accent-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                  >
-                    {isGeneratingComments && (
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full"
-                      />
-                    )}
-                    <span>{isGeneratingComments ? 'AI応答生成中...' : '投稿する'}</span>
-                  </motion.button>
-                </div>
               </form>
+            </div>
+            
+            {/* Modal Footer */}
+            <div className="flex-shrink-0 p-4 sm:p-6 border-t border-neutral-200 bg-gray-50">
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  キャンセル
+                </button>
+                <button
+                  type="submit"
+                  form="new-post-form"
+                  disabled={isLoading || !selectedImage || !formData.title.trim() || !formData.userComment.trim()}
+                  className="px-6 py-2.5 text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? '投稿中...' : '投稿する'}
+                </button>
+              </div>
             </div>
           </motion.div>
         </motion.div>

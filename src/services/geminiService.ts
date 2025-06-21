@@ -34,7 +34,7 @@ class GeminiService {
 投稿者コメント: "${userComment}"
 ${imageAIDescription ? `画像AI説明: "${imageAIDescription}"` : ''}
 
-要求事項:300文字程度
+要求事項:200文字程度
 
 `;
 
@@ -105,7 +105,7 @@ ${imageAIDescription ? `画像AI説明: "${imageAIDescription}"` : ''}
 投稿者コメント: "${userComment}"
 AI情景描写: "${aiDescription}"
 
-300文字
+150文字
 
 `;
   }
@@ -119,7 +119,7 @@ AI情景描写: "${aiDescription}"
 AI情景描写: "${aiDescription}"
 
 要求事項:
-- 200文字程度
+- 100文字程度
 - 投稿者の体験をより深く聞き出す質問
 - 撮影時の感情や状況について尋ねる
 - 丁寧で親しみやすい口調
@@ -137,8 +137,8 @@ AI情景描写: "${aiDescription}"
 AI情景描写: "${aiDescription}"
 
 要求事項:
-- 200文字程度
-- 知的で洞察に富んだ内容
+- 100文字程度
+- 知的で洞に富んだ内容
 - 投稿者が気づかなかった新しい価値を提示
 - 固有名詞と推測を多めに使って
 

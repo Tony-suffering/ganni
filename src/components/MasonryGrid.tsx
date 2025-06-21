@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
-import { PostCard } from './PostCard';
+import PostCard from './PostCard';
 import { Post } from '../types';
 
 interface MasonryGridProps {
@@ -11,6 +11,9 @@ interface MasonryGridProps {
   onLoadMore: () => void;
   likePost: (postId: string) => void;
   unlikePost: (postId: string) => void;
+  bookmarkPost: (postId: string) => void;
+  unbookmarkPost: (postId: string) => void;
+  deletePost: (postId: string) => void;
 }
 
 export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = ({
@@ -20,6 +23,9 @@ export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = (
   onLoadMore,
   likePost,
   unlikePost,
+  bookmarkPost,
+  unbookmarkPost,
+  deletePost,
   loading = false
 }) => {
   const { ref, inView } = useInView({
@@ -68,17 +74,19 @@ export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = (
   return (
     <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8 scroll-container w-full overflow-x-hidden">
       {/* Desktop Masonry Grid */}
-      <div className="hidden md:grid md:grid-cols-3 gap-6">
+      <div className="hidden md:grid md:grid-cols-3 gap-4">
         {columns.map((column, columnIndex) => (
-          <div key={columnIndex} className="space-y-6">
-            {column.map((post, index) => (
+          <div key={columnIndex} className="space-y-4">
+            {column.map((post) => (
               <PostCard
                 key={post.id}
                 post={post}
                 onClick={() => onPostClick(post)}
-                index={columnIndex * Math.ceil(posts.length / 3) + index}
                 likePost={likePost}
                 unlikePost={unlikePost}
+                bookmarkPost={bookmarkPost}
+                unbookmarkPost={unbookmarkPost}
+                deletePost={deletePost}
               />
             ))}
           </div>
@@ -86,15 +94,17 @@ export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = (
       </div>
 
       {/* Mobile Single Column */}
-      <div className="md:hidden space-y-6">
-        {posts.map((post, index) => (
+      <div className="md:hidden space-y-4">
+        {posts.map((post) => (
           <PostCard
             key={post.id}
             post={post}
             onClick={() => onPostClick(post)}
-            index={index}
             likePost={likePost}
             unlikePost={unlikePost}
+            bookmarkPost={bookmarkPost}
+            unbookmarkPost={unbookmarkPost}
+            deletePost={deletePost}
           />
         ))}
       </div>

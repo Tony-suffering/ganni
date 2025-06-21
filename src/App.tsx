@@ -14,7 +14,10 @@ import { MasonryGrid } from './components/MasonryGrid';
 import { PostModal } from './components/PostModal';
 import { NewPostModal } from './components/NewPostModal';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { LoginModal } from './components/LoginModal';
+import { LoginModal } from './components/auth/LoginModal';
+import { RegisterModal } from './components/auth/RegisterModal';
+import BottomNavBar from './components/BottomNavBar';
+import UserProfile from './pages/UserProfile';
 
 // Pages
 import { ProfileEdit } from './pages/ProfileEdit';
@@ -34,6 +37,7 @@ function AppContent() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isNewPostOpen, setIsNewPostOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<FilterOptions>({ tags: [], sortBy: 'newest' });
 
@@ -50,6 +54,9 @@ function AppContent() {
     filterPosts,
     likePost,
     unlikePost,
+    bookmarkPost,
+    unbookmarkPost,
+    deletePost
   } = usePosts();
 
   // フィルターや検索クエリが変更された時に投稿を再フィルタリング
@@ -71,20 +78,37 @@ function AppContent() {
   // 新しい投稿データを処理する関数
   const handleNewPost = async (postData: any) => {
     const newPost = await addPost(postData);
-    setSelectedPost(newPost);
+    if (newPost) { // Check if newPost is not null
+      setSelectedPost(newPost);
+    }
   };
+
+  const openLoginModal = () => setIsLoginOpen(true);
+  
+  const switchToRegister = () => {
+    setIsLoginOpen(false);
+    setIsRegisterOpen(true);
+  };
+
+  const switchToLogin = () => {
+    setIsRegisterOpen(false);
+    setIsLoginOpen(true);
+  };
+
+  const handleToggleFilter = () => setIsFilterOpen(!isFilterOpen);
 
   // ユーザーがログインしている場合の表示
   return (
-    <div className="min-h-screen bg-neutral-50 w-full overflow-x-hidden">
+    <div className="bg-neutral-50 w-full min-h-screen">
       <Header
         onNewPost={() => setIsNewPostOpen(true)}
-        onToggleFilter={() => setIsFilterOpen(!isFilterOpen)}
+        onToggleFilter={handleToggleFilter}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        onLoginClick={openLoginModal}
       />
 
-      <main>
+      <main className="mt-16 pb-20 md:pb-0">
         <Routes>
           <Route
             path="/"
@@ -97,9 +121,13 @@ function AppContent() {
                 loading={postsLoading}
                 likePost={likePost}
                 unlikePost={unlikePost}
+                bookmarkPost={bookmarkPost}
+                unbookmarkPost={unbookmarkPost}
+                deletePost={deletePost}
               />
             }
           />
+          <Route path="/profile/:userId" element={<UserProfile />} />
           <Route path="/profile-edit" element={<ProtectedRoute><ProfileEdit /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
         </Routes>
@@ -121,12 +149,29 @@ function AppContent() {
         unlikePost={unlikePost}
       />
 
-      {/* NewPostModalはProtectedRouteでラップする必要はありません */}
       <NewPostModal
         isOpen={isNewPostOpen}
         onClose={() => setIsNewPostOpen(false)}
         tags={mockTags}
         onSubmit={handleNewPost}
+      />
+      
+      <LoginModal
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
+        onSwitchToRegister={switchToRegister}
+      />
+
+      <RegisterModal
+        isOpen={isRegisterOpen}
+        onClose={() => setIsRegisterOpen(false)}
+        onSwitchToLogin={switchToLogin}
+      />
+
+      <BottomNavBar
+        onNewPostClick={() => setIsNewPostOpen(true)}
+        onLoginClick={openLoginModal}
+        onToggleFilter={handleToggleFilter}
       />
     </div>
   );

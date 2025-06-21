@@ -9,12 +9,14 @@ export interface Post {
   createdAt: string;
   updatedAt: string;
   author: {
+    id: string;
     name: string;
     avatar: string;
   };
   aiComments: AIComment[];
   likeCount: number;
   likedByCurrentUser: boolean;
+  bookmarkedByCurrentUser: boolean;
 }
 
 export interface AIComment {

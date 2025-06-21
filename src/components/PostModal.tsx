@@ -116,6 +116,14 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
           className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4"
           onClick={onClose}
         >
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 z-[51] p-2 bg-black/50 text-white hover:bg-black/70 rounded-full shadow-lg transition-colors focus:outline-none focus:ring-2 focus:ring-white"
+            aria-label="閉じる"
+          >
+            <X className="w-7 h-7" />
+          </button>
+
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -124,53 +132,46 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
             className="bg-white rounded-3xl max-w-2xl w-full max-h-[95vh] overflow-hidden flex flex-col shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header with image and title overlay */}
-            <div className="relative flex-shrink-0 ">
-              <img
-                src={post.imageUrl}
-                alt={post.aiDescription}
-                className="w-full h-30 md:h-40 object-cover"
-              />
-              <button
-                onClick={onClose}
-                className="p-4 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary-300"
-                aria-label="閉じる"
-              >
-                <X className="w-6 h-6" />
-              </button>
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-                <div className="flex flex-wrap gap-2 mb-3">
-                  {post.tags.map((tag) => (
-                    <span
-                      key={tag.id}
-                      className="px-3 py-1 text-sm font-medium text-white rounded-full"
-                      style={{ backgroundColor: tag.color }}
-                    >
-                      {tag.name}
-                    </span>
-                  ))}
-                </div>
-                <h1 className="text-2xl md:text-3xl font-display font-bold text-white mb-2">
-                  {post.title}
-                </h1>
-                <div className="flex items-center text-white/90 space-x-4">
-                  <div className="flex items-center space-x-2">
-                    <Calendar className="w-4 h-4" />
-                    <span className="text-sm">{formatDate(post.createdAt)}</span>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4 mt-2">
-                  {/* いいねボタン */}
-                  <button
-                    onClick={handleLike}
-                    className={`flex items-center space-x-1 px-3 py-1 rounded-full transition-colors ${post.likedByCurrentUser ? 'bg-pink-100 text-pink-600' : 'bg-neutral-100 text-neutral-500'} hover:bg-pink-200`}
-                    title={post.likedByCurrentUser ? 'いいねを取り消す' : 'いいね'}
-                  >
-                    <Heart className={`w-5 h-5 ${post.likedByCurrentUser ? 'fill-pink-500' : 'fill-none'}`} />
-                    <span className="text-base font-semibold">{post.likeCount}</span>
-                  </button>
+            {/* 写真（横幅いっぱい） */}
+            <img
+              src={post.imageUrl}
+              alt={post.aiDescription}
+              className="w-full max-h-60 md:max-h-80 object-cover rounded-t-3xl"
+              style={{ minHeight: '120px', background: '#f3f4f6' }}
+            />
+
+            {/* タイトル・日付・いいねボタン 横並び */}
+            <div className="flex items-center justify-between gap-2 px-4 pt-4">
+              <div className="flex flex-col min-w-0 flex-1">
+                <h1 className="text-lg md:text-xl font-display font-bold text-neutral-900 truncate mb-1">{post.title}</h1>
+                <div className="flex items-center text-neutral-500 space-x-2 text-xs">
+                  <Calendar className="w-4 h-4" />
+                  <span>{formatDate(post.createdAt)}</span>
                 </div>
               </div>
+              <button
+                onClick={handleLike}
+                className={`flex items-center justify-center p-3 rounded-full shadow transition-colors focus:outline-none focus:ring-2 focus:ring-primary-400 text-2xl ${post.likedByCurrentUser ? 'bg-pink-100 text-pink-600' : 'bg-neutral-100 text-neutral-500'} hover:bg-pink-200`}
+                title={post.likedByCurrentUser ? 'いいねを取り消す' : 'いいね'}
+                aria-label="いいね"
+                style={{ minWidth: '48px', minHeight: '48px' }}
+              >
+                <Heart className={`w-7 h-7 ${post.likedByCurrentUser ? 'fill-pink-500' : 'fill-none'}`} />
+                <span className="ml-1 text-base font-semibold">{post.likeCount}</span>
+              </button>
+            </div>
+
+            {/* タグ */}
+            <div className="mt-2 flex flex-wrap justify-center gap-2 px-4">
+              {post.tags.map((tag) => (
+                <span
+                  key={tag.id}
+                  className="px-3 py-1 text-xs font-medium text-white rounded-full"
+                  style={{ backgroundColor: tag.color }}
+                >
+                  {tag.name}
+                </span>
+              ))}
             </div>
 
             {/* Content area with improved readability */}

@@ -10,7 +10,7 @@ interface CustomUserMetadata {
   avatar_url?: string;
 }
 
-export function UserMenu() {
+export function UserMenu({ direction = 'down' }: { direction?: 'up' | 'down' }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const { user, signOut } = useAuth();
@@ -57,6 +57,10 @@ export function UserMenu() {
     return null;
   }
 
+  const menuPositionClass = direction === 'up'
+    ? "absolute right-0 bottom-full mb-2 w-56 bg-white rounded-xl shadow-lg border border-neutral-200/70 py-1 z-50"
+    : "absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-lg border border-neutral-200/70 py-1 z-50";
+
   return (
     <div className="relative" ref={menuRef}>
       <button
@@ -77,11 +81,11 @@ export function UserMenu() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -10 }}
+            initial={{ opacity: 0, y: direction === 'up' ? 10 : -10 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+            exit={{ opacity: 0, y: direction === 'up' ? 10 : -10 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-lg border border-neutral-200/70 py-1 z-50"
+            className={menuPositionClass}
           >
             <div className="px-3 py-2 border-b border-neutral-100">
               <p className="text-sm font-semibold text-neutral-900 truncate">{getDisplayName()}</p>
