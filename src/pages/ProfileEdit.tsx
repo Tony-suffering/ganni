@@ -39,36 +39,117 @@ export const ProfileEdit: React.FC = () => {
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-    const fileExt = file.name.split('.').pop();
-    const filePath = `avatars/${user.id}.${fileExt}`;
-    setSaving(true);
-    const { error: uploadError } = await supabase.storage.from('avatars').upload(filePath, file, { upsert: true });
-    if (!uploadError) {
-      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
-      setProfile((prev) => ({ ...prev, avatar_url: data.publicUrl }));
-      setAvatarPreview(data.publicUrl);
-      setMessage('アバター画像を更新しました');
-    } else {
-      setMessage('アバター画像のアップロードに失敗しました');
+
+    // ファイルサイズチェック (5MB以下)
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage('ファイルサイズは5MB以下にしてください');
+      return;
     }
-    setSaving(false);
+
+    // ファイルタイプチェック
+    if (!file.type.startsWith('image/')) {
+      setMessage('画像ファイルを選択してください');
+      return;
+    }
+
+    setSaving(true);
+    setMessage('画像をアップロード中...');
+
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `avatars/${fileName}`;
+
+      // 既存のファイルを削除（もしあれば）
+      if (profile.avatar_url) {
+        const oldPath = profile.avatar_url.split('/').pop();
+        if (oldPath && oldPath.startsWith(user.id)) {
+          await supabase.storage.from('avatars').remove([`avatars/${oldPath}`]);
+        }
+      }
+
+      // 新しいファイルをアップロード
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { 
+          cacheControl: '3600',
+          upsert: false 
+        });
+
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        setMessage(`アップロードエラー: ${uploadError.message}`);
+        return;
+      }
+
+      // パブリックURLを取得
+      const { data } = supabase.storage.from('avatars').getPublicUrl(filePath);
+      
+      if (data?.publicUrl) {
+        const newAvatarUrl = `${data.publicUrl}?t=${Date.now()}`;
+        setProfile((prev) => ({ ...prev, avatar_url: newAvatarUrl }));
+        setAvatarPreview(newAvatarUrl);
+        setMessage('アバター画像を更新しました');
+      } else {
+        setMessage('画像URLの取得に失敗しました');
+      }
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      setMessage('画像のアップロードに失敗しました');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
-    const { error } = await supabase
-      .from('profiles')
-      .update(profile)
-      .eq('id', user.id);
-    await supabase.auth.updateUser({
-      data: {
-        name: profile.name,
-        avatar_url: profile.avatar_url
+    setMessage('プロフィールを保存中...');
+
+    try {
+      // profilesテーブルを更新
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          name: profile.name,
+          avatar_url: profile.avatar_url,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id);
+
+      if (profileError) {
+        console.error('Profile update error:', profileError);
+        setMessage('プロフィールの更新に失敗しました');
+        return;
       }
-    });
-    setSaving(false);
-    setMessage(error ? 'プロフィールの更新に失敗しました' : 'プロフィールを更新しました');
+
+      // ユーザーメタデータも更新
+      const { error: authError } = await supabase.auth.updateUser({
+        data: {
+          name: profile.name,
+          avatar_url: profile.avatar_url
+        }
+      });
+
+      if (authError) {
+        console.error('Auth update error:', authError);
+        setMessage('認証情報の更新に失敗しました');
+        return;
+      }
+
+      setMessage('プロフィールを更新しました');
+      
+      // 成功時は少し待ってからメッセージをクリア
+      setTimeout(() => {
+        setMessage('');
+      }, 3000);
+
+    } catch (error) {
+      console.error('Save error:', error);
+      setMessage('プロフィールの保存に失敗しました');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

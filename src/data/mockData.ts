@@ -19,19 +19,19 @@ const generateAIComments = (): AIComment[] => [
   {
     id: '1',
     type: 'comment',
-    content: 'この写真から感じる光と影のコントラストが、まさに旅の始まりと終わりを象徴しているように思えます。空港という場所が持つ独特の時間の流れを見事に捉えていますね。',
+    content: '光と影のコントラストがエモすぎる ✨ 旅の始まりの高揚感が伝わってくる！',
     createdAt: new Date(Date.now() - 3600000).toISOString()
   },
   {
     id: '2',
     type: 'question',
-    content: 'この瞬間を撮影された時、周りにはどのような音が聞こえていましたか？空港特有の音の風景も、この写真の物語の一部のような気がします。',
+    content: 'この瞬間の音の風景も気になる！どんなサウンドが聞こえてた？ 🎧',
     createdAt: new Date(Date.now() - 1800000).toISOString()
   },
   {
     id: '3',
     type: 'observation',
-    content: '建築の幾何学的な美しさと、そこを行き交う人々の有機的な動きの対比が印象的です。現代の空港デザインが目指す「機能美」の本質を表現した一枚だと感じます。',
+    content: '建築と人の動きのコントラストが美しい 🏗️ 機能美の新しい表現だね',
     createdAt: new Date(Date.now() - 900000).toISOString()
   }
 ];
@@ -64,13 +64,13 @@ export const mockPosts: Post[] = [
       {
         id: '4',
         type: 'comment',
-        content: '飛行機の離陸シーンは何度見ても感動的ですが、この夕焼けの中での瞬間は特別ですね。黄金色の空に溶け込む機体が、まるで神話の中の場面のようです。',
+        content: '夕焼けフライトがまじでドラマチック ✈️ 黄金の空が最高のシチュエーション',
         createdAt: new Date(Date.now() - 2700000).toISOString()
       },
       {
         id: '5',
         type: 'question',
-        content: 'この写真を撮られた時の気温や風はどうでしたか？夕方の空港での撮影は、時間との勝負もありそうですが、どのようにしてこの完璧なタイミングを捉えたのでしょう？',
+        content: 'この完璧タイミングの秘訣、教えて！夕方の空港でこんなショットとれるのすごい 📸',
         createdAt: new Date(Date.now() - 1200000).toISOString()
       }
     ],
@@ -90,7 +90,7 @@ export const mockPosts: Post[] = [
       {
         id: '6',
         type: 'observation',
-        content: '深夜の空港は昼間とは全く違う表情を見せますね。静寂の中にある緊張感と期待感が、写真からも伝わってきます。',
+        content: '深夜の空港の雰囲気がエモい 🌃 静かな緊張感が伝わってくる',
         createdAt: new Date(Date.now() - 4500000).toISOString()
       }
     ],
@@ -123,7 +123,7 @@ export const mockPosts: Post[] = [
       {
         id: '7',
         type: 'question',
-        content: 'この朝の風景を撮影する際、どのような心境でシャッターを切られましたか？人々の動きの中に何か特別なリズムを感じ取られたのでしょうか？',
+        content: '朝のラッシュでこの角度が思いついたの？人の流れがいいリズム 🚶‍♂️',
         createdAt: new Date(Date.now() - 5400000).toISOString()
       }
     ],
@@ -143,13 +143,13 @@ export const mockPosts: Post[] = [
       {
         id: '8',
         type: 'comment',
-        content: 'カフェでの一瞬の休息が、旅の重要な一部分だということを改めて感じさせてくれる写真ですね。黄金色の光が、その特別な時間を演出しています。',
+        content: 'カフェタイムが旅のハイライトだよね ☕ 黄金の光がいい感じ出してる',
         createdAt: new Date(Date.now() - 6300000).toISOString()
       },
       {
         id: '9',
         type: 'observation',
-        content: '空港カフェは世界中どこでも似たような雰囲気がありますが、それぞれに独特の物語があるものです。この写真からは、静かな満足感が伝わってきます。',
+        content: '空港カフェは世界共通のチル空間 ✨ この静けさがいいんだよね',
         createdAt: new Date(Date.now() - 3600000).toISOString()
       }
     ],

@@ -27,14 +27,18 @@ class GeminiService {
     }
 
     const prompt = `
-以下の投稿について、AIの視点から独自の意見を出しつつも、コメントに寄り添った、暖かい、元気のでる文章を書く、高度な推測機能で、ありきたりにならないで、固有名詞をかなり多めに使って新しい情報を与えてください
+この投稿に対して、モダンでおしゃれな視点からコメント。今風の表現とセンスのいい観察を。
 
+📸 ${title}
+💭 ${userComment}
+${imageAIDescription ? `🔍 ${imageAIDescription}` : ''}
 
-タイトル: "${title}"
-投稿者コメント: "${userComment}"
-${imageAIDescription ? `画像AI説明: "${imageAIDescription}"` : ''}
-
-要求事項:200文字程度
+スタイル要件:
+• 150文字以内で簡潔に
+• 今風でおしゃれな表現
+• 具体的で印象的な言葉選び
+• 温かみとセンスのある視点
+• 過度な固有名詞は避ける
 
 `;
 
@@ -99,58 +103,64 @@ ${imageAIDescription ? `画像AI説明: "${imageAIDescription}"` : ''}
 
   private createCommentPrompt(title: string, userComment: string, aiDescription: string): string {
     return `
-以下の投稿に対して、笑える返答を固有名詞や芸能人の名前をたくさん出して、面白い推測、邪推もいれてコメント。
+この瞬間にウィットの効いたコメントを。センス良く、軽やかに。
 
-タイトル: "${title}"
-投稿者コメント: "${userComment}"
-AI情景描写: "${aiDescription}"
+📸 ${title}
+💭 ${userComment}
+🎯 ${aiDescription}
 
-150文字
+求める雰囲気:
+• 100文字以内でスマート
+• さりげないユーモア
+• 共感できる視点
+• 今風の軽やかな表現
+• 親しみやすい口調
 
 `;
   }
 
   private createQuestionPrompt(title: string, userComment: string, aiDescription: string): string {
     return `
-以下の写真投稿に対して、対話を促しまた投稿したくなるような興味深い質問を、固有名詞と推測を多めに使って日本語で生成してください。
+この投稿にもっと詳しく聞いてみたい質問を、自然に会話が続くように。
 
-タイトル: "${title}"
-投稿者コメント: "${userComment}"
-AI情景描写: "${aiDescription}"
+📸 ${title}
+💭 ${userComment}
+✨ ${aiDescription}
 
-要求事項:
-- 100文字程度
-- 投稿者の体験をより深く聞き出す質問
-- 撮影時の感情や状況について尋ねる
-- 丁寧で親しみやすい口調
-　まと投稿してくださいと必ず最後に言う（毎回パターンを変えて）
+質問のポイント:
+• 80文字以内で簡潔に
+• 撮影の瞬間や体験について
+• 続きが気になる質問
+• カジュアルで親しみやすく
+• 最後に「また聞かせて！」的な一言
 
 `;
   }
 
   private createObservationPrompt(title: string, userComment: string, aiDescription: string): string {
     return `
-以下の投稿に対して、次の投稿を期待するようなコメントを、固有名詞と推測を多めに使って日本語で生成してください。
+この投稿の新しい発見や気づきを、スマートに指摘。
 
-タイトル: "${title}"
-投稿者コメント: "${userComment}"
-AI情景描写: "${aiDescription}"
+📸 ${title}
+💭 ${userComment}
+🔎 ${aiDescription}
 
-要求事項:
-- 100文字程度
-- 知的で洞に富んだ内容
-- 投稿者が気づかなかった新しい価値を提示
-- 固有名詞と推測を多めに使って
+観察のスタイル:
+• 90文字以内で鋭く
+• 意外な視点や気づき
+• おしゃれで知的な表現
+• 写真の隠れた魅力を発見
+• 次も見たくなる一言
 
 `;
   }
 
   private getFallbackDescription(): string {
     const descriptions = [
-      "朝の光が建物全体を包み込んで、まるで光の聖堂のような神秘的な空間が広がります。旅立ちの高揚感と建築の美しさが重なる特別な瞬間です。",
-      "空港の幾何学的な美しさと、そこを行き交う人々の有機的な動きが織りなす現代のアートです。機能美と人間性が調和した空間の詩的表現です。",
-      "夕日に染まった雲海と機体のシルエットが、旅への憧れと冒険心を呼び覚まします。空の舞台で繰り広げられる、壮大な物語の一場面です。",
-      "静寂の中に漂う期待感と緊張感が、空港という特別な場所の魅力を物語ります。時間が止まったような美しい瞬間の切り取りです。"
+      "この瞬間、光とスペースが絶妙にマッチング ✨ 朝の空気感がエモい",
+      "建築とヒトの動きがクロスオーバー 🏗️ 現代アートみたいな構図",
+      "空の表情がドラマチック ☁️ 旅心をくすぐるシチュエーション",
+      "静けさの中の緊張感、めちゃくちゃ印象的 🌅 時が止まった感じ"
     ];
     return descriptions[Math.floor(Math.random() * descriptions.length)];
   }
@@ -160,19 +170,19 @@ AI情景描写: "${aiDescription}"
       {
         id: Date.now().toString(),
         type: 'comment',
-        content: 'この写真から感じる光と影のコントラストが、まさに旅の始まりと終わりを象徴しているように思えます。空港という場所が持つ独特の時間の流れを見事に捉えていますね。',
+        content: '光と影のコントラストがエモすぎる ✨ 旅の始まりの高揚感が伝わってくる！',
         createdAt: new Date().toISOString()
       },
       {
         id: (Date.now() + 1).toString(),
         type: 'question',
-        content: 'この瞬間を撮影された時、周りにはどのような音が聞こえていましたか？空港特有の音の風景も、この写真の物語の一部のような気がします。',
+        content: 'この瞬間の音の風景も気になる！どんなサウンドが聞こえてた？',
         createdAt: new Date(Date.now() + 60000).toISOString()
       },
       {
         id: (Date.now() + 2).toString(),
         type: 'observation',
-        content: '建築の幾何学的な美しさと、そこを行き交う人々の有機的な動きの対比が印象的です。現代の空港デザインが目指す「機能美」の本質を表現した一枚だと感じます。',
+        content: '建築と人の動きのコントラストが美しい 🏗️ 機能美の新しい表現だね',
         createdAt: new Date(Date.now() + 120000).toISOString()
       }
     ];

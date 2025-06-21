@@ -97,6 +97,15 @@ function AppContent() {
 
   const handleToggleFilter = () => setIsFilterOpen(!isFilterOpen);
 
+  // 通知から投稿を開く機能
+  const handlePostClick = (postId: string) => {
+    // 投稿IDから該当の投稿を見つけて開く
+    const post = posts.find(p => p.id === postId);
+    if (post) {
+      setSelectedPost(post);
+    }
+  };
+
   // ユーザーがログインしている場合の表示
   return (
     <div className="bg-neutral-50 w-full min-h-screen">
@@ -106,6 +115,7 @@ function AppContent() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onLoginClick={openLoginModal}
+        onPostClick={handlePostClick}
       />
 
       <main className="mt-16 pb-20 md:pb-0">
@@ -124,6 +134,7 @@ function AppContent() {
                 bookmarkPost={bookmarkPost}
                 unbookmarkPost={unbookmarkPost}
                 deletePost={deletePost}
+                searchQuery={searchQuery}
               />
             }
           />
@@ -172,6 +183,7 @@ function AppContent() {
         onNewPostClick={() => setIsNewPostOpen(true)}
         onLoginClick={openLoginModal}
         onToggleFilter={handleToggleFilter}
+        onPostClick={handlePostClick}
       />
     </div>
   );

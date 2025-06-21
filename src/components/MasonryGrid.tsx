@@ -14,6 +14,7 @@ interface MasonryGridProps {
   bookmarkPost: (postId: string) => void;
   unbookmarkPost: (postId: string) => void;
   deletePost: (postId: string) => void;
+  searchQuery?: string;
 }
 
 export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = ({
@@ -26,6 +27,7 @@ export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = (
   bookmarkPost,
   unbookmarkPost,
   deletePost,
+  searchQuery,
   loading = false
 }) => {
   const { ref, inView } = useInView({
@@ -58,14 +60,31 @@ export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = (
   }
 
   if (posts.length === 0) {
+    // 検索結果が空の場合
+    if (searchQuery && searchQuery.trim() !== '') {
+      return (
+        <div className="flex flex-col items-center justify-center py-16 min-h-[50vh]">
+          <div className="text-6xl mb-4">🔍</div>
+          <h3 className="text-xl font-display font-semibold text-neutral-900 mb-2">
+            検索結果が見つかりませんでした
+          </h3>
+          <p className="text-neutral-600 text-center max-w-md">
+            「{searchQuery}」に一致する投稿がありません。<br />
+            別のキーワードで検索してみてください。
+          </p>
+        </div>
+      );
+    }
+
+    // 投稿が全くない場合
     return (
       <div className="flex flex-col items-center justify-center py-16 min-h-[50vh]">
-        <div className="text-6xl mb-4">✈️</div>
+        <div className="text-6xl mb-4">📸</div>
         <h3 className="text-xl font-display font-semibold text-neutral-900 mb-2">
           まだ投稿がありません
         </h3>
         <p className="text-neutral-600 text-center max-w-md">
-          最初の空港写真を投稿して、あなたの空港体験をシェアしてください
+          最初の写真を投稿して、あなたの体験をシェアしてください
         </p>
       </div>
     );

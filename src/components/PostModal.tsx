@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Calendar, Tag as TagIcon, MessageCircle, Sparkles, HelpCircle, Eye, Heart } from 'lucide-react';
-import { Post } from '../types';
+import { Post, Comment } from '../types';
 import { supabase } from '../supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -16,7 +16,7 @@ interface PostModalProps {
 export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, likePost, unlikePost }) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [newComment, setNewComment] = useState('');
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [loadingComments, setLoadingComments] = useState(false);
   const { user } = useAuth();
 
@@ -48,16 +48,110 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
   const fetchComments = async () => {
     if (!post) return;
     setLoadingComments(true);
-    const { data, error } = await supabase
-      .from('comments')
-      .select('id, content, created_at, user_id')
-      .eq('post_id', post.id)
-      .order('created_at', { ascending: true });
-    if (!error && data) {
-      console.log('comments:', data);
-      setComments(data);
+    try {
+      // まず、commentsテーブルが存在するかチェック
+      console.log('Fetching comments for post:', post.id);
+      
+      const { data: commentsData, error: commentsError } = await supabase
+        .from('comments')
+        .select('id, content, user_id, post_id, created_at')
+        .eq('post_id', post.id)
+        .order('created_at', { ascending: true });
+      
+      if (commentsError) {
+        console.error('コメント取得エラー:', commentsError);
+        console.error('エラー詳細:', {
+          message: commentsError.message,
+          details: commentsError.details,
+          hint: commentsError.hint,
+          code: commentsError.code
+        });
+        
+        // テーブルが存在しない場合は空配列を設定
+        setComments([]);
+        return;
+      }
+      
+      console.log('Comments data received:', commentsData);
+      
+      if (commentsData && commentsData.length > 0) {
+        // ユーザー情報を取得
+        const userIds = [...new Set(commentsData.map(c => c.user_id))];
+        console.log('取得するユーザーID:', userIds);
+        
+        // usersテーブルまたはprofilesテーブルからユーザー情報を取得
+        const { data: usersData, error: usersError } = await supabase
+          .from('users')
+          .select('id, name, avatar_url')
+          .in('id', userIds);
+        
+        let finalUsersData = usersData;
+        
+        if (usersError) {
+          console.log('usersテーブルからの取得失敗、profilesテーブルを試行:', usersError);
+          // usersテーブルが無い場合、profilesテーブルを試す
+          const { data: profilesData, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, name, avatar_url')
+            .in('id', userIds);
+          
+          if (profilesError) {
+            console.log('profilesテーブルからの取得も失敗:', profilesError);
+          } else {
+            console.log('profilesからユーザー情報を取得:', profilesData);
+            finalUsersData = profilesData;
+          }
+        } else {
+          console.log('usersからユーザー情報を取得:', usersData);
+        }
+        
+        // ユーザー情報のマップを作成
+        const userMap = new Map();
+        if (finalUsersData) {
+          finalUsersData.forEach(user => userMap.set(user.id, user));
+        }
+        
+        // 現在のユーザー情報も追加（認証されたユーザーの場合）
+        if (user && !userMap.has(user.id)) {
+          userMap.set(user.id, {
+            id: user.id,
+            name: user.user_metadata?.name || user.email?.split('@')[0] || 'ユーザー',
+            avatar_url: user.user_metadata?.avatar_url
+          });
+        }
+        
+        // コメントデータにユーザー情報を結合
+        const formattedComments: Comment[] = commentsData.map(comment => {
+          const commentUser = userMap.get(comment.user_id);
+          return {
+            id: comment.id,
+            content: comment.content,
+            type: 'user',
+            author_id: comment.user_id,
+            post_id: comment.post_id,
+            parent_id: null,
+            published: true,
+            created_at: comment.created_at,
+            updated_at: comment.created_at,
+            author: {
+              id: comment.user_id,
+              name: commentUser?.name || 'ユーザー',
+              avatar_url: commentUser?.avatar_url
+            }
+          };
+        });
+        
+        console.log('フォーマット済みコメント:', formattedComments);
+        setComments(formattedComments);
+      } else {
+        setComments([]);
+      }
+    } catch (error) {
+      console.error('コメント取得の予期しないエラー:', error);
+      setComments([]);
+    } finally {
+      setLoadingComments(false);
     }
-    setLoadingComments(false);
   };
 
   useEffect(() => {
@@ -86,14 +180,70 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
   // コメント投稿
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim() || !user || !post) return;
-    await supabase.from('comments').insert({
-      post_id: post.id,
-      user_id: user.id,
-      content: newComment,
-    });
-    setNewComment('');
-    fetchComments();
+    if (!newComment.trim() || !post) return;
+    
+    if (!user) {
+      alert('コメント投稿にはログインが必要です');
+      return;
+    }
+    
+    try {
+      // 認証状態を詳しくチェック
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      console.log('認証状態チェック:', {
+        user: user,
+        session: session,
+        sessionError: sessionError
+      });
+      
+      console.log('コメント投稿開始:', {
+        post_id: post.id,
+        user_id: user.id,
+        content: newComment.trim()
+      });
+      
+      // テスト用にuser_idを確実に設定
+      const userId = user.id || 'test-user-id';
+      console.log('使用するuser_id:', userId);
+      
+      const { data, error } = await supabase.from('comments').insert({
+        post_id: post.id,
+        user_id: userId,
+        content: newComment.trim()
+      }).select();
+      
+      if (error) {
+        console.error('コメント投稿エラー:', error);
+        console.error('エラー詳細:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        alert(`コメントの投稿に失敗しました: ${error.message}`);
+        return;
+      }
+      
+      console.log('コメント投稿成功:', data);
+      
+      // 投稿者に通知を送信（自分以外の場合）
+      if (post.author.id !== user.id) {
+        const { createNotification } = await import('../utils/notifications');
+        await createNotification({
+          recipientId: post.author.id,
+          senderId: user.id,
+          postId: post.id,
+          type: 'comment',
+          content: newComment.trim()
+        });
+      }
+      
+      setNewComment('');
+      fetchComments();
+    } catch (error) {
+      console.error('コメント投稿の予期しないエラー:', error);
+      alert('コメントの投稿に失敗しました');
+    }
   };
 
   const handleLike = (e: React.MouseEvent) => {
@@ -184,7 +334,7 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
                 <img
                   src={post.author.avatar && post.author.avatar !== '' ? post.author.avatar : `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author.name || 'ユーザー')}&background=0072f5&color=fff`}
                   alt={post.author.name}
-                  className="w-12 h-12 rounded-full object-cover"
+                  className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600 shadow-sm"
                 />
                 <div>
                   <h3 className="font-medium text-neutral-900">{post.author.name}</h3>
@@ -290,20 +440,43 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
                     <div className="text-neutral-400">まだコメントはありません</div>
                   ) : (
                     <ul className="space-y-4 pb-4">
-                      {comments.map((c) => (
-                        <li key={c.id} className="flex items-start space-x-3">
-                          <img
-                            src={'https://ui-avatars.com/api/?name=User&background=0072f5&color=fff'}
-                            alt={c.user_id}
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                          <div>
-                            <div className="text-sm font-medium text-neutral-900">{c.user_id || 'ユーザー'}</div>
-                            <div className="text-xs text-neutral-500 mb-1">{new Date(c.created_at).toLocaleString('ja-JP')}</div>
-                            <div className="text-neutral-800 text-base break-words py-1 px-2 bg-neutral-100 rounded-lg max-w-xs sm:max-w-md">{c.content}</div>
-                          </div>
-                        </li>
-                      ))}
+                      {comments.map((comment) => {
+                        const displayName = comment.author?.name || 'ユーザー';
+                        const avatarUrl = comment.author?.avatar_url || 
+                          `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random&size=40`;
+                        
+                        return (
+                          <li key={comment.id} className="flex items-start space-x-3">
+                            <div className="relative">
+                              <img
+                                src={avatarUrl}
+                                alt={`${displayName}のアバター`}
+                                className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600 shadow-sm"
+                                onError={(e) => {
+                                  // 画像読み込みエラー時のフォールバック
+                                  e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=random&size=40`;
+                                }}
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-1">
+                                <span className="text-sm font-semibold text-neutral-900">{displayName}</span>
+                                <span className="text-xs text-neutral-500">
+                                  {new Date(comment.created_at).toLocaleString('ja-JP', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </span>
+                              </div>
+                              <div className="text-neutral-800 text-base break-words py-2 px-3 bg-neutral-100 rounded-lg max-w-xs sm:max-w-md shadow-sm">
+                                {comment.content}
+                              </div>
+                            </div>
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                   {/* コメント投稿フォーム */}

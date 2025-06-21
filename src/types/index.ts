@@ -183,6 +183,79 @@ export interface Database {
           created_at?: string;
         };
       };
+      comments: {
+        Row: {
+          id: string;
+          content: string;
+          user_id: string;
+          post_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          content: string;
+          user_id: string;
+          post_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          content?: string;
+          user_id?: string;
+          post_id?: string;
+          created_at?: string;
+        };
+      };
+      notifications: {
+        Row: {
+          id: string;
+          recipient_id: string;
+          sender_id: string;
+          post_id: string;
+          type: 'like' | 'comment';
+          content?: string;
+          is_read: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          recipient_id: string;
+          sender_id: string;
+          post_id: string;
+          type: 'like' | 'comment';
+          content?: string;
+          is_read?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          recipient_id?: string;
+          sender_id?: string;
+          post_id?: string;
+          type?: 'like' | 'comment';
+          content?: string;
+          is_read?: boolean;
+          created_at?: string;
+        };
+      };
     };
+  };
+}
+
+// コメント関連の型定義
+export interface Comment {
+  id: string;
+  content: string;
+  type: 'user' | 'ai_comment' | 'ai_question' | 'ai_observation';
+  author_id: string;
+  post_id: string;
+  parent_id?: string;
+  published: boolean;
+  created_at: string;
+  updated_at: string;
+  author?: {
+    id: string;
+    name: string;
+    avatar_url?: string;
   };
 }

@@ -293,7 +293,28 @@ export const usePosts = (): UsePostsReturn => {
   const likePost = useCallback(async (postId: string) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) return;
+    
+    // いいねを追加
     await supabase.from('likes').insert({ post_id: postId, user_id: user.id });
+    
+    // 投稿者IDを取得して通知を作成
+    const { data: postData } = await supabase
+      .from('posts')
+      .select('author_id')
+      .eq('id', postId)
+      .single();
+    
+    if (postData && postData.author_id !== user.id) {
+      // 通知作成
+      const { createNotification } = await import('../utils/notifications');
+      await createNotification({
+        recipientId: postData.author_id,
+        senderId: user.id,
+        postId: postId,
+        type: 'like'
+      });
+    }
+    
     await fetchPosts();
   }, [fetchPosts]);
 
@@ -301,7 +322,28 @@ export const usePosts = (): UsePostsReturn => {
   const unlikePost = useCallback(async (postId: string) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (userError || !user) return;
+    
+    // いいねを削除
     await supabase.from('likes').delete().eq('post_id', postId).eq('user_id', user.id);
+    
+    // 投稿者IDを取得して通知を削除
+    const { data: postData } = await supabase
+      .from('posts')
+      .select('author_id')
+      .eq('id', postId)
+      .single();
+    
+    if (postData && postData.author_id !== user.id) {
+      // 通知削除
+      const { deleteNotification } = await import('../utils/notifications');
+      await deleteNotification({
+        recipientId: postData.author_id,
+        senderId: user.id,
+        postId: postId,
+        type: 'like'
+      });
+    }
+    
     await fetchPosts();
   }, [fetchPosts]);
 

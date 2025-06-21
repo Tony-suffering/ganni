@@ -215,11 +215,11 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-            className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] m-4 overflow-hidden flex flex-col"
+            className="bg-white rounded-2xl max-w-2xl w-full max-h-[80vh] md:max-h-[90vh] m-2 md:m-4 overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
-            <div className="flex-shrink-0 p-4 sm:p-6 border-b border-neutral-200">
+            <div className="flex-shrink-0 p-3 sm:p-4 md:p-6 border-b border-neutral-200">
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-display font-semibold text-neutral-900">
                   新しい投稿
@@ -236,9 +236,9 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
             {/* Scrollable Modal Content */}
             <div 
               ref={modalContentRef}
-              className="flex-1 overflow-y-auto scroll-container p-4 sm:p-6"
+              className="flex-1 overflow-y-auto scroll-container p-3 sm:p-4 md:p-6 pb-2"
             >
-              <form id="new-post-form" onSubmit={handleSubmit} className="space-y-6">
+              <form id="new-post-form" onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
                 {/* Title */}
                 <div>
                   <label className="flex items-center text-sm font-medium text-neutral-700 mb-3">
@@ -268,7 +268,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                   {!imagePreview ? (
                     <div
                       onClick={() => fileInputRef.current?.click()}
-                      className="border-2 border-dashed border-neutral-300 rounded-2xl p-12 text-center cursor-pointer hover:border-primary-400 hover:bg-primary-50/50 transition-all duration-200"
+                      className="border-2 border-dashed border-neutral-300 rounded-2xl p-8 md:p-12 text-center cursor-pointer hover:border-primary-400 hover:bg-primary-50/50 transition-all duration-200"
                     >
                       <Upload className="w-12 h-12 text-neutral-400 mx-auto mb-4" />
                       <p className="text-neutral-600 font-medium mb-2">
@@ -283,7 +283,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                       <img
                         src={imagePreview}
                         alt="Preview"
-                        className="w-full h-64 object-cover rounded-2xl"
+                        className="w-full h-48 md:h-64 object-cover rounded-2xl"
                       />
                       <button
                         type="button"
@@ -427,12 +427,12 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
             </div>
             
             {/* Modal Footer */}
-            <div className="flex-shrink-0 p-4 sm:p-6 border-t border-neutral-200 bg-gray-50">
-              <div className="flex justify-end space-x-4">
+            <div className="flex-shrink-0 p-2 md:p-6 border-t border-neutral-200 bg-gray-50">
+              <div className="flex justify-end space-x-3">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-6 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
                 >
                   キャンセル
                 </button>
@@ -440,7 +440,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                   type="submit"
                   form="new-post-form"
                   disabled={isLoading || !selectedImage || !formData.title.trim() || !formData.userComment.trim()}
-                  className="px-6 py-2.5 text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? '投稿中...' : '投稿する'}
                 </button>

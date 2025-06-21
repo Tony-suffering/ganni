@@ -65,17 +65,17 @@ export function UserMenu({ direction = 'down' }: { direction?: 'up' | 'down' }) 
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 p-2 rounded-lg hover:bg-neutral-100 transition-colors"
+        className="flex items-center space-x-2 p-2.5 rounded-lg hover:bg-gray-100 transition-all duration-200 border border-gray-200 hover:border-gray-300"
       >
         <img
           src={getAvatarUrl()}
           alt={getDisplayName()}
-          className="w-8 h-8 rounded-full object-cover border-2 border-neutral-200"
+          className="w-8 h-8 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600 shadow-sm"
         />
-        <span className="text-sm font-medium text-neutral-700 hidden sm:inline">
+        <span className="text-sm font-semibold text-gray-700 hidden sm:inline">
           {getDisplayName()}
         </span>
-        <ChevronDown className={`w-4 h-4 text-neutral-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       <AnimatePresence>

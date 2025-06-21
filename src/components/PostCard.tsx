@@ -78,11 +78,11 @@ const PostCard = ({ post, onClick, likePost, unlikePost, bookmarkPost, unbookmar
           {/* Card Header */}
           <div className="p-3 flex items-center justify-between">
             <Link to={`/profile/${author.id}`} className="flex items-center space-x-3 group">
-              <div className="relative p-0.5 rounded-full bg-gradient-to-r from-yellow-400 via-red-500 to-pink-500">
+              <div className="relative">
                 <img
                   src={getAvatarUrl()}
                   alt={`${getDisplayName()}'s avatar`}
-                  className="w-9 h-9 rounded-full object-cover border-2 border-white dark:border-gray-800"
+                  className="w-9 h-9 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600 shadow-sm hover:shadow-md transition-shadow"
                 />
               </div>
               <div className="text-sm">

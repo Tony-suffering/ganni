@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- 六角形の背景 -->
+  <polygon points="25,12.5 75,12.5 93.75,50 75,87.5 25,87.5 6.25,50" 
+           fill="#1f2937" 
+           stroke="none"/>
+  
+  <!-- 雷アイコン -->
+  <path d="M54 30V15L30 55h14v15l24-20H54z" 
+        fill="white" 
+        stroke="white" 
+        stroke-width="1.5" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"/>
+</svg>
