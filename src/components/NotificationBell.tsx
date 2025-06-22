@@ -34,6 +34,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
   const userIdRef = useRef<string | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const isMountedRef = useRef(true);
+  const isInitializedRef = useRef(false);
 
   // 通知を取得
   const fetchNotifications = useCallback(async () => {
@@ -149,8 +150,8 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
   useEffect(() => {
     const currentUserId = user?.id;
     
-    // ユーザーがいない、または同じユーザーで既に購読済みの場合は何もしない
-    if (!currentUserId || (isSubscribedRef.current && userIdRef.current === currentUserId)) {
+    // ユーザーがいない、または既に初期化済みの場合は何もしない
+    if (!currentUserId || isInitializedRef.current) {
       return;
     }
 
@@ -207,6 +208,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
         isSubscribedRef.current = true;
         userIdRef.current = currentUserId;
         channelRef.current = channel;
+        isInitializedRef.current = true;
         console.log('購読完了:', channelName);
       } else if (status === 'CHANNEL_ERROR') {
         console.error('チャンネルエラー:', channelName);

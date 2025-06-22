@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Bell, Info, Send, MessageSquare, FileText, Shield, Save, Check } from 'lucide-react';
+import { ArrowLeft, Info, Send, MessageSquare, FileText, Shield, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../supabase';
@@ -9,13 +9,7 @@ export const Settings: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // 通知設定
-  const [notificationSettings, setNotificationSettings] = useState({
-    likes: true,
-    comments: true,
-    newPosts: true
-  });
-  const [notificationSaved, setNotificationSaved] = useState(false);
+  // 通知設定機能は削除されました
 
   // モーダル状態
   const [showTerms, setShowTerms] = useState(false);
@@ -31,11 +25,10 @@ export const Settings: React.FC = () => {
   });
   const [contactLoading, setContactLoading] = useState(false);
   const [contactSent, setContactSent] = useState(false);
+  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
 
   useEffect(() => {
     if (user) {
-      // 通知設定を読み込み
-      loadNotificationSettings();
       // お問い合わせフォームにユーザー情報を事前入力
       setContactForm(prev => ({
         ...prev,
@@ -45,101 +38,52 @@ export const Settings: React.FC = () => {
     }
   }, [user]);
 
-  const loadNotificationSettings = async () => {
-    if (!user) return;
+  // 通知設定関連の関数は削除されました
+
+  const validateForm = () => {
+    const errors: {[key: string]: string} = {};
     
-    try {
-      const { data, error } = await supabase
-        .from('user_notification_settings')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-
-      if (data && !error) {
-        setNotificationSettings({
-          likes: data.likes ?? true,
-          comments: data.comments ?? true,
-          newPosts: data.new_posts ?? true
-        });
-      } else if (error && error.code === 'PGRST116') {
-        // テーブルが存在しない場合、ローカルストレージから読み込み
-        const localSettings = localStorage.getItem(`notification_settings_${user.id}`);
-        if (localSettings) {
-          setNotificationSettings(JSON.parse(localSettings));
-        }
-      }
-    } catch (error) {
-      console.log('通知設定の読み込みに失敗:', error);
-      // ローカルストレージから読み込み
-      const localSettings = localStorage.getItem(`notification_settings_${user.id}`);
-      if (localSettings) {
-        setNotificationSettings(JSON.parse(localSettings));
-      }
+    if (!contactForm.name.trim()) {
+      errors.name = 'お名前を入力してください';
+    } else if (contactForm.name.length < 2) {
+      errors.name = 'お名前は2文字以上で入力してください';
     }
-  };
-
-  const saveNotificationSettings = async () => {
-    if (!user) return;
-
-    console.log('通知設定保存開始:', notificationSettings);
-
-    try {
-      // 直接upsertを試行
-      const { data, error } = await supabase
-        .from('user_notification_settings')
-        .upsert({ 
-          user_id: user.id, 
-          likes: notificationSettings.likes,
-          comments: notificationSettings.comments,
-          new_posts: notificationSettings.newPosts
-        }, {
-          onConflict: 'user_id'
-        })
-        .select();
-
-      if (error) {
-        console.error('通知設定の保存に失敗:', error);
-        console.error('エラー詳細:', error);
-        
-        // 具体的なエラーを表示
-        if (error.code === 'PGRST116') {
-          alert('データベーステーブルが見つかりません。管理者にお問い合わせください。');
-        } else if (error.code === '42501') {
-          alert('データベースへのアクセス権限がありません。ログインし直してください。');
-        } else if (error.message.includes('JWT')) {
-          alert('認証エラーです。ログインし直してください。');
-        } else {
-          alert(`データベース保存エラー: ${error.message}`);
-        }
-        
-        // フォールバック: ローカルストレージに保存
-        localStorage.setItem(`notification_settings_${user.id}`, JSON.stringify(notificationSettings));
-        console.log('ローカルストレージに保存しました');
-        return;
-      }
-
-      console.log('データベース保存成功:', data);
-      alert('通知設定を保存しました！');
-      setNotificationSaved(true);
-      setTimeout(() => setNotificationSaved(false), 2000);
-    } catch (error) {
-      console.error('予期しないエラー:', error);
-      alert(`予期しないエラー: ${error instanceof Error ? error.message : '不明なエラー'}`);
-      
-      // フォールバック: ローカルストレージに保存
-      localStorage.setItem(`notification_settings_${user.id}`, JSON.stringify(notificationSettings));
-      console.log('ローカルストレージに保存しました');
-      setNotificationSaved(true);
-      setTimeout(() => setNotificationSaved(false), 2000);
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!contactForm.email.trim()) {
+      errors.email = 'メールアドレスを入力してください';
+    } else if (!emailRegex.test(contactForm.email)) {
+      errors.email = '有効なメールアドレスを入力してください';
     }
+    
+    if (!contactForm.subject) {
+      errors.subject = '件名を選択してください';
+    }
+    
+    if (!contactForm.message.trim()) {
+      errors.message = 'メッセージを入力してください';
+    } else if (contactForm.message.length < 10) {
+      errors.message = 'メッセージは10文字以上で入力してください';
+    } else if (contactForm.message.length > 1000) {
+      errors.message = 'メッセージは1000文字以内で入力してください';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setContactLoading(true);
 
     try {
-      const { error } = await supabase
+      // まずデータベースに保存
+      const { error: dbError } = await supabase
         .from('contact_messages')
         .insert([{
           user_id: user?.id,
@@ -149,37 +93,50 @@ export const Settings: React.FC = () => {
           message: contactForm.message
         }]);
 
-      if (error) {
-        console.error('お問い合わせの送信に失敗:', error);
-        console.error('エラー詳細:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        
-        if (error.code === 'PGRST116') {
-          // テーブルが存在しない場合のフォールバック
-          console.log('contact_messagesテーブルが存在しません。ローカルログに保存します。');
-          const contactLog = JSON.parse(localStorage.getItem('contact_messages') || '[]');
-          contactLog.push({
-            ...contactForm,
-            user_id: user?.id,
-            timestamp: new Date().toISOString()
-          });
-          localStorage.setItem('contact_messages', JSON.stringify(contactLog));
-        } else {
-          alert('お問い合わせの送信に失敗しました。後でもう一度お試しください。');
-          return;
-        }
+      if (dbError && dbError.code !== 'PGRST116') {
+        console.error('データベースエラー:', dbError);
       }
 
-      setContactSent(true);
-      setContactForm({ name: '', email: '', subject: '', message: '' });
-      setTimeout(() => {
-        setContactSent(false);
-        setShowContact(false);
-      }, 2000);
+      // Edge Functionを呼び出してメール送信
+      const { data, error: emailError } = await supabase.functions.invoke('send-contact-email', {
+        body: {
+          name: contactForm.name,
+          email: contactForm.email,
+          subject: contactForm.subject,
+          message: contactForm.message
+        }
+      });
+
+      if (emailError) {
+        console.error('メール送信エラー:', emailError);
+        // メール送信に失敗してもローカルに保存
+        const contactLog = JSON.parse(localStorage.getItem('contact_messages') || '[]');
+        contactLog.push({
+          ...contactForm,
+          user_id: user?.id,
+          timestamp: new Date().toISOString(),
+          emailSent: false
+        });
+        localStorage.setItem('contact_messages', JSON.stringify(contactLog));
+        
+        // ユーザーには成功として表示（お問い合わせは受け付けた）
+        setContactSent(true);
+        setContactForm({ name: '', email: '', subject: '', message: '' });
+        setFormErrors({});
+        setTimeout(() => {
+          setContactSent(false);
+          setShowContact(false);
+        }, 2000);
+      } else {
+        // 成功
+        setContactSent(true);
+        setContactForm({ name: '', email: '', subject: '', message: '' });
+        setFormErrors({});
+        setTimeout(() => {
+          setContactSent(false);
+          setShowContact(false);
+        }, 2000);
+      }
     } catch (error) {
       console.error('予期しないエラー:', error);
       alert('お問い合わせの送信に失敗しました');
@@ -229,72 +186,7 @@ export const Settings: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
 
-          {/* 通知設定 */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6"
-          >
-            <div className="flex items-center space-x-3 mb-6">
-              <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                <Bell className="w-5 h-5 text-green-600 dark:text-green-400" />
-              </div>
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                通知設定
-              </h2>
-            </div>
-
-            <div className="space-y-4">
-              {Object.entries({
-                likes: 'いいね通知',
-                comments: 'コメント通知',
-                newPosts: '新規投稿通知'
-              }).map(([key, label]) => (
-                <div key={key} className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
-                    {label}
-                  </span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={notificationSettings[key as keyof typeof notificationSettings]}
-                      onChange={(e) => setNotificationSettings(prev => ({ 
-                        ...prev, 
-                        [key]: e.target.checked 
-                      }))}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                  </label>
-                </div>
-              ))}
-              
-              {/* 保存ボタン */}
-              <div className="flex justify-end pt-4">
-                <button
-                  onClick={saveNotificationSettings}
-                  className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors ${
-                    notificationSaved 
-                      ? 'bg-green-600 text-white' 
-                      : 'bg-blue-600 hover:bg-blue-700 text-white'
-                  }`}
-                >
-                  {notificationSaved ? (
-                    <>
-                      <Check className="w-4 h-4" />
-                      <span>保存完了</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-4 h-4" />
-                      <span>通知設定を保存</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </motion.div>
+          {/* 通知設定セクションは削除されました */}
 
           {/* アプリについて */}
           <motion.div
@@ -464,9 +356,17 @@ export const Settings: React.FC = () => {
                       type="text"
                       required
                       value={contactForm.name}
-                      onChange={(e) => setContactForm(prev => ({ ...prev, name: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      onChange={(e) => {
+                        setContactForm(prev => ({ ...prev, name: e.target.value }));
+                        if (formErrors.name) setFormErrors(prev => ({ ...prev, name: '' }));
+                      }}
+                      className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                        formErrors.name ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      }`}
                     />
+                    {formErrors.name && (
+                      <p className="mt-1 text-sm text-red-500">{formErrors.name}</p>
+                    )}
                   </div>
                   
                   <div>
@@ -477,9 +377,17 @@ export const Settings: React.FC = () => {
                       type="email"
                       required
                       value={contactForm.email}
-                      onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      onChange={(e) => {
+                        setContactForm(prev => ({ ...prev, email: e.target.value }));
+                        if (formErrors.email) setFormErrors(prev => ({ ...prev, email: '' }));
+                      }}
+                      className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                        formErrors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      }`}
                     />
+                    {formErrors.email && (
+                      <p className="mt-1 text-sm text-red-500">{formErrors.email}</p>
+                    )}
                   </div>
                   
                   <div>
@@ -489,8 +397,13 @@ export const Settings: React.FC = () => {
                     <select
                       required
                       value={contactForm.subject}
-                      onChange={(e) => setContactForm(prev => ({ ...prev, subject: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      onChange={(e) => {
+                        setContactForm(prev => ({ ...prev, subject: e.target.value }));
+                        if (formErrors.subject) setFormErrors(prev => ({ ...prev, subject: '' }));
+                      }}
+                      className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                        formErrors.subject ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      }`}
                     >
                       <option value="">選択してください</option>
                       <option value="バグ報告">バグ報告</option>
@@ -498,6 +411,9 @@ export const Settings: React.FC = () => {
                       <option value="使い方について">使い方について</option>
                       <option value="その他">その他</option>
                     </select>
+                    {formErrors.subject && (
+                      <p className="mt-1 text-sm text-red-500">{formErrors.subject}</p>
+                    )}
                   </div>
                   
                   <div>
@@ -508,10 +424,21 @@ export const Settings: React.FC = () => {
                       required
                       rows={4}
                       value={contactForm.message}
-                      onChange={(e) => setContactForm(prev => ({ ...prev, message: e.target.value }))}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      onChange={(e) => {
+                        setContactForm(prev => ({ ...prev, message: e.target.value }));
+                        if (formErrors.message) setFormErrors(prev => ({ ...prev, message: '' }));
+                      }}
+                      className={`w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
+                        formErrors.message ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'
+                      }`}
                       placeholder="お問い合わせ内容をご記入ください"
                     />
+                    {formErrors.message && (
+                      <p className="mt-1 text-sm text-red-500">{formErrors.message}</p>
+                    )}
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      {contactForm.message.length}/1000文字
+                    </p>
                   </div>
                   
                   <div className="flex justify-end space-x-3">

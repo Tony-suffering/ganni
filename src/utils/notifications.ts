@@ -22,6 +22,8 @@ export const createNotification = async ({
       return;
     }
 
+    // 通知設定チェックは削除されました - 全ての通知が作成されます
+
     // 既存の同じ通知があるかチェック（いいねの場合）
     if (type === 'like') {
       const { data: existing } = await supabase
@@ -52,6 +54,8 @@ export const createNotification = async ({
 
     if (error) {
       console.error('通知作成エラー:', error);
+    } else {
+      console.log(`通知作成成功: ${type} notification from ${senderId} to ${recipientId}`);
     }
   } catch (error) {
     console.error('通知作成の予期しないエラー:', error);

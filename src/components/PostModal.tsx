@@ -1,5 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { X, User, Calendar, Tag as TagIcon, MessageCircle, Sparkles, HelpCircle, Eye, Heart } from 'lucide-react';
 import { Post, Comment } from '../types';
 import { supabase } from '../supabase';
@@ -291,12 +292,33 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
             onClick={(e) => e.stopPropagation()}
           >
             {/* 写真（横幅いっぱい） */}
-            <img
-              src={post.imageUrl}
-              alt={post.aiDescription}
-              className="w-full max-h-60 md:max-h-80 object-cover rounded-t-3xl"
-              style={{ minHeight: '120px', background: '#f3f4f6' }}
-            />
+            <div className="relative">
+              <img
+                src={post.imageUrl}
+                alt={post.aiDescription}
+                className="w-full max-h-32 md:max-h-40 object-cover rounded-t-3xl"
+                style={{ minHeight: '80px', background: '#f3f4f6' }}
+              />
+              {/* Tags Overlay */}
+              {post.tags && post.tags.length > 0 && (
+                <div className="absolute top-3 left-3 flex flex-wrap gap-1 max-w-[70%]">
+                  {post.tags.slice(0, 4).map((tag) => (
+                    <span
+                      key={tag.id}
+                      className="px-3 py-1 text-sm font-medium text-white rounded-full shadow-lg backdrop-blur-sm"
+                      style={{ backgroundColor: `${tag.color}CC` }}
+                    >
+                      {tag.name}
+                    </span>
+                  ))}
+                  {post.tags.length > 4 && (
+                    <span className="px-3 py-1 text-sm font-medium text-white bg-black bg-opacity-60 rounded-full shadow-lg backdrop-blur-sm">
+                      +{post.tags.length - 4}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* タイトル・日付・いいねボタン 横並び */}
             <div className="flex items-center justify-between gap-2 px-4 pt-4">
@@ -319,18 +341,6 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
               </button>
             </div>
 
-            {/* タグ */}
-            <div className="mt-2 flex flex-wrap justify-center gap-2 px-4">
-              {post.tags.map((tag) => (
-                <span
-                  key={tag.id}
-                  className="px-3 py-1 text-xs font-medium text-white rounded-full"
-                  style={{ backgroundColor: tag.color }}
-                >
-                  {tag.name}
-                </span>
-              ))}
-            </div>
 
             {/* Content area with improved readability */}
             <div 
@@ -338,17 +348,24 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
               className="flex-1 p-4 sm:p-6 md:p-8 overflow-y-auto scroll-smooth overscroll-contain"
             >
               {/* Author info */}
-              <div className="flex items-center space-x-4 mb-6">
+              <Link 
+                to={`/profile/${post.author.id}`} 
+                className="flex items-center space-x-4 mb-6 hover:bg-gray-50 p-2 rounded-lg transition-colors group"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onClose(); // モーダルを閉じる
+                }}
+              >
                 <img
                   src={post.author.avatar && post.author.avatar !== '' ? post.author.avatar : `https://ui-avatars.com/api/?name=${encodeURIComponent(post.author.name || 'ユーザー')}&background=0072f5&color=fff`}
                   alt={post.author.name}
                   className="w-12 h-12 rounded-full object-cover border-2 border-gray-200 dark:border-gray-600 shadow-sm"
                 />
                 <div>
-                  <h3 className="font-medium text-neutral-900">{post.author.name}</h3>
+                  <h3 className="font-medium text-neutral-900 group-hover:underline">{post.author.name}</h3>
                   <p className="text-sm text-neutral-500">投稿者</p>
                 </div>
-              </div>
+              </Link>
 
               <div className="space-y-8">
                 {/* 画像AI説明 */}

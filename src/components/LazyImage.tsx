@@ -54,7 +54,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   return (
     <div 
       ref={imgRef}
-      className={`relative overflow-hidden ${aspectRatio} ${className}`}
+      className={`relative overflow-hidden ${aspectRatio === 'aspect-auto' ? '' : aspectRatio} ${className}`}
     >
       {!imageSrc && !isError && (placeholder || defaultPlaceholder)}
       

@@ -38,6 +38,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
   const modalContentRef = useRef<HTMLDivElement>(null);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isComposing, setIsComposing] = useState(false);
 
   const { 
     generateDescription, 
@@ -49,23 +50,29 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
 
   // Auto-resize textarea
   const autoResizeTextarea = () => {
+    // IME入力中はリサイズしない
+    if (isComposing) return;
+    
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = 'auto';
       const newHeight = Math.min(textarea.scrollHeight, 300);
       textarea.style.height = `${newHeight}px`;
       
-      setTimeout(() => {
-        const modalContent = modalContentRef.current;
-        if (modalContent && textarea.scrollTop > 0) {
-          const textareaRect = textarea.getBoundingClientRect();
-          const modalRect = modalContent.getBoundingClientRect();
-          
-          if (textareaRect.bottom > modalRect.bottom - 100) {
-            modalContent.scrollTop += textareaRect.bottom - modalRect.bottom + 100;
+      // スクロール位置の調整もIME入力中はスキップ
+      if (!isComposing) {
+        setTimeout(() => {
+          const modalContent = modalContentRef.current;
+          if (modalContent && textarea.scrollTop > 0) {
+            const textareaRect = textarea.getBoundingClientRect();
+            const modalRect = modalContent.getBoundingClientRect();
+            
+            if (textareaRect.bottom > modalRect.bottom - 100) {
+              modalContent.scrollTop += textareaRect.bottom - modalRect.bottom + 100;
+            }
           }
-        }
-      }, 0);
+        }, 0);
+      }
     }
   };
 
@@ -146,7 +153,10 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedImage || !formData.userComment.trim() || !formData.title.trim() || !user) {
+    if (!selectedImage || !formData.userComment.trim() || !formData.title.trim() || !user || formData.tags.length === 0) {
+      if (formData.tags.length === 0) {
+        alert('少なくとも1つのタグを選択してください。');
+      }
       return;
     }
 
@@ -331,9 +341,14 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                       ref={textareaRef}
                       value={formData.userComment}
                       onChange={handleTextareaChange}
+                      onCompositionStart={() => setIsComposing(true)}
+                      onCompositionEnd={() => {
+                        setIsComposing(false);
+                        autoResizeTextarea();
+                      }}
                       placeholder="この写真を撮った時の感想や体験を教えてください..."
                       className="auto-resize-textarea w-full px-4 py-3 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all duration-200 scroll-container"
-                      style={{ minHeight: '100px' }}
+                      style={{ minHeight: '100px', resize: 'none' }}
                       required
                     />
                   </div>
@@ -407,7 +422,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                 {/* タグ選択 */}
                 <div>
                   <label className="block text-sm font-medium text-neutral-700 mb-3">
-                    タグを選択（複数可）
+                    タグを選択（複数可） <span className="text-red-500 ml-1">*</span>
                   </label>
                   <div className="flex flex-wrap gap-2">
                     {tags.map(tag => (
@@ -422,6 +437,16 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                       </button>
                     ))}
                   </div>
+                  {formData.tags.length === 0 && (
+                    <p className="text-xs text-red-500 mt-1">
+                      少なくとも1つのタグを選択してください
+                    </p>
+                  )}
+                  {formData.tags.length > 0 && (
+                    <p className="text-xs text-green-600 mt-1">
+                      {formData.tags.length}個のタグが選択されています
+                    </p>
+                  )}
                 </div>
               </form>
             </div>
@@ -439,7 +464,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                 <button
                   type="submit"
                   form="new-post-form"
-                  disabled={isLoading || !selectedImage || !formData.title.trim() || !formData.userComment.trim()}
+                  disabled={isLoading || !selectedImage || !formData.title.trim() || !formData.userComment.trim() || formData.tags.length === 0}
                   className="px-4 py-2 text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? '投稿中...' : '投稿する'}

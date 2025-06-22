@@ -119,16 +119,37 @@ const PostCard = ({ post, onClick, likePost, unlikePost, bookmarkPost, unbookmar
 
           {/* Post Image with Padding */}
           <div className="p-4">
-            <div className="cursor-pointer" onClick={onClick}>
+            <div className="cursor-pointer relative" onClick={onClick}>
               {imageUrl && (
-                <LazyImage
-                  src={imageUrl}
-                  alt={title}
-                  className="rounded-md"
-                  aspectRatio="aspect-auto"
-                  threshold={0.1}
-                  rootMargin="200px"
-                />
+                <>
+                  <LazyImage
+                    src={imageUrl}
+                    alt={title}
+                    className="rounded-md w-full h-auto"
+                    aspectRatio="aspect-auto"
+                    threshold={0.1}
+                    rootMargin="200px"
+                  />
+                  {/* Tags Overlay */}
+                  {post.tags && post.tags.length > 0 && (
+                    <div className="absolute top-2 left-2 flex flex-wrap gap-1 max-w-[70%]">
+                      {post.tags.slice(0, 3).map((tag) => (
+                        <span
+                          key={tag.id}
+                          className="px-2 py-1 text-xs font-medium text-white rounded-full shadow-lg backdrop-blur-sm"
+                          style={{ backgroundColor: `${tag.color}CC` }}
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
+                      {post.tags.length > 3 && (
+                        <span className="px-2 py-1 text-xs font-medium text-white bg-black bg-opacity-60 rounded-full shadow-lg backdrop-blur-sm">
+                          +{post.tags.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

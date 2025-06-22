@@ -16,6 +16,7 @@ interface MasonryGridProps {
   unbookmarkPost: (postId: string) => void;
   deletePost: (postId: string) => void;
   searchQuery?: string;
+  isLoadingMore?: boolean;
 }
 
 export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = ({
@@ -29,7 +30,8 @@ export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = (
   unbookmarkPost,
   deletePost,
   searchQuery,
-  loading = false
+  loading = false,
+  isLoadingMore = false
 }) => {
   const { ref, inView } = useInView({
     threshold: 0,
@@ -37,10 +39,10 @@ export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = (
   });
 
   React.useEffect(() => {
-    if (inView && hasNextPage) {
+    if (inView && hasNextPage && !isLoadingMore) {
       onLoadMore();
     }
-  }, [inView, hasNextPage, onLoadMore]);
+  }, [inView, hasNextPage, isLoadingMore, onLoadMore]);
 
   // Create columns for masonry layout with memoization
   const columns = useMemo(() => {
@@ -143,9 +145,11 @@ export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = (
       {/* Load More Trigger */}
       {hasNextPage && (
         <div ref={ref} className="flex justify-center py-8">
-          <div
-            className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"
-          />
+          {isLoadingMore && (
+            <div
+              className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"
+            />
+          )}
         </div>
       )}
     </div>

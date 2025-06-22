@@ -75,6 +75,10 @@ export const usePosts = (): UsePostsReturn => {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(true);
+  const [currentFilters, setCurrentFilters] = useState<FilterOptions>({ tags: [], sortBy: 'newest' });
+  const [currentSearchQuery, setCurrentSearchQuery] = useState<string>('');
+  const [randomSeed, setRandomSeed] = useState<number>(Date.now());
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const POSTS_PER_PAGE = 6;
 
@@ -145,7 +149,9 @@ export const usePosts = (): UsePostsReturn => {
       });
 
       setPosts(formattedPosts);
+      // 初期表示は新しい順で表示（データベースから既にソート済み）
       setFilteredPosts(formattedPosts.slice(0, POSTS_PER_PAGE));
+      setHasNextPage(formattedPosts.length > POSTS_PER_PAGE);
       setLoading(false);
     } catch (e: any) {
       setError(`投稿の読み込みに失敗しました: ${e.message}`);
@@ -159,34 +165,105 @@ export const usePosts = (): UsePostsReturn => {
   useEffect(() => {
     fetchPosts();
 
+    // チャンネル名にタイムスタンプを追加してユニークにする
+    const channelName = `realtime_posts_and_likes_${Date.now()}_${Math.random()}`;
     const channel = supabase
-      .channel('realtime_posts_and_likes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, (payload) => {
-        // console.log('Change received!', payload);
-        fetchPosts(); // 変更があったら投稿を再取得
+      .channel(channelName)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, async (payload) => {
+        console.log('Posts change received!', payload);
+        await fetchPosts();
+        // データ更新後、現在のフィルター状態を維持
+        if (currentFilters || currentSearchQuery) {
+          setTimeout(() => {
+            filterPosts(currentFilters, currentSearchQuery);
+          }, 100);
+        }
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'likes' }, (payload) => {
-        // console.log('Like change received!', payload);
-        fetchPosts(); // 変更があったら投稿を再取得
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'likes' }, async (payload) => {
+        console.log('Likes change received!', payload);
+        await fetchPosts();
+        // データ更新後、現在のフィルター状態を維持
+        if (currentFilters || currentSearchQuery) {
+          setTimeout(() => {
+            filterPosts(currentFilters, currentSearchQuery);
+          }, 100);
+        }
       })
       .subscribe();
 
     return () => {
+      // チャンネルを適切にクリーンアップ
+      channel.unsubscribe();
       supabase.removeChannel(channel);
     };
   }, []); // 空の依存配列に戻して初回のみ実行
 
   const loadMore = useCallback(() => {
-    if (!hasNextPage || loading) return;
-    const newPosts = posts.slice(page * POSTS_PER_PAGE, (page + 1) * POSTS_PER_PAGE);
-    if (newPosts.length > 0) {
-      setFilteredPosts(prev => [...prev, ...newPosts]);
-      setPage(prev => prev + 1);
+    if (!hasNextPage || loading || isLoadingMore) return;
+    
+    setIsLoadingMore(true);
+    console.log('LoadMore実行:', { page, hasNextPage, filteredPostsLength: filteredPosts.length });
+    
+    try {
+      // 現在表示中の投稿数を確認
+      const currentDisplayed = filteredPosts.length;
+      const nextPageEnd = currentDisplayed + POSTS_PER_PAGE;
+      
+      // 全投稿を再計算
+      let allFiltered = [...posts];
+      
+      // 検索クエリによるフィルタリング
+      if (currentSearchQuery.trim()) {
+        const query = currentSearchQuery.toLowerCase();
+        allFiltered = allFiltered.filter(post =>
+          post.title.toLowerCase().includes(query) ||
+          post.userComment.toLowerCase().includes(query) ||
+          post.aiDescription.toLowerCase().includes(query)
+        );
+      }
+      
+      // タグによるフィルタリング
+      if (currentFilters.tags.length > 0) {
+        allFiltered = allFiltered.filter(post =>
+          post.tags.some(tag => currentFilters.tags.includes(tag.id))
+        );
+      }
+      
+      // ソート処理
+      switch (currentFilters.sortBy) {
+        case 'oldest':
+          allFiltered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          break;
+        case 'popular':
+          allFiltered.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
+          break;
+        case 'random':
+          allFiltered.sort((a, b) => {
+            const seedA = randomSeed + a.id.charCodeAt(0);
+            const seedB = randomSeed + b.id.charCodeAt(0);
+            return seededRandom(seedA) - seededRandom(seedB);
+          });
+          break;
+        case 'newest':
+        default:
+          allFiltered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          break;
+      }
+      
+      if (allFiltered.length > nextPageEnd) {
+        setFilteredPosts(allFiltered.slice(0, nextPageEnd));
+        setPage(prev => prev + 1);
+        setHasNextPage(nextPageEnd < allFiltered.length);
+      } else {
+        setFilteredPosts(allFiltered);
+        setHasNextPage(false);
+      }
+      
+      console.log('LoadMore完了:', { newLength: allFiltered.slice(0, nextPageEnd).length, hasNextPage: nextPageEnd < allFiltered.length });
+    } finally {
+      setIsLoadingMore(false);
     }
-    if ((page + 1) * POSTS_PER_PAGE >= posts.length) {
-      setHasNextPage(false);
-    }
-  }, [page, posts, hasNextPage, loading]);
+  }, [page, posts, hasNextPage, loading, isLoadingMore, currentFilters, currentSearchQuery, randomSeed, filteredPosts.length]);
 
   const addPost = useCallback(async (newPostInput: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author' | 'likeCount' | 'likedByCurrentUser' | 'bookmarkedByCurrentUser' | 'commentCount'>) => {
     try {
@@ -231,9 +308,14 @@ export const usePosts = (): UsePostsReturn => {
 
       // 5. 関連テーブルにinsert
       if (newPostInput.tags.length > 0) {
-        await supabase.from('post_tags').insert(
+        const { error: tagError } = await supabase.from('post_tags').insert(
           newPostInput.tags.map(tag => ({ post_id: postData.id, tag_id: tag.id }))
         );
+        
+        if (tagError) {
+          console.error('Error saving post tags:', tagError);
+          throw new Error('タグの保存に失敗しました');
+        }
       }
 
       if (newPostInput.aiComments && newPostInput.aiComments.length > 0) {
@@ -281,8 +363,25 @@ export const usePosts = (): UsePostsReturn => {
     }
   }, [fetchPosts]);
 
+  // シードベースのランダム関数（通常の関数として定義）
+  const seededRandom = (seed: number) => {
+    const x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+  };
+
   const filterPosts = useCallback((filters: FilterOptions, searchQuery: string) => {
+    // 現在のフィルター・検索クエリを保存
+    setCurrentFilters(filters);
+    setCurrentSearchQuery(searchQuery);
+    
+    // ランダムソートの場合のみ、フィルターが変更された時に新しいシードを生成
+    if (filters.sortBy === 'random' && currentFilters.sortBy !== 'random') {
+      setRandomSeed(Date.now());
+    }
+    
     let filtered = [...posts];
+    
+    // 検索クエリによるフィルタリング
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(post =>
@@ -291,6 +390,15 @@ export const usePosts = (): UsePostsReturn => {
         post.aiDescription.toLowerCase().includes(query)
       );
     }
+    
+    // タグによるフィルタリング
+    if (filters.tags.length > 0) {
+      filtered = filtered.filter(post =>
+        post.tags.some(tag => filters.tags.includes(tag.id))
+      );
+    }
+    
+    // ソート処理
     switch (filters.sortBy) {
       case 'oldest':
         filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
@@ -298,15 +406,29 @@ export const usePosts = (): UsePostsReturn => {
       case 'popular':
         filtered.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
         break;
+      case 'random':
+        // シードベースの安定したランダムソート
+        filtered.sort((a, b) => {
+          const seedA = randomSeed + a.id.charCodeAt(0);
+          const seedB = randomSeed + b.id.charCodeAt(0);
+          return seededRandom(seedA) - seededRandom(seedB);
+        });
+        break;
       case 'newest':
       default:
         filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
         break;
     }
+    
+    console.log(`フィルター適用: ${filters.sortBy}, 件数: ${filtered.length}, シード: ${randomSeed}`);
+    if (filtered.length > 0) {
+      console.log('最初の投稿:', filtered[0].title, filtered[0].createdAt);
+    }
+    
     setFilteredPosts(filtered.slice(0, POSTS_PER_PAGE));
     setPage(1);
     setHasNextPage(filtered.length > POSTS_PER_PAGE);
-  }, [posts]);
+  }, [posts, randomSeed, currentFilters.sortBy]);
 
   // 投稿編集
   const updatePost = useCallback(async (postId: string, updates: Partial<Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author'>>) => {
@@ -430,5 +552,5 @@ export const usePosts = (): UsePostsReturn => {
     }
   }, []);
 
-  return { posts: filteredPosts, loading, error, fetchPosts, addPost, deletePost, likePost, unlikePost, bookmarkPost, unbookmarkPost, filterPosts, hasNextPage, loadMore };
+  return { posts: filteredPosts, loading, error, fetchPosts, addPost, deletePost, likePost, unlikePost, bookmarkPost, unbookmarkPost, filterPosts, hasNextPage, loadMore, isLoadingMore };
 };

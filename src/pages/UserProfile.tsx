@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { usePosts } from '../hooks/usePosts';
 import { MasonryGrid } from '../components/MasonryGrid';
+import { PostModal } from '../components/PostModal';
 import { Post, User } from '../types';
 import { supabase } from '../supabase';
 import { ArrowLeft } from 'lucide-react';
@@ -10,9 +11,11 @@ import { useAuth } from '../contexts/AuthContext';
 const UserProfile = () => {
   const { userId } = useParams<{ userId: string }>();
   const { user: currentUser } = useAuth();
-  const { posts, loading: postsLoading, likePost, unlikePost } = usePosts();
+  const { posts, loading: postsLoading, likePost, unlikePost, bookmarkPost, unbookmarkPost } = usePosts();
   const [profileUser, setProfileUser] = useState<Partial<User> | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [postCount, setPostCount] = useState(0);
   
   const isMyProfile = currentUser?.id === userId;
 
@@ -20,6 +23,8 @@ const UserProfile = () => {
     const fetchUserProfile = async () => {
       if (!userId) return;
       setLoadingProfile(true);
+      
+      // プロフィール情報を取得
       const { data, error } = await supabase
         .from('profiles')
         .select('id, name, avatar_url')
@@ -31,6 +36,17 @@ const UserProfile = () => {
       } else {
         setProfileUser(data);
       }
+      
+      // 投稿数を取得
+      const { count, error: countError } = await supabase
+        .from('posts')
+        .select('*', { count: 'exact', head: true })
+        .eq('author_id', userId);
+      
+      if (!countError && count !== null) {
+        setPostCount(count);
+      }
+      
       setLoadingProfile(false);
     };
 
@@ -74,7 +90,7 @@ const UserProfile = () => {
             />
             <div className="ml-6">
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-800">{profileUser.name}</h1>
-                <p className="text-neutral-500">{userPosts.length} posts</p>
+                <p className="text-neutral-500">{postCount} posts</p>
                  {isMyProfile && (
                     <Link 
                         to="/profile-edit" 
@@ -90,12 +106,23 @@ const UserProfile = () => {
 
         <MasonryGrid
             posts={userPosts}
-            onPostClick={() => { /* Modal logic is in App.tsx */ }}
+            onPostClick={setSelectedPost}
             hasNextPage={false}
             onLoadMore={() => {}}
             loading={postsLoading}
             likePost={likePost}
             unlikePost={unlikePost}
+            bookmarkPost={bookmarkPost}
+            unbookmarkPost={unbookmarkPost}
+            deletePost={() => {}}
+        />
+
+        <PostModal
+          post={selectedPost}
+          isOpen={!!selectedPost}
+          onClose={() => setSelectedPost(null)}
+          likePost={likePost}
+          unlikePost={unlikePost}
         />
     </div>
   );

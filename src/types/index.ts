@@ -36,7 +36,7 @@ export interface Tag {
 
 export interface FilterOptions {
   tags: string[];
-  sortBy: 'newest' | 'oldest' | 'popular';
+  sortBy: 'newest' | 'oldest' | 'popular' | 'random';
 }
 
 export interface User {

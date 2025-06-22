@@ -6,6 +6,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 // Providers and Hooks
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { usePosts } from './hooks/usePosts';
+import { useTags } from './hooks/useTags';
 
 // Components
 import { Header } from './components/Header';
@@ -25,7 +26,6 @@ import { Settings } from './pages/Settings';
 import { Bookmarks } from './pages/Bookmarks';
 
 // Data and Types
-import { mockTags } from './data/mockData';
 import { Post, FilterOptions } from './types';
 
 /**
@@ -57,16 +57,20 @@ function AppContent() {
     unlikePost,
     bookmarkPost,
     unbookmarkPost,
-    deletePost
+    deletePost,
+    isLoadingMore
   } = usePosts();
+  
+  // タグデータを管理するカスタムフック
+  const { tags, loading: tagsLoading } = useTags();
 
   // フィルターや検索クエリが変更された時に投稿を再フィルタリング
   useEffect(() => {
-    // 投稿のローディングが終わってからフィルタリングを実行
-    if (!postsLoading) {
+    // 投稿のローディングが終わって、フィルター・検索が初期値でない場合のみフィルタリングを実行
+    if (!postsLoading && posts.length > 0 && (filters.sortBy !== 'newest' || filters.tags.length > 0 || searchQuery.trim())) {
       filterPosts(filters, searchQuery);
     }
-  }, [filters, searchQuery, postsLoading, filterPosts]); // filterPostsを依存配列に追加
+  }, [filters, searchQuery, postsLoading, posts, filterPosts]); // 適切な依存関係を設定
 
   // 認証または投稿データの読み込み中はローディングスピナーを表示
   if (authLoading) { // postsLoadingよりもauthLoadingを優先
@@ -130,6 +134,7 @@ function AppContent() {
                 hasNextPage={hasNextPage}
                 onLoadMore={loadMore}
                 loading={postsLoading}
+                isLoadingMore={isLoadingMore}
                 likePost={likePost}
                 unlikePost={unlikePost}
                 bookmarkPost={bookmarkPost}
@@ -149,7 +154,7 @@ function AppContent() {
       <FilterPanel
         isOpen={isFilterOpen}
         onClose={() => setIsFilterOpen(false)}
-        tags={mockTags}
+        tags={tags}
         filters={filters}
         onFiltersChange={setFilters}
       />
@@ -165,7 +170,7 @@ function AppContent() {
       <NewPostModal
         isOpen={isNewPostOpen}
         onClose={() => setIsNewPostOpen(false)}
-        tags={mockTags}
+        tags={tags}
         onSubmit={handleNewPost}
       />
       
