@@ -42,14 +42,9 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    console.log('Logo clicked, current path:', location.pathname);
-    if (location.pathname === '/') {
-      e.preventDefault();
-      console.log('Scrolling to top');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      console.log('Navigating to home');
-    }
+    e.preventDefault();
+    console.log('Logo clicked, reloading page and navigating to home');
+    window.location.href = '/';
   };
 
   const switchToRegister = () => {

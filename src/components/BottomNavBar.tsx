@@ -20,14 +20,9 @@ const BottomNavBar = ({ onNewPostClick, onLoginClick, onToggleFilter, onPostClic
   const inactiveIconStyle = "text-gray-600 dark:text-gray-400";
 
   const handleHomeClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    console.log('Home button clicked, current path:', location.pathname);
-    if (location.pathname === '/') {
-      e.preventDefault();
-      console.log('Scrolling to top');
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    } else {
-      console.log('Navigating to home');
-    }
+    e.preventDefault();
+    console.log('Home button clicked, reloading page and navigating to home');
+    window.location.href = '/';
   };
 
   const handleNewPostClick = () => {
