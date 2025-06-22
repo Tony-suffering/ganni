@@ -6,6 +6,8 @@ import { ja } from 'date-fns/locale';
 import { Post } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import ConfirmationModal from './ConfirmationModal';
+import { LazyImage } from './LazyImage';
+import { ShareModal } from './ShareModal';
 
 interface PostCardProps {
   post: Post;
@@ -19,9 +21,10 @@ interface PostCardProps {
 
 const PostCard = ({ post, onClick, likePost, unlikePost, bookmarkPost, unbookmarkPost, deletePost }: PostCardProps) => {
   const { user: currentUser } = useAuth();
-  const { author, title, userComment, imageUrl, likeCount, likedByCurrentUser, bookmarkedByCurrentUser, createdAt } = post;
+  const { author, title, userComment, imageUrl, likeCount, likedByCurrentUser, bookmarkedByCurrentUser, createdAt, commentCount } = post;
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
   const isOwner = currentUser?.id === author.id;
 
@@ -53,6 +56,11 @@ const PostCard = ({ post, onClick, likePost, unlikePost, bookmarkPost, unbookmar
 
   const confirmDelete = () => {
     deletePost(post.id);
+  };
+
+  const handleShareClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsShareModalOpen(true);
   };
   
   const getDisplayName = (): string => {
@@ -113,10 +121,13 @@ const PostCard = ({ post, onClick, likePost, unlikePost, bookmarkPost, unbookmar
           <div className="p-4">
             <div className="cursor-pointer" onClick={onClick}>
               {imageUrl && (
-                <img
+                <LazyImage
                   src={imageUrl}
                   alt={title}
-                  className="w-full h-auto object-cover rounded-md"
+                  className="rounded-md"
+                  aspectRatio="aspect-auto"
+                  threshold={0.1}
+                  rootMargin="200px"
                 />
               )}
             </div>
@@ -126,13 +137,23 @@ const PostCard = ({ post, onClick, likePost, unlikePost, bookmarkPost, unbookmar
           <div className="p-3 pt-0">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center space-x-4">
-                <button onClick={handleLikeClick} className="text-gray-700 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-500 transition-colors">
+                <button onClick={handleLikeClick} className="relative text-gray-700 dark:text-gray-300 hover:text-red-500 dark:hover:text-red-500 transition-colors">
                   <Heart className={`w-6 h-6 ${likedByCurrentUser ? 'text-red-500 fill-current' : ''}`} />
+                  {likeCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-semibold">
+                      {likeCount > 9 ? '9+' : likeCount}
+                    </span>
+                  )}
                 </button>
-                <button onClick={onClick} className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+                <button onClick={onClick} className="relative text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
                   <MessageCircle className="w-6 h-6" />
+                  {commentCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-semibold">
+                      {commentCount > 9 ? '9+' : commentCount}
+                    </span>
+                  )}
                 </button>
-                <button className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
+                <button onClick={handleShareClick} className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
                   <Send className="w-6 h-6" />
                 </button>
               </div>
@@ -141,18 +162,9 @@ const PostCard = ({ post, onClick, likePost, unlikePost, bookmarkPost, unbookmar
               </button>
             </div>
 
-            {likeCount > 0 && (
-              <div className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-1">
-                {likeCount.toLocaleString()} likes
-              </div>
-            )}
 
             <div className="text-sm text-gray-800 dark:text-gray-200">
               {caption}
-            </div>
-            
-            <div onClick={onClick} className="text-sm text-gray-500 dark:text-gray-400 mt-1 cursor-pointer hover:underline">
-              View all comments
             </div>
           </div>
         </div>
@@ -166,6 +178,12 @@ const PostCard = ({ post, onClick, likePost, unlikePost, bookmarkPost, unbookmar
         message="この投稿を本当に削除しますか？この操作は元に戻すことはできません。"
         confirmText="削除"
         confirmButtonClass="bg-red-600 hover:bg-red-700"
+      />
+
+      <ShareModal
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        post={post}
       />
     </>
   );

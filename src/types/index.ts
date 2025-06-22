@@ -17,6 +17,7 @@ export interface Post {
   likeCount: number;
   likedByCurrentUser: boolean;
   bookmarkedByCurrentUser: boolean;
+  commentCount: number;
 }
 
 export interface AIComment {

@@ -46,9 +46,13 @@ export const mockPosts: Post[] = [
     tags: [mockTags[0], mockTags[4]],
     createdAt: '2024-01-15T08:30:00Z',
     updatedAt: '2024-01-15T08:30:00Z',
-    author: { name: '田中 航', avatar: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=100' },
+    author: { id: 'user1', name: '田中 航', avatar: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=100' },
     aiComments: generateAIComments(),
     imageAIDescription: '',
+    likeCount: 12,
+    likedByCurrentUser: false,
+    bookmarkedByCurrentUser: false,
+    commentCount: 5,
   },
   {
     id: '2',
@@ -59,7 +63,7 @@ export const mockPosts: Post[] = [
     tags: [mockTags[1], mockTags[3]],
     createdAt: '2024-01-14T18:45:00Z',
     updatedAt: '2024-01-14T18:45:00Z',
-    author: { name: '佐藤 美咲', avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=100' },
+    author: { id: 'user2', name: '佐藤 美咲', avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=100' },
     aiComments: [
       {
         id: '4',
@@ -75,6 +79,10 @@ export const mockPosts: Post[] = [
       }
     ],
     imageAIDescription: '',
+    likeCount: 8,
+    likedByCurrentUser: true,
+    bookmarkedByCurrentUser: false,
+    commentCount: 3,
   },
   {
     id: '3',
@@ -85,7 +93,7 @@ export const mockPosts: Post[] = [
     tags: [mockTags[2], mockTags[5]],
     createdAt: '2024-01-13T23:15:00Z',
     updatedAt: '2024-01-13T23:15:00Z',
-    author: { name: '山田 健太', avatar: 'https://images.pexels.com/photos/697509/pexels-photo-697509.jpeg?auto=compress&cs=tinysrgb&w=100' },
+    author: { id: 'user3', name: '山田 健太', avatar: 'https://images.pexels.com/photos/697509/pexels-photo-697509.jpeg?auto=compress&cs=tinysrgb&w=100' },
     aiComments: [
       {
         id: '6',
@@ -95,6 +103,10 @@ export const mockPosts: Post[] = [
       }
     ],
     imageAIDescription: '',
+    likeCount: 15,
+    likedByCurrentUser: false,
+    bookmarkedByCurrentUser: true,
+    commentCount: 7,
   },
   {
     id: '4',
@@ -105,9 +117,13 @@ export const mockPosts: Post[] = [
     tags: [mockTags[6], mockTags[7]],
     createdAt: '2024-01-12T22:00:00Z',
     updatedAt: '2024-01-12T22:00:00Z',
-    author: { name: '鈴木 麗奈', avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100' },
+    author: { id: 'user4', name: '鈴木 麗奈', avatar: 'https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100' },
     aiComments: generateAIComments(),
     imageAIDescription: '',
+    likeCount: 20,
+    likedByCurrentUser: true,
+    bookmarkedByCurrentUser: false,
+    commentCount: 2,
   },
   {
     id: '5',
@@ -118,7 +134,7 @@ export const mockPosts: Post[] = [
     tags: [mockTags[0], mockTags[5]],
     createdAt: '2024-01-11T07:30:00Z',
     updatedAt: '2024-01-11T07:30:00Z',
-    author: { name: '田中 航', avatar: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=100' },
+    author: { id: 'user1', name: '田中 航', avatar: 'https://images.pexels.com/photos/1043471/pexels-photo-1043471.jpeg?auto=compress&cs=tinysrgb&w=100' },
     aiComments: [
       {
         id: '7',
@@ -128,6 +144,10 @@ export const mockPosts: Post[] = [
       }
     ],
     imageAIDescription: '',
+    likeCount: 6,
+    likedByCurrentUser: false,
+    bookmarkedByCurrentUser: false,
+    commentCount: 1,
   },
   {
     id: '6',
@@ -138,7 +158,7 @@ export const mockPosts: Post[] = [
     tags: [mockTags[2], mockTags[3]],
     createdAt: '2024-01-10T17:20:00Z',
     updatedAt: '2024-01-10T17:20:00Z',
-    author: { name: '佐藤 美咲', avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=100' },
+    author: { id: 'user2', name: '佐藤 美咲', avatar: 'https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=100' },
     aiComments: [
       {
         id: '8',
@@ -154,5 +174,9 @@ export const mockPosts: Post[] = [
       }
     ],
     imageAIDescription: '',
+    likeCount: 10,
+    likedByCurrentUser: false,
+    bookmarkedByCurrentUser: true,
+    commentCount: 4,
   }
 ];

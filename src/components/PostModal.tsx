@@ -79,6 +79,13 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
         const userIds = [...new Set(commentsData.map(c => c.user_id))];
         console.log('取得するユーザーID:', userIds);
         
+        // 空の配列チェック
+        if (userIds.length === 0) {
+          console.log('ユーザーIDが空のため、ユーザー情報取得をスキップ');
+          setComments([]);
+          return;
+        }
+        
         // usersテーブルまたはprofilesテーブルからユーザー情報を取得
         const { data: usersData, error: usersError } = await supabase
           .from('users')
@@ -163,8 +170,9 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
   useEffect(() => {
     if (!post) return;
     // Supabaseのリアルタイム購読
-    const subscription = supabase
-      .channel('comments_changes')
+    const channelName = `comments_changes_${post.id}`;
+    const channel = supabase
+      .channel(channelName)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'comments', filter: `post_id=eq.${post.id}` },
         () => {
           fetchComments();
@@ -173,7 +181,7 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
       .subscribe();
 
     return () => {
-      subscription.unsubscribe();
+      supabase.removeChannel(channel);
     };
   }, [post?.id]);
 
@@ -433,7 +441,15 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
 
                 {/* コメント一覧 */}
                 <div className="mt-10">
-                  <h3 className="text-lg font-semibold mb-4">コメント</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="flex items-center text-lg font-semibold text-neutral-900">
+                      <MessageCircle className="w-5 h-5 mr-2 text-blue-500" />
+                      コメント
+                      <span className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
+                        {comments.length}件
+                      </span>
+                    </h3>
+                  </div>
                   {loadingComments ? (
                     <div className="text-neutral-500">読み込み中...</div>
                   ) : comments.length === 0 ? (

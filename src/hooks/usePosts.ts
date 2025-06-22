@@ -16,7 +16,7 @@ interface UsePostsReturn {
   loading: boolean;
   error: string | null;
   fetchPosts: () => Promise<void>;
-  addPost: (postData: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author' | 'likeCount' | 'likedByCurrentUser' | 'bookmarkedByCurrentUser'>) => Promise<Post | null>;
+  addPost: (postData: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author' | 'likeCount' | 'likedByCurrentUser' | 'bookmarkedByCurrentUser' | 'commentCount'>) => Promise<Post | null>;
   deletePost: (postId: string) => Promise<void>;
   likePost: (postId: string) => Promise<void>;
   unlikePost: (postId: string) => Promise<void>;
@@ -26,6 +26,47 @@ interface UsePostsReturn {
   hasNextPage: boolean;
   loadMore: () => void;
 }
+
+// 新規投稿通知を送信する関数
+const sendNewPostNotifications = async (postId: string, authorId: string) => {
+  try {
+    // 新規投稿通知を有効にしているユーザーを取得
+    const { data: notificationUsers, error } = await supabase
+      .from('user_notification_settings')
+      .select('user_id')
+      .eq('newPosts', true)
+      .neq('user_id', authorId); // 投稿者自身を除外
+
+    if (error) {
+      console.error('通知設定の取得に失敗:', error);
+      return;
+    }
+
+    if (!notificationUsers || notificationUsers.length === 0) {
+      return;
+    }
+
+    // 各ユーザーに通知を作成
+    const notifications = notificationUsers.map(user => ({
+      recipient_id: user.user_id,
+      sender_id: authorId,
+      post_id: postId,
+      type: 'new_post' as const,
+      content: '新しい投稿がありました',
+      is_read: false
+    }));
+
+    const { error: insertError } = await supabase
+      .from('notifications')
+      .insert(notifications);
+
+    if (insertError) {
+      console.error('通知の作成に失敗:', insertError);
+    }
+  } catch (error) {
+    console.error('新規投稿通知の送信でエラー:', error);
+  }
+};
 
 export const usePosts = (): UsePostsReturn => {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -55,15 +96,17 @@ export const usePosts = (): UsePostsReturn => {
 
       const { data: { user: currentUser } } = await supabase.auth.getUser();
 
-      // いいねとブックマーク情報を並列で取得
+      // いいね、ブックマーク、コメント情報を並列で取得
       const postIds = (data as PostWithRelations[]).map(post => post.id);
-      const [likesData, bookmarksData] = await Promise.all([
+      const [likesData, bookmarksData, commentsData] = await Promise.all([
         supabase.from('likes').select('post_id, user_id').in('post_id', postIds),
-        currentUser ? supabase.from('bookmarks').select('post_id').eq('user_id', currentUser.id) : Promise.resolve({ data: [], error: null })
+        currentUser ? supabase.from('bookmarks').select('post_id').eq('user_id', currentUser.id) : Promise.resolve({ data: [], error: null }),
+        supabase.from('comments').select('post_id').in('post_id', postIds)
       ]);
 
       if (likesData.error) throw likesData.error;
       if (bookmarksData.error) throw bookmarksData.error;
+      if (commentsData.error) throw commentsData.error;
       
       const bookmarkedPostIds = new Set((bookmarksData.data ?? []).map(b => b.post_id));
 
@@ -71,6 +114,7 @@ export const usePosts = (): UsePostsReturn => {
         const postLikes = (likesData.data ?? []).filter(like => like.post_id === post.id);
         const likeCount = postLikes.length;
         const likedByCurrentUser = !!currentUser && postLikes.some(like => like.user_id === currentUser.id);
+        const commentCount = (commentsData.data ?? []).filter(comment => comment.post_id === post.id).length;
         
         return {
           id: post.id,
@@ -95,7 +139,8 @@ export const usePosts = (): UsePostsReturn => {
           })),
           likeCount,
           likedByCurrentUser,
-          bookmarkedByCurrentUser: bookmarkedPostIds.has(post.id)
+          bookmarkedByCurrentUser: bookmarkedPostIds.has(post.id),
+          commentCount
         };
       });
 
@@ -116,8 +161,12 @@ export const usePosts = (): UsePostsReturn => {
 
     const channel = supabase
       .channel('realtime_posts_and_likes')
-      .on('postgres_changes', { event: '*', schema: 'public' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, (payload) => {
         // console.log('Change received!', payload);
+        fetchPosts(); // 変更があったら投稿を再取得
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'likes' }, (payload) => {
+        // console.log('Like change received!', payload);
         fetchPosts(); // 変更があったら投稿を再取得
       })
       .subscribe();
@@ -125,7 +174,7 @@ export const usePosts = (): UsePostsReturn => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, []); // 空の依存配列に戻して初回のみ実行
 
   const loadMore = useCallback(() => {
     if (!hasNextPage || loading) return;
@@ -139,7 +188,7 @@ export const usePosts = (): UsePostsReturn => {
     }
   }, [page, posts, hasNextPage, loading]);
 
-  const addPost = useCallback(async (newPostInput: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author' | 'likeCount' | 'likedByCurrentUser' | 'bookmarkedByCurrentUser'>) => {
+  const addPost = useCallback(async (newPostInput: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author' | 'likeCount' | 'likedByCurrentUser' | 'bookmarkedByCurrentUser' | 'commentCount'>) => {
     try {
       // 1. ユーザーID取得
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -212,8 +261,17 @@ export const usePosts = (): UsePostsReturn => {
         aiComments: newPostInput.aiComments || [],
         likeCount: 0,
         likedByCurrentUser: false,
-        bookmarkedByCurrentUser: false
+        bookmarkedByCurrentUser: false,
+        commentCount: 0
       };
+
+      // 新規投稿通知を送信
+      try {
+        await sendNewPostNotifications(postData.id, userId);
+      } catch (error) {
+        console.log('新規投稿通知の送信に失敗:', error);
+      }
+
       await fetchPosts();
       setTimeout(fetchPosts, 500);
       return newPost;
@@ -353,6 +411,7 @@ export const usePosts = (): UsePostsReturn => {
 
     setPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: true } : p));
     const { error } = await supabase.from('bookmarks').insert({ post_id: postId, user_id: user.id });
+    
     if (error) {
       console.error("Error bookmarking post:", error);
       setPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: false } : p));

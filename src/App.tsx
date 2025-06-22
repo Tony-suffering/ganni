@@ -22,6 +22,7 @@ import UserProfile from './pages/UserProfile';
 // Pages
 import { ProfileEdit } from './pages/ProfileEdit';
 import { Settings } from './pages/Settings';
+import { Bookmarks } from './pages/Bookmarks';
 
 // Data and Types
 import { mockTags } from './data/mockData';
@@ -141,6 +142,7 @@ function AppContent() {
           <Route path="/profile/:userId" element={<UserProfile />} />
           <Route path="/profile-edit" element={<ProtectedRoute><ProfileEdit /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/bookmarks" element={<ProtectedRoute><Bookmarks /></ProtectedRoute>} />
         </Routes>
       </main>
 

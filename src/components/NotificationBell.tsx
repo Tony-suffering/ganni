@@ -31,7 +31,9 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
   const channelRef = useRef<any>(null);
   const isSubscribedRef = useRef(false);
+  const userIdRef = useRef<string | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const isMountedRef = useRef(true);
 
   // 通知を取得
   const fetchNotifications = useCallback(async () => {
@@ -53,23 +55,28 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
 
       if (data) {
         // ユーザー情報と投稿情報を取得
-        const senderIds = [...new Set(data.map(n => n.sender_id))];
-        const postIds = [...new Set(data.map(n => n.post_id))];
+        const senderIds = [...new Set(data.map(n => n.sender_id).filter(Boolean))];
+        const postIds = [...new Set(data.map(n => n.post_id).filter(Boolean))];
 
-        // ユーザー情報を取得（usersテーブルから試行、失敗時はprofilesテーブル）
+        // ユーザー情報を取得（空の配列チェック付き）
         let usersData = null;
-        const usersResult = await supabase.from('users').select('id, name, avatar_url').in('id', senderIds);
-        
-        if (usersResult.error) {
-          console.log('usersテーブルから取得失敗、profilesテーブルを試行');
-          const profilesResult = await supabase.from('profiles').select('id, name, avatar_url').in('id', senderIds);
-          usersData = profilesResult.data;
-        } else {
-          usersData = usersResult.data;
+        if (senderIds.length > 0) {
+          const usersResult = await supabase.from('users').select('id, name, avatar_url').in('id', senderIds);
+          
+          if (usersResult.error) {
+            console.log('usersテーブルから取得失敗、profilesテーブルを試行');
+            const profilesResult = await supabase.from('profiles').select('id, name, avatar_url').in('id', senderIds);
+            usersData = profilesResult.data;
+          } else {
+            usersData = usersResult.data;
+          }
         }
 
-        // 投稿情報を取得
-        const postsResult = await supabase.from('posts').select('id, title').in('id', postIds);
+        // 投稿情報を取得（空の配列チェック付き）
+        let postsResult = { data: [] };
+        if (postIds.length > 0) {
+          postsResult = await supabase.from('posts').select('id, title').in('id', postIds);
+        }
 
         const usersMap = new Map(usersData?.map(u => [u.id, u]) || []);
         const postsMap = new Map(postsResult.data?.map(p => [p.id, p]) || []);
@@ -140,20 +147,40 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
 
   // リアルタイム通知の購読
   useEffect(() => {
-    if (!user || !user.id) return;
+    const currentUserId = user?.id;
+    
+    // ユーザーがいない、または同じユーザーで既に購読済みの場合は何もしない
+    if (!currentUserId || (isSubscribedRef.current && userIdRef.current === currentUserId)) {
+      return;
+    }
 
-    // 既存のチャンネルがあれば削除
-    if (channelRef.current && isSubscribedRef.current) {
-      channelRef.current.unsubscribe();
-      channelRef.current = null;
+    // 既存のチャンネルをクリーンアップ
+    const cleanup = () => {
+      if (channelRef.current) {
+        try {
+          supabase.removeChannel(channelRef.current);
+          console.log('チャンネルを削除しました');
+        } catch (error) {
+          console.warn('チャンネル削除エラー:', error);
+        }
+        channelRef.current = null;
+      }
       isSubscribedRef.current = false;
+      userIdRef.current = null;
+    };
+
+    // 前のユーザーのチャンネルがあればクリーンアップ
+    if (userIdRef.current !== currentUserId) {
+      cleanup();
     }
 
     // 初回データ取得
     fetchNotifications();
 
-    // 新しいチャンネルを作成（重複を避けるため毎回ユニークな名前）
-    const channelName = `notifications-${user.id}-${Date.now()}-${Math.random()}`;
+    // 新しいチャンネルを作成
+    const channelName = `notifications_${currentUserId}_${Math.random().toString(36).substr(2, 9)}`;
+    console.log('新しいチャンネルを作成:', channelName);
+    
     const channel = supabase
       .channel(channelName)
       .on(
@@ -162,33 +189,52 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `recipient_id=eq.${user.id}`
+          filter: `recipient_id=eq.${currentUserId}`
         },
-        () => {
-          // 重複呼び出しを防ぐためにタイマーで遅延
-          setTimeout(() => {
-            fetchNotifications();
-          }, 100);
+        (payload) => {
+          console.log('新しい通知受信:', payload);
+          if (payload.new && isMountedRef.current) {
+            setNotifications(prev => [payload.new as Notification, ...prev]);
+            setUnreadCount(prev => prev + 1);
+          }
         }
       );
 
     // 購読を開始
     channel.subscribe((status) => {
+      console.log('購読状態変更:', status, 'for user:', currentUserId);
       if (status === 'SUBSCRIBED') {
         isSubscribedRef.current = true;
+        userIdRef.current = currentUserId;
+        channelRef.current = channel;
+        console.log('購読完了:', channelName);
+      } else if (status === 'CHANNEL_ERROR') {
+        console.error('チャンネルエラー:', channelName);
+        cleanup();
       }
     });
 
-    channelRef.current = channel;
-
+    // クリーンアップ関数
     return () => {
-      if (channelRef.current && isSubscribedRef.current) {
-        channelRef.current.unsubscribe();
-        channelRef.current = null;
-        isSubscribedRef.current = false;
+      console.log('useEffectクリーンアップ実行');
+      isMountedRef.current = false;
+      cleanup();
+    };
+  }, [user?.id]);
+
+  // コンポーネントアンマウント時のクリーンアップ
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (channelRef.current) {
+        try {
+          supabase.removeChannel(channelRef.current);
+        } catch (error) {
+          console.warn('コンポーネントアンマウント時のクリーンアップエラー:', error);
+        }
       }
     };
-  }, [user, fetchNotifications]);
+  }, []);
 
   if (!user) return null;
 

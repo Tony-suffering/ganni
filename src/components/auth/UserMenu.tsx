@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Settings, LogOut, ChevronDown } from 'lucide-react';
+import { User, Settings, LogOut, ChevronDown, Bookmark } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 
@@ -100,6 +100,24 @@ export function UserMenu({ direction = 'down' }: { direction?: 'up' | 'down' }) 
               >
                 <User className="w-4 h-4 text-neutral-500" />
                 <span>プロフィール</span>
+              </Link>
+              
+              <Link
+                to="/bookmarks"
+                className="flex items-center space-x-3 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                <Bookmark className="w-4 h-4 text-neutral-500" />
+                <span>ブックマーク</span>
+              </Link>
+              
+              <Link
+                to="/settings"
+                className="flex items-center space-x-3 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 transition-colors"
+                onClick={() => setIsOpen(false)}
+              >
+                <Settings className="w-4 h-4 text-neutral-500" />
+                <span>設定</span>
               </Link>
             </div>
 

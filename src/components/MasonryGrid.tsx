@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useMemo, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import PostCard from './PostCard';
 import { Post } from '../types';
+import { imageCache } from '../utils/imageCache';
 
 interface MasonryGridProps {
   posts: Post[];
@@ -41,13 +42,46 @@ export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = (
     }
   }, [inView, hasNextPage, onLoadMore]);
 
-  // Create columns for masonry layout
-  const columns = React.useMemo(() => {
+  // Create columns for masonry layout with memoization
+  const columns = useMemo(() => {
     const cols: Post[][] = [[], [], []];
     posts.forEach((post, index) => {
       cols[index % 3].push(post);
     });
     return cols;
+  }, [posts]);
+
+  // Memoized PostCard rendering functions
+  const renderPostCard = useCallback((post: Post) => (
+    <motion.div
+      key={post.id}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <PostCard
+        post={post}
+        onClick={() => onPostClick(post)}
+        likePost={likePost}
+        unlikePost={unlikePost}
+        bookmarkPost={bookmarkPost}
+        unbookmarkPost={unbookmarkPost}
+        deletePost={deletePost}
+      />
+    </motion.div>
+  ), [onPostClick, likePost, unlikePost, bookmarkPost, unbookmarkPost, deletePost]);
+
+  // 画像プリロード効果
+  useEffect(() => {
+    // 表示中の投稿の次の5枚をプリロード
+    const imageUrls = posts
+      .slice(0, 20) // 最初の20投稿の画像をプリロード
+      .map(post => post.imageUrl)
+      .filter(Boolean);
+    
+    if (imageUrls.length > 0) {
+      imageCache.preloadBatch(imageUrls, 5);
+    }
   }, [posts]);
 
   if (loading) {
@@ -96,36 +130,14 @@ export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = (
       <div className="hidden md:grid md:grid-cols-3 gap-4">
         {columns.map((column, columnIndex) => (
           <div key={columnIndex} className="space-y-4">
-            {column.map((post) => (
-              <PostCard
-                key={post.id}
-                post={post}
-                onClick={() => onPostClick(post)}
-                likePost={likePost}
-                unlikePost={unlikePost}
-                bookmarkPost={bookmarkPost}
-                unbookmarkPost={unbookmarkPost}
-                deletePost={deletePost}
-              />
-            ))}
+            {column.map(renderPostCard)}
           </div>
         ))}
       </div>
 
       {/* Mobile Single Column */}
       <div className="md:hidden space-y-4">
-        {posts.map((post) => (
-          <PostCard
-            key={post.id}
-            post={post}
-            onClick={() => onPostClick(post)}
-            likePost={likePost}
-            unlikePost={unlikePost}
-            bookmarkPost={bookmarkPost}
-            unbookmarkPost={unbookmarkPost}
-            deletePost={deletePost}
-          />
-        ))}
+        {posts.map(renderPostCard)}
       </div>
 
       {/* Load More Trigger */}
