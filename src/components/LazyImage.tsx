@@ -11,6 +11,8 @@ interface LazyImageProps {
   threshold?: number;
   rootMargin?: string;
   placeholder?: React.ReactNode;
+  priority?: boolean; // 優先読み込み用フラグ
+  index?: number; // 配列内のインデックス
 }
 
 export const LazyImage: React.FC<LazyImageProps> = ({
@@ -20,12 +22,18 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   aspectRatio = 'aspect-square',
   threshold = 0.1,
   rootMargin = '100px',
-  placeholder
+  placeholder,
+  priority = false,
+  index = 0
 }) => {
+  // 最初の3枚または優先読み込みフラグがある場合は即座に読み込み
+  const shouldLoadImmediately = priority || index < 3;
+  
   const { imgRef, imageSrc, isLoaded, isError } = useLazyImage({ 
     src, 
-    threshold, 
-    rootMargin 
+    threshold: shouldLoadImmediately ? 1 : threshold, // 即座に読み込む場合は閾値を1に
+    rootMargin: shouldLoadImmediately ? '0px' : rootMargin,
+    eager: shouldLoadImmediately // 即座に読み込み
   });
 
   const defaultPlaceholder = (
