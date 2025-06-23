@@ -18,6 +18,22 @@ export interface Post {
   likedByCurrentUser: boolean;
   bookmarkedByCurrentUser: boolean;
   commentCount: number;
+  photoScore?: PhotoScore;
+}
+
+export interface PhotoScore {
+  id?: string;
+  post_id?: string;
+  technical_score: number;
+  composition_score: number;
+  creativity_score: number;
+  engagement_score: number;
+  total_score: number;
+  score_level: string;
+  level_description: string;
+  ai_comment: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface AIComment {
@@ -237,6 +253,79 @@ export interface Database {
           content?: string;
           is_read?: boolean;
           created_at?: string;
+        };
+      };
+      highlight_posts: {
+        Row: {
+          id: string;
+          post_id: string;
+          highlight_score: number;
+          highlight_reason: string;
+          display_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          post_id: string;
+          highlight_score: number;
+          highlight_reason: string;
+          display_order: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          post_id?: string;
+          highlight_score?: number;
+          highlight_reason?: string;
+          display_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      photo_scores: {
+        Row: {
+          id: string;
+          post_id: string;
+          technical_score: number;
+          composition_score: number;
+          creativity_score: number;
+          engagement_score: number;
+          total_score: number;
+          score_level: string;
+          level_description: string;
+          ai_comment: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          post_id: string;
+          technical_score: number;
+          composition_score: number;
+          creativity_score: number;
+          engagement_score: number;
+          total_score: number;
+          score_level: string;
+          level_description: string;
+          ai_comment: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          post_id?: string;
+          technical_score?: number;
+          composition_score?: number;
+          creativity_score?: number;
+          engagement_score?: number;
+          total_score?: number;
+          score_level?: string;
+          level_description?: string;
+          ai_comment?: string;
+          created_at?: string;
+          updated_at?: string;
         };
       };
     };

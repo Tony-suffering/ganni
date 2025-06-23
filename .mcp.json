@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "supabase-mcp@latest",
+        "supabase-mcp-claude"
+      ],
+      "env": {
+        "SUPABASE_URL": "https://dijtrtaydurrhkgmulnj.supabase.co",
+        "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpanRydGF5ZHVycmhrZ211bG5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5MTg4NTcsImV4cCI6MjA2NTQ5NDg1N30.I1jlEi7lisjrUGj9qA77D_KKLhQPojw5t8wY-i0U7No",
+        "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpanRydGF5ZHVycmhrZ211bG5qIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTkxODg1NywiZXhwIjoyMDY1NDk0ODU3fQ.gUmDcI-7OFBjSgxB5L5jN5Zy5T2iD3QJwE6FxKvz3lU",
+        "MCP_API_KEY": "supabase_mcp_secret_key_12345"
+      }
+    }
+  }
+}

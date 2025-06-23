@@ -8,6 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import ConfirmationModal from './ConfirmationModal';
 import { LazyImage } from './LazyImage';
 import { ShareModal } from './ShareModal';
+import { PhotoScoreBadge } from './PhotoScoreBadge';
 
 interface PostCardProps {
   post: Post;
@@ -17,9 +18,11 @@ interface PostCardProps {
   bookmarkPost: (postId: string) => void;
   unbookmarkPost: (postId: string) => void;
   deletePost: (postId: string) => void;
+  priority?: boolean; // 優先読み込み
+  index?: number; // インデックス
 }
 
-const PostCard = ({ post, onClick, likePost, unlikePost, bookmarkPost, unbookmarkPost, deletePost }: PostCardProps) => {
+const PostCard = ({ post, onClick, likePost, unlikePost, bookmarkPost, unbookmarkPost, deletePost, priority = false, index = 0 }: PostCardProps) => {
   const { user: currentUser } = useAuth();
   const { author, title, userComment, imageUrl, likeCount, likedByCurrentUser, bookmarkedByCurrentUser, createdAt, commentCount } = post;
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
@@ -129,6 +132,8 @@ const PostCard = ({ post, onClick, likePost, unlikePost, bookmarkPost, unbookmar
                     aspectRatio="aspect-auto"
                     threshold={0.1}
                     rootMargin="200px"
+                    priority={priority}
+                    index={index}
                   />
                   {/* Tags Overlay */}
                   {post.tags && post.tags.length > 0 && (
@@ -147,6 +152,13 @@ const PostCard = ({ post, onClick, likePost, unlikePost, bookmarkPost, unbookmar
                           +{post.tags.length - 3}
                         </span>
                       )}
+                    </div>
+                  )}
+                  
+                  {/* Photo Score Badge */}
+                  {post.photoScore && (
+                    <div className="absolute top-2 right-2">
+                      <PhotoScoreBadge score={post.photoScore} size="small" />
                     </div>
                   )}
                 </>

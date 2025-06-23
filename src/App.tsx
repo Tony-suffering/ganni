@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -7,10 +6,13 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { usePosts } from './hooks/usePosts';
 import { useTags } from './hooks/useTags';
+import { useHighlightUpdater } from './hooks/useHighlightUpdater';
 
 // Components
 import { Header } from './components/Header';
 import { FilterPanel } from './components/FilterPanel';
+import { ActiveFilters } from './components/ActiveFilters';
+import { HighlightSection } from './components/HighlightSection';
 import { MasonryGrid } from './components/MasonryGrid';
 import { PostModal } from './components/PostModal';
 import { NewPostModal } from './components/NewPostModal';
@@ -43,11 +45,12 @@ function AppContent() {
   const [filters, setFilters] = useState<FilterOptions>({ tags: [], sortBy: 'newest' });
 
   // useAuthフックで認証状態とローディング状態を取得
-  const { user, loading: authLoading } = useAuth();
+  const { loading: authLoading } = useAuth();
   
   // 投稿データを管理するカスタムフック
   const {
     posts,
+    allPosts,
     loading: postsLoading,
     hasNextPage,
     loadMore,
@@ -58,11 +61,19 @@ function AppContent() {
     bookmarkPost,
     unbookmarkPost,
     deletePost,
-    isLoadingMore
+    isLoadingMore,
+    isFiltering
   } = usePosts();
   
   // タグデータを管理するカスタムフック
-  const { tags, loading: tagsLoading } = useTags();
+  const { tags } = useTags();
+
+  // バックグラウンドでハイライトを自動更新
+  useHighlightUpdater({
+    allPosts,
+    updateIntervalMinutes: 30, // 30分間隔で更新
+    enabled: !authLoading && !postsLoading
+  });
 
   // フィルターや検索クエリが変更された時に投稿を再フィルタリング
   useEffect(() => {
@@ -81,7 +92,7 @@ function AppContent() {
     );
   }
   // 新しい投稿データを処理する関数
-  const handleNewPost = async (postData: any) => {
+  const handleNewPost = async (postData: Parameters<typeof addPost>[0]) => {
     const newPost = await addPost(postData);
     if (newPost) { // Check if newPost is not null
       setSelectedPost(newPost);
@@ -111,6 +122,8 @@ function AppContent() {
     }
   };
 
+  const hasActiveFilters = filters.tags.length > 0 || filters.sortBy !== 'newest' || searchQuery.trim();
+
   // ユーザーがログインしている場合の表示
   return (
     <div className="bg-neutral-50 w-full min-h-screen">
@@ -121,27 +134,52 @@ function AppContent() {
         onSearchChange={setSearchQuery}
         onLoginClick={openLoginModal}
         onPostClick={handlePostClick}
+        hasActiveFilters={hasActiveFilters}
+        allPosts={allPosts}
+        onHighlightPostClick={setSelectedPost}
       />
 
-      <main className="mt-16 pb-20 md:pb-0">
+      {/* Active Filters */}
+      <ActiveFilters
+        tags={tags}
+        filters={filters}
+        onFiltersChange={setFilters}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
+
+      <main className="pb-20 md:pb-0">
         <Routes>
           <Route
             path="/"
             element={
-              <MasonryGrid
-                posts={posts}
-                onPostClick={setSelectedPost}
-                hasNextPage={hasNextPage}
-                onLoadMore={loadMore}
-                loading={postsLoading}
-                isLoadingMore={isLoadingMore}
-                likePost={likePost}
-                unlikePost={unlikePost}
-                bookmarkPost={bookmarkPost}
-                unbookmarkPost={unbookmarkPost}
-                deletePost={deletePost}
-                searchQuery={searchQuery}
-              />
+              <>
+                {/* Filter Loading Overlay */}
+                {isFiltering && (
+                  <div className="fixed top-16 left-0 right-0 bg-blue-50 border-b border-blue-200 z-40 px-4 py-3">
+                    <div className="max-w-7xl mx-auto flex items-center justify-center space-x-3">
+                      <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      <span className="text-blue-700 font-medium">フィルターを適用中...</span>
+                    </div>
+                  </div>
+                )}
+                
+                
+                <MasonryGrid
+                  posts={posts}
+                  onPostClick={setSelectedPost}
+                  hasNextPage={hasNextPage}
+                  onLoadMore={loadMore}
+                  loading={postsLoading}
+                  isLoadingMore={isLoadingMore}
+                  likePost={likePost}
+                  unlikePost={unlikePost}
+                  bookmarkPost={bookmarkPost}
+                  unbookmarkPost={unbookmarkPost}
+                  deletePost={deletePost}
+                  searchQuery={searchQuery}
+                />
+              </>
             }
           />
           <Route path="/profile/:userId" element={<UserProfile />} />
@@ -191,6 +229,7 @@ function AppContent() {
         onLoginClick={openLoginModal}
         onToggleFilter={handleToggleFilter}
         onPostClick={handlePostClick}
+        hasActiveFilters={hasActiveFilters}
       />
     </div>
   );

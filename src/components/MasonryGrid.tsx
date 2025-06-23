@@ -54,7 +54,7 @@ export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = (
   }, [posts]);
 
   // Memoized PostCard rendering functions
-  const renderPostCard = useCallback((post: Post) => (
+  const renderPostCard = useCallback((post: Post, index: number) => (
     <motion.div
       key={post.id}
       initial={{ opacity: 0, y: 20 }}
@@ -69,6 +69,8 @@ export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = (
         bookmarkPost={bookmarkPost}
         unbookmarkPost={unbookmarkPost}
         deletePost={deletePost}
+        priority={index < 6} // 最初の6枚は優先読み込み
+        index={index}
       />
     </motion.div>
   ), [onPostClick, likePost, unlikePost, bookmarkPost, unbookmarkPost, deletePost]);
@@ -88,7 +90,7 @@ export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = (
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 min-h-[50vh]">
+      <div className="flex flex-col items-center justify-center py-16 min-h-[50vh] mt-20 md:mt-24">
         <div className="w-12 h-12 mb-4 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
         <div className="text-neutral-500">読み込み中...</div>
       </div>
@@ -127,19 +129,19 @@ export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = (
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8 scroll-container w-full overflow-x-hidden">
+    <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8 scroll-container w-full overflow-x-hidden mt-20 md:mt-24">
       {/* Desktop Masonry Grid */}
       <div className="hidden md:grid md:grid-cols-3 gap-4">
         {columns.map((column, columnIndex) => (
           <div key={columnIndex} className="space-y-4">
-            {column.map(renderPostCard)}
+            {column.map((post, index) => renderPostCard(post, columnIndex * Math.ceil(posts.length / 3) + index))}
           </div>
         ))}
       </div>
 
       {/* Mobile Single Column */}
       <div className="md:hidden space-y-4">
-        {posts.map(renderPostCard)}
+        {posts.map((post, index) => renderPostCard(post, index))}
       </div>
 
       {/* Load More Trigger */}

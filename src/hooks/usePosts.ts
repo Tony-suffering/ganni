@@ -9,10 +9,12 @@ type PostWithRelations = Database['public']['Tables']['posts']['Row'] & {
     tags: Database['public']['Tables']['tags']['Row'];
   }>;
   ai_comments: Array<Database['public']['Tables']['ai_comments']['Row']>;
+  photo_scores: Array<Database['public']['Tables']['photo_scores']['Row']>;
 };
 
 interface UsePostsReturn {
   posts: Post[];
+  allPosts: Post[];
   loading: boolean;
   error: string | null;
   fetchPosts: () => Promise<void>;
@@ -25,6 +27,8 @@ interface UsePostsReturn {
   filterPosts: (filters: FilterOptions, searchQuery: string) => void;
   hasNextPage: boolean;
   loadMore: () => void;
+  isLoadingMore: boolean;
+  isFiltering: boolean;
 }
 
 // 新規投稿通知を送信する関数
@@ -79,6 +83,7 @@ export const usePosts = (): UsePostsReturn => {
   const [currentSearchQuery, setCurrentSearchQuery] = useState<string>('');
   const [randomSeed, setRandomSeed] = useState<number>(Date.now());
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isFiltering, setIsFiltering] = useState(false);
 
   const POSTS_PER_PAGE = 6;
 
@@ -92,7 +97,12 @@ export const usePosts = (): UsePostsReturn => {
           *,
           profiles:author_id (id, name, avatar_url),
           post_tags ( tags ( id, name, category, color ) ),
-          ai_comments ( id, type, content, created_at )
+          ai_comments ( id, type, content, created_at ),
+          photo_scores ( 
+            id, technical_score, composition_score, creativity_score, 
+            engagement_score, total_score, score_level, level_description, 
+            ai_comment, created_at, updated_at 
+          )
         `)
         .order('created_at', { ascending: false });
 
@@ -100,25 +110,42 @@ export const usePosts = (): UsePostsReturn => {
 
       const { data: { user: currentUser } } = await supabase.auth.getUser();
 
-      // いいね、ブックマーク、コメント情報を並列で取得
+      // いいね、ブックマーク、コメント、photo_scores情報を並列で取得
       const postIds = (data as PostWithRelations[]).map(post => post.id);
-      const [likesData, bookmarksData, commentsData] = await Promise.all([
+      const [likesData, bookmarksData, commentsData, photoScoresData] = await Promise.all([
         supabase.from('likes').select('post_id, user_id').in('post_id', postIds),
         currentUser ? supabase.from('bookmarks').select('post_id').eq('user_id', currentUser.id) : Promise.resolve({ data: [], error: null }),
-        supabase.from('comments').select('post_id').in('post_id', postIds)
+        supabase.from('comments').select('post_id').in('post_id', postIds),
+        supabase.from('photo_scores').select('*').in('post_id', postIds)
       ]);
+
 
       if (likesData.error) throw likesData.error;
       if (bookmarksData.error) throw bookmarksData.error;
       if (commentsData.error) throw commentsData.error;
+      if (photoScoresData.error) {
+        console.warn('photo_scores取得エラー:', photoScoresData.error);
+      }
       
       const bookmarkedPostIds = new Set((bookmarksData.data ?? []).map(b => b.post_id));
+      
+      // photo_scoresをpost_idでマップ化
+      const photoScoresMap = new Map();
+      (photoScoresData.data ?? []).forEach(score => {
+        photoScoresMap.set(score.post_id, score);
+      });
 
       const formattedPosts = (data as PostWithRelations[]).map(post => {
         const postLikes = (likesData.data ?? []).filter(like => like.post_id === post.id);
         const likeCount = postLikes.length;
         const likedByCurrentUser = !!currentUser && postLikes.some(like => like.user_id === currentUser.id);
         const commentCount = (commentsData.data ?? []).filter(comment => comment.post_id === post.id).length;
+        
+        // photoScoreを別途取得したデータから設定
+        const photoScoreFromJoin = (post as any).photo_scores?.[0];
+        const photoScoreFromMap = photoScoresMap.get(post.id);
+        const finalPhotoScore = photoScoreFromMap || photoScoreFromJoin;
+        
         
         return {
           id: post.id,
@@ -144,9 +171,11 @@ export const usePosts = (): UsePostsReturn => {
           likeCount,
           likedByCurrentUser,
           bookmarkedByCurrentUser: bookmarkedPostIds.has(post.id),
-          commentCount
+          commentCount,
+          photoScore: finalPhotoScore || undefined
         };
       });
+
 
       setPosts(formattedPosts);
       // 初期表示は新しい順で表示（データベースから既にソート済み）
@@ -370,6 +399,9 @@ export const usePosts = (): UsePostsReturn => {
   };
 
   const filterPosts = useCallback((filters: FilterOptions, searchQuery: string) => {
+    // フィルタリング開始
+    setIsFiltering(true);
+    
     // 現在のフィルター・検索クエリを保存
     setCurrentFilters(filters);
     setCurrentSearchQuery(searchQuery);
@@ -379,7 +411,9 @@ export const usePosts = (): UsePostsReturn => {
       setRandomSeed(Date.now());
     }
     
-    let filtered = [...posts];
+    // 少し遅延させてフィルタリング感を演出
+    setTimeout(() => {
+      let filtered = [...posts];
     
     // 検索クエリによるフィルタリング
     if (searchQuery.trim()) {
@@ -425,9 +459,13 @@ export const usePosts = (): UsePostsReturn => {
       console.log('最初の投稿:', filtered[0].title, filtered[0].createdAt);
     }
     
-    setFilteredPosts(filtered.slice(0, POSTS_PER_PAGE));
-    setPage(1);
-    setHasNextPage(filtered.length > POSTS_PER_PAGE);
+      setFilteredPosts(filtered.slice(0, POSTS_PER_PAGE));
+      setPage(1);
+      setHasNextPage(filtered.length > POSTS_PER_PAGE);
+      
+      // フィルタリング完了
+      setIsFiltering(false);
+    }, 150); // 150ms の遅延でスムーズな感じを演出
   }, [posts, randomSeed, currentFilters.sortBy]);
 
   // 投稿編集
@@ -552,5 +590,5 @@ export const usePosts = (): UsePostsReturn => {
     }
   }, []);
 
-  return { posts: filteredPosts, loading, error, fetchPosts, addPost, deletePost, likePost, unlikePost, bookmarkPost, unbookmarkPost, filterPosts, hasNextPage, loadMore, isLoadingMore };
+  return { posts: filteredPosts, allPosts: posts, loading, error, fetchPosts, addPost, deletePost, likePost, unlikePost, bookmarkPost, unbookmarkPost, filterPosts, hasNextPage, loadMore, isLoadingMore, isFiltering };
 };

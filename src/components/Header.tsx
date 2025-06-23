@@ -6,6 +6,7 @@ import { UserMenu } from './auth/UserMenu';
 import { LoginModal } from './auth/LoginModal';
 import { RegisterModal } from './auth/RegisterModal';
 import { NotificationBell } from './NotificationBell';
+import { HighlightSection } from './HighlightSection';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -16,6 +17,9 @@ interface HeaderProps {
   onSearchChange: (query: string) => void;
   onLoginClick: () => void;
   onPostClick?: (postId: string) => void;
+  hasActiveFilters?: boolean;
+  allPosts?: any[];
+  onHighlightPostClick?: (post: any) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -25,6 +29,9 @@ export const Header: React.FC<HeaderProps> = ({
   onSearchChange,
   onLoginClick,
   onPostClick,
+  hasActiveFilters = false,
+  allPosts = [],
+  onHighlightPostClick,
 }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -68,7 +75,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* --- Unified Header for All Devices --- */}
           <div className="flex items-center justify-between h-16">
             
-            {/* Left Side: Logo and Title */}
+            {/* Left Side: Logo, Title and AI Pickup */}
             <div className="flex items-center space-x-4">
               <Link to="/" onClick={handleLogoClick} className="flex items-center space-x-4 group focus:outline-none touch-manipulation hover:bg-gray-50 rounded-xl p-3 -m-3 transition-all duration-300" style={{ minHeight: '44px' }}>
                 <div className="relative">
@@ -88,6 +95,17 @@ export const Header: React.FC<HeaderProps> = ({
                   <p className="text-xs text-gray-500 -mt-1 hidden sm:block font-medium tracking-wide">あなたの感想・体験にコメントします</p>
                 </div>
               </Link>
+              
+              {/* Compact AI Highlight Section - Right of Title */}
+              {!hasActiveFilters && allPosts.length > 0 && (
+                <div className="block">
+                  <HighlightSection
+                    allPosts={allPosts}
+                    onPostClick={onHighlightPostClick || (() => {})}
+                    compact={true}
+                  />
+                </div>
+              )}
             </div>
 
             {/* --- Right Side: Actions --- */}
@@ -119,10 +137,19 @@ export const Header: React.FC<HeaderProps> = ({
               {/* Filter Button */}
               <button
                 onClick={onToggleFilter}
-                className="hidden md:flex p-2.5 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200 border border-gray-200 hover:border-gray-300"
+                className={`hidden md:flex p-2.5 rounded-lg transition-all duration-200 border relative ${
+                  hasActiveFilters
+                    ? 'text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 border-gray-200 hover:border-gray-300'
+                }`}
                 aria-label="フィルター"
               >
                 <Filter className="w-5 h-5" />
+                {hasActiveFilters && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center">
+                    <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                  </div>
+                )}
               </button>
               
               {/* New Post Button */}

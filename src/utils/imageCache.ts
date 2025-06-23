@@ -12,7 +12,7 @@ class ImageCache {
   }
 
   // 画像をプリロード
-  preload(src: string): Promise<HTMLImageElement> {
+  preload(src: string, priority: boolean = false): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
       // キャッシュに存在する場合は即座に返す
       if (this.cache.has(src)) {
@@ -20,14 +20,34 @@ class ImageCache {
         return;
       }
 
-      // 既にプリロード中の場合はスキップ
-      if (this.preloadQueue.has(src)) {
+      // 既にプリロード中の場合はスキップ（優先度が高い場合は除く）
+      if (this.preloadQueue.has(src) && !priority) {
         return;
       }
 
       this.preloadQueue.add(src);
 
       const img = new Image();
+      
+      // 優先読み込みの場合はcrossOriginとfetchPriorityを設定
+      if (priority) {
+        img.crossOrigin = 'anonymous';
+        if ('fetchPriority' in img) {
+          (img as any).fetchPriority = 'high';
+        }
+        // デコードヒントを設定
+        if ('decoding' in img) {
+          img.decoding = 'sync';
+        }
+      } else {
+        if ('fetchPriority' in img) {
+          (img as any).fetchPriority = 'low';
+        }
+        if ('decoding' in img) {
+          img.decoding = 'async';
+        }
+      }
+
       img.onload = () => {
         this.preloadQueue.delete(src);
         this.addToCache(src, img);

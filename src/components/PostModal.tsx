@@ -2,6 +2,8 @@ import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { X, User, Calendar, Tag as TagIcon, MessageCircle, Sparkles, HelpCircle, Eye, Heart } from 'lucide-react';
+import { LazyImage } from './LazyImage';
+import { PhotoScoreDisplay } from './PhotoScoreDisplay';
 import { Post, Comment } from '../types';
 import { supabase } from '../supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -43,6 +45,18 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  // ライク機能のハンドラー
+  const handleLike = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!post) return;
+    
+    if (post.likedByCurrentUser) {
+      unlikePost(post.id);
+    } else {
+      likePost(post.id);
+    }
   };
 
   // コメント一覧取得
@@ -255,16 +269,6 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
     }
   };
 
-  const handleLike = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!user || !post) return;
-    if (post.likedByCurrentUser) {
-      unlikePost(post.id);
-    } else {
-      likePost(post.id);
-    }
-  };
-
   return (
     <AnimatePresence>
       {isOpen && post && (
@@ -293,11 +297,12 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
           >
             {/* 写真（横幅いっぱい） */}
             <div className="relative">
-              <img
+              <LazyImage
                 src={post.imageUrl}
                 alt={post.aiDescription}
                 className="w-full max-h-32 md:max-h-40 object-cover rounded-t-3xl"
-                style={{ minHeight: '80px', background: '#f3f4f6' }}
+                aspectRatio="aspect-auto"
+                priority={true} // モーダルで開いた画像は優先読み込み
               />
               {/* Tags Overlay */}
               {post.tags && post.tags.length > 0 && (
@@ -530,6 +535,17 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
                       >投稿</button>
                     </form>
                   )}
+                </div>
+
+                {/* AI Photo Score Section */}
+                <div className="mt-8">
+                  <PhotoScoreDisplay
+                    postId={post.id}
+                    imageUrl={post.imageUrl}
+                    title={post.title}
+                    description={post.userComment}
+                    initialScore={post.photoScore}
+                  />
                 </div>
 
                 {/* Footer info */}

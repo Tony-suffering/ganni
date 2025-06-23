@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Upload, Sparkles, Tag as TagIcon, Type, MessageCircle, HelpCircle, Eye, Wifi, WifiOff } from 'lucide-react';
+import { X, Upload, Sparkles, Tag as TagIcon, Type, MessageCircle, HelpCircle, Eye, Wifi, WifiOff, Award } from 'lucide-react';
 import { Tag, AIComment } from '../types';
 import { useAI } from '../hooks/useAI';
 import { useAuth } from '../contexts/AuthContext';
 import VoiceInputButton from "./VoiceInputButton";
 import { generateImageAIComments } from "../lib/gemini";
+import { PhotoScoringService } from '../services/photoScoringService';
 
 interface NewPostModalProps {
   isOpen: boolean;
@@ -32,6 +33,9 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
     aiComments: [] as AIComment[],
     tags: [] as Tag[],
   });
+  
+  const [photoScore, setPhotoScore] = useState<any>(null);
+  const [isGeneratingScore, setIsGeneratingScore] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -116,6 +120,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
         setImagePreview(base64);
         // 画像AIコメント生成
         setFormData(prev => ({ ...prev, imageAIDescription: '', aiComments: [] })); // まず空に
+        setPhotoScore(null); // フォトスコアをリセット
         try {
           const { description, comments } = await generateImageAIComments(base64);
           setFormData(prev => ({ ...prev, imageAIDescription: description || 'AI説明の生成に失敗しました', aiComments: comments || [] }));
@@ -124,6 +129,36 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
         }
       };
       reader.readAsDataURL(file);
+    }
+  };
+
+  const handleGeneratePhotoScore = async () => {
+    if (!imagePreview || !formData.title.trim()) {
+      alert('画像とタイトルを入力してからAI写真採点を実行してください');
+      return;
+    }
+    
+    try {
+      setIsGeneratingScore(true);
+      const scoringService = new PhotoScoringService();
+      const score = await scoringService.scorePhoto(imagePreview, formData.title, formData.userComment);
+      const levelInfo = PhotoScoringService.getScoreLevel(score.total);
+      
+      setPhotoScore({
+        technical_score: score.technical,
+        composition_score: score.composition,
+        creativity_score: score.creativity,
+        engagement_score: score.engagement,
+        total_score: score.total,
+        score_level: levelInfo.level,
+        level_description: levelInfo.description,
+        ai_comment: score.comment
+      });
+    } catch (error) {
+      console.error('Photo scoring failed:', error);
+      alert('AI写真採点中にエラーが発生しました。');
+    } finally {
+      setIsGeneratingScore(false);
     }
   };
 
@@ -201,6 +236,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
         aiComments: [],
         tags: []
       });
+      setPhotoScore(null);
       setScrollPosition(0);
     } catch (error) {
       console.error('Post submission failed:', error);
@@ -307,17 +343,74 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                         <X className="w-4 h-4" />
                       </button>
                       {/* 画像AI説明 */}
-                      <div>
-                        <h3 className="flex items-center text-lg font-display font-semibold text-indigo-900 mb-4">
-                          <Sparkles className="w-5 h-5 mr-2 text-indigo-500" />
-                          この画像のAI説明
-                        </h3>
-                        <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-2xl">
-                          <p className="text-neutral-700 italic leading-relaxed text-base">
-                            {formData.imageAIDescription
-                              ? `"${formData.imageAIDescription}"`
-                              : 'あと数秒で表示されるので少し待っててね！'}
-                          </p>
+                      <div className="space-y-6">
+                        <div>
+                          <h3 className="flex items-center text-lg font-display font-semibold text-indigo-900 mb-4">
+                            <Sparkles className="w-5 h-5 mr-2 text-indigo-500" />
+                            この画像のAI説明
+                          </h3>
+                          <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-2xl">
+                            <p className="text-neutral-700 italic leading-relaxed text-base">
+                              {formData.imageAIDescription
+                                ? `"${formData.imageAIDescription}"`
+                                : 'あと数秒で表示されるので少し待っててね！'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* AI写真採点セクション */}
+                        <div>
+                          <div className="flex items-center justify-between mb-4">
+                            <h3 className="flex items-center text-lg font-display font-semibold text-purple-900">
+                              <Award className="w-5 h-5 mr-2 text-purple-500" />
+                              AI写真採点
+                            </h3>
+                            <button
+                              type="button"
+                              onClick={handleGeneratePhotoScore}
+                              disabled={isGeneratingScore || !imagePreview || !formData.title.trim()}
+                              className="flex items-center space-x-2 px-3 py-1.5 text-sm bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 disabled:opacity-50"
+                            >
+                              <Award className="w-4 h-4" />
+                              <span>{isGeneratingScore ? '採点中...' : '採点開始'}</span>
+                            </button>
+                          </div>
+                          <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-2xl">
+                            {isGeneratingScore ? (
+                              <div className="flex items-center space-x-3 text-purple-600">
+                                <motion.div
+                                  animate={{ rotate: 360 }}
+                                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                  className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full"
+                                />
+                                <span className="text-sm">AI写真採点中です...</span>
+                              </div>
+                            ) : photoScore ? (
+                              <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-2">
+                                    <span className={`px-3 py-1 rounded-full text-white font-bold text-lg`} 
+                                          style={{ backgroundColor: PhotoScoringService.getScoreLevel(photoScore.total_score).color }}>
+                                      {photoScore.score_level}級
+                                    </span>
+                                    <span className="text-2xl font-bold text-purple-900">{photoScore.total_score}点</span>
+                                  </div>
+                                  <span className="text-sm text-purple-600">{photoScore.level_description}</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                  <div>技術的品質: {photoScore.technical_score}/25</div>
+                                  <div>構図・バランス: {photoScore.composition_score}/25</div>
+                                  <div>創造性: {photoScore.creativity_score}/25</div>
+                                  <div>エンゲージメント: {photoScore.engagement_score}/25</div>
+                                </div>
+                                <p className="text-sm text-purple-700 italic">"{photoScore.ai_comment}"</p>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-neutral-700 italic">
+                                画像とタイトルを入力してから「採点開始」ボタンを押してください
+                              </p>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>

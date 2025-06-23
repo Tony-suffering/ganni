@@ -9,9 +9,10 @@ interface BottomNavBarProps {
   onLoginClick: () => void;
   onToggleFilter: () => void;
   onPostClick?: (postId: string) => void;
+  hasActiveFilters?: boolean;
 }
 
-const BottomNavBar = ({ onNewPostClick, onLoginClick, onToggleFilter, onPostClick }: BottomNavBarProps) => {
+const BottomNavBar = ({ onNewPostClick, onLoginClick, onToggleFilter, onPostClick, hasActiveFilters = false }: BottomNavBarProps) => {
   const { user } = useAuth();
   const location = useLocation();
 
@@ -54,10 +55,13 @@ const BottomNavBar = ({ onNewPostClick, onLoginClick, onToggleFilter, onPostClic
           <span className="sr-only">Home</span>
         </button>
         {/* Filter */}
-        <button onClick={onToggleFilter} type="button" className="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-700 group">
-          <svg className={`${iconStyle} ${inactiveIconStyle}`} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+        <button onClick={onToggleFilter} type="button" className={`inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-700 group relative ${hasActiveFilters ? 'bg-blue-50' : ''}`}>
+          <svg className={`${iconStyle} ${hasActiveFilters ? activeIconStyle : inactiveIconStyle}`} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
               <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2 4.5A2.5 2.5 0 014.5 2h11A2.5 2.5 0 0118 4.5v2a2.5 2.5 0 01-.73 1.77L14 11.54V17a1 1 0 01-.6.9l-2 .67A1 1 0 0110 17.67V11.54L6.73 8.27A2.5 2.5 0 016 6.5v-2z"/>
           </svg>
+          {hasActiveFilters && (
+            <div className="absolute top-2 right-3 w-2 h-2 bg-blue-500 rounded-full"></div>
+          )}
           <span className="sr-only">Filter</span>
         </button>
         {/* New Post */}

@@ -7,12 +7,16 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "mcp:supabase": "supabase-mcp-claude",
+    "test:photo-scoring": "node scripts/test-photo-scoring.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.17.1",
+    "@modelcontextprotocol/sdk": "^1.13.0",
     "@supabase/supabase-js": "^2.39.0",
     "date-fns": "^4.1.0",
+    "dotenv": "^16.5.0",
     "framer-motion": "^10.16.0",
     "lucide-react": "^0.344.0",
     "node-fetch": "^2.7.0",
@@ -20,7 +24,8 @@
     "react-dom": "^18.3.1",
     "react-error-boundary": "^6.0.0",
     "react-intersection-observer": "^9.5.3",
-    "react-router-dom": "^6.20.1"
+    "react-router-dom": "^6.20.1",
+    "supabase-mcp": "^1.5.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",

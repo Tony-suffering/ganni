@@ -5,46 +5,57 @@ interface UseLazyImageProps {
   src: string;
   threshold?: number;
   rootMargin?: string;
+  eager?: boolean; // 即座に読み込むかどうか
 }
 
 export const useLazyImage = ({ 
   src, 
   threshold = 0.1, 
-  rootMargin = '50px' 
+  rootMargin = '50px',
+  eager = false
 }: UseLazyImageProps) => {
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isError, setIsError] = useState(false);
   const imgRef = useRef<HTMLImageElement | null>(null);
 
+  // 即座に読み込む関数
+  const loadImage = () => {
+    // キャッシュから取得を試みる
+    const cachedImage = imageCache.get(src);
+    if (cachedImage) {
+      setImageSrc(src);
+      setIsLoaded(true);
+      setIsError(false);
+      return;
+    }
+
+    // キャッシュにない場合はプリロード
+    imageCache.preload(src, eager)
+      .then(() => {
+        setImageSrc(src);
+        setIsLoaded(true);
+        setIsError(false);
+      })
+      .catch(() => {
+        setIsError(true);
+        setIsLoaded(false);
+      });
+  };
+
   useEffect(() => {
+    // 即座に読み込む場合
+    if (eager) {
+      loadImage();
+      return;
+    }
+
+    // 通常の遅延読み込み
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          // キャッシュから取得を試みる
-          const cachedImage = imageCache.get(src);
-          if (cachedImage) {
-            setImageSrc(src);
-            setIsLoaded(true);
-            setIsError(false);
-            observer.disconnect();
-            return;
-          }
-
-          // キャッシュにない場合はプリロード
-          imageCache.preload(src)
-            .then(() => {
-              setImageSrc(src);
-              setIsLoaded(true);
-              setIsError(false);
-            })
-            .catch(() => {
-              setIsError(true);
-              setIsLoaded(false);
-            })
-            .finally(() => {
-              observer.disconnect();
-            });
+          loadImage();
+          observer.disconnect();
         }
       },
       {
@@ -64,7 +75,7 @@ export const useLazyImage = ({
       }
       observer.disconnect();
     };
-  }, [src, threshold, rootMargin]);
+  }, [src, threshold, rootMargin, eager]);
 
   return {
     imgRef,
