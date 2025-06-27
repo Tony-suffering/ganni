@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Upload, Sparkles, Tag as TagIcon, Type, MessageCircle, HelpCircle, Eye, Wifi, WifiOff, Award } from 'lucide-react';
-import { Tag, AIComment } from '../types';
+import { X, Upload, Sparkles, Tag as TagIcon, Type, MessageCircle, HelpCircle, Eye, Wifi, WifiOff, Award, ShoppingBag } from 'lucide-react';
+import { Tag, AIComment, ProductRecommendation } from '../types';
 import { useAI } from '../hooks/useAI';
 import { useAuth } from '../contexts/AuthContext';
 import VoiceInputButton from "./VoiceInputButton";
 import { generateImageAIComments } from "../lib/gemini";
 import { PhotoScoringService } from '../services/photoScoringService';
+import { productRecommendationService } from '../services/productRecommendationService';
+import { RelatedProductsCompact } from './RelatedProducts';
 
 interface NewPostModalProps {
   isOpen: boolean;
@@ -36,6 +38,8 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
   
   const [photoScore, setPhotoScore] = useState<any>(null);
   const [isGeneratingScore, setIsGeneratingScore] = useState(false);
+  const [productRecommendations, setProductRecommendations] = useState<ProductRecommendation | null>(null);
+  const [isGeneratingRecommendations, setIsGeneratingRecommendations] = useState(false);
   
   // TypeScript用の型定義
   declare global {
@@ -117,25 +121,95 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
     }
   }, [isOpen, formData.userComment]);
 
+  // 画像を圧縮する関数
+  const compressImage = (file: File, maxWidth: number = 1920, quality: number = 0.85): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      
+      img.onload = () => {
+        try {
+          // アスペクト比を保持して最大幅に調整
+          const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
+          canvas.width = img.width * ratio;
+          canvas.height = img.height * ratio;
+          
+          if (!ctx) {
+            throw new Error('Canvas context not available');
+          }
+          
+          // 高品質でリサイズ
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          
+          // JPEG形式で圧縮
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+          
+          // サイズチェック
+          const sizeInBytes = (compressedDataUrl.split(',')[1].length * 3) / 4;
+          console.log('🖼️ Compressed image size:', sizeInBytes, 'bytes');
+          
+          if (sizeInBytes > 4 * 1024 * 1024) {
+            // さらに圧縮が必要な場合
+            const lowerQuality = canvas.toDataURL('image/jpeg', 0.6);
+            resolve(lowerQuality);
+          } else {
+            resolve(compressedDataUrl);
+          }
+        } catch (error) {
+          console.error('Image compression failed:', error);
+          // 圧縮に失敗した場合は元の画像を使用
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        }
+      };
+      
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setSelectedImage(file);
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        const base64 = e.target?.result as string;
-        setImagePreview(base64);
+      // ファイルタイプチェック
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        alert('JPEG、PNG、WebP形式の画像ファイルを選択してください。');
+        return;
+      }
+      
+      // ファイルサイズチェック (20MB制限)
+      if (file.size > 20 * 1024 * 1024) {
+        alert('ファイルサイズが大きすぎます。20MB以下の画像を選択してください。');
+        return;
+      }
+      
+      try {
+        setSelectedImage(file);
+        // 画像を圧縮してから使用
+        const compressedBase64 = await compressImage(file);
+        setImagePreview(compressedBase64);
+        
         // 画像AIコメント生成
         setFormData(prev => ({ ...prev, imageAIDescription: '', aiComments: [] })); // まず空に
         setPhotoScore(null); // フォトスコアをリセット
+        
         try {
-          const { description, comments } = await generateImageAIComments(base64);
+          const { description, comments } = await generateImageAIComments(compressedBase64);
           setFormData(prev => ({ ...prev, imageAIDescription: description || 'AI説明の生成に失敗しました', aiComments: comments || [] }));
         } catch (err) {
+          console.error('AI description generation failed:', err);
           setFormData(prev => ({ ...prev, imageAIDescription: 'AI説明の生成に失敗しました', aiComments: [] }));
         }
-      };
-      reader.readAsDataURL(file);
+      } catch (error) {
+        console.error('Image processing failed:', error);
+        alert('画像の処理中にエラーが発生しました。別の画像を試してください。');
+      }
     }
   };
 
@@ -196,6 +270,28 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
       setFormData(prev => ({ ...prev, textAIDescription: description }));
     } catch (error) {
       alert('AI描写生成中にエラーが発生しました。');
+    }
+  };
+
+  const handleGenerateProductRecommendations = async () => {
+    if (!imagePreview || !formData.title.trim() || !formData.userComment.trim()) {
+      alert('画像、タイトル、感想を入力してから商品推薦を生成してください');
+      return;
+    }
+
+    try {
+      setIsGeneratingRecommendations(true);
+      const recommendations = await productRecommendationService.analyzeAndRecommend(
+        imagePreview,
+        formData.title,
+        formData.userComment
+      );
+      setProductRecommendations(recommendations);
+    } catch (error) {
+      console.error('Product recommendation generation failed:', error);
+      alert('商品推薦の生成中にエラーが発生しました。');
+    } finally {
+      setIsGeneratingRecommendations(false);
     }
   };
 

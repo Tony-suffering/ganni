@@ -82,7 +82,30 @@ export class PhotoScoringService {
       if (imageUrl.startsWith('data:')) {
         console.log('📄 Using base64 data URL directly');
         const [header, base64] = imageUrl.split(',');
+        
+        if (!base64 || base64.length === 0) {
+          throw new Error('Base64データが無効です');
+        }
+        
         const mimeType = header.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
+        console.log('📄 Detected MIME type:', mimeType);
+        
+        // サポートされている画像形式かチェック
+        const supportedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+        if (!supportedTypes.includes(mimeType)) {
+          throw new Error(`サポートされていない画像形式: ${mimeType}. JPEG, PNG, WebP, GIFのみサポートしています。`);
+        }
+        
+        // Base64データの妥当性をチェック
+        try {
+          // Base64文字列が有効かテスト
+          const binaryString = atob(base64);
+          if (binaryString.length === 0) {
+            throw new Error('Base64データが空です');
+          }
+        } catch (e) {
+          throw new Error('無効なBase64データです');
+        }
         
         // Base64データサイズチェック
         const sizeInBytes = (base64.length * 3) / 4;
@@ -92,8 +115,13 @@ export class PhotoScoringService {
           throw new Error(`画像サイズが大きすぎます: ${Math.round(sizeInBytes / 1024 / 1024)}MB (最大4MB)`);
         }
         
+        // 小さすぎる画像もチェック
+        if (sizeInBytes < 100) {
+          throw new Error('画像データが小さすぎます。有効な画像ファイルを選択してください。');
+        }
+        
         const prompt = this.createScoringPrompt(title, description);
-        console.log('💭 Sending to Gemini...');
+        console.log('💭 Sending to Gemini with image size:', sizeInBytes, 'bytes, type:', mimeType);
         
         const result = await model.generateContent([
           prompt,
@@ -104,6 +132,10 @@ export class PhotoScoringService {
             }
           }
         ]);
+        
+        if (!result || !result.response) {
+          throw new Error('Gemini APIからの応答が無効です');
+        }
         
         const responseText = result.response.text();
         console.log('✅ Gemini response received:', responseText.slice(0, 200) + '...');
@@ -192,6 +224,10 @@ export class PhotoScoringService {
         }
       ]);
       
+      if (!result || !result.response) {
+        throw new Error('Gemini APIからの応答が無効です');
+      }
+      
       const responseText = result.response.text();
       console.log('✅ Gemini response received:', responseText.slice(0, 200) + '...');
       
@@ -202,18 +238,41 @@ export class PhotoScoringService {
       
     } catch (error) {
       console.error('❌ Photo scoring error:', error);
-      console.error('Error details:', {
-        message: error instanceof Error ? error.message : String(error),
-        imageUrl: imageUrl.slice(0, 100) + '...',
-        title,
-        description
-      });
+      
+      let errorMessage = '採点に失敗しました。';
+      
+      if (error instanceof Error) {
+        const message = error.message;
+        console.error('Error details:', {
+          message,
+          imageUrl: imageUrl.slice(0, 100) + '...',
+          title,
+          description
+        });
+        
+        // Gemini API特有のエラーを詳細に処理
+        if (message.includes('Provided image is not valid')) {
+          errorMessage = '画像形式が無効です。JPEG、PNG、WebP形式の画像を使用してください。';
+        } else if (message.includes('400')) {
+          errorMessage = 'リクエストが無効です。画像のサイズや形式を確認してください。';
+        } else if (message.includes('403')) {
+          errorMessage = 'API キーが無効です。管理者にお問い合わせください。';
+        } else if (message.includes('429')) {
+          errorMessage = 'API の利用制限に達しました。しばらく時間をおいて再試行してください。';
+        } else if (message.includes('500')) {
+          errorMessage = 'Gemini APIサーバーエラーです。しばらく時間をおいて再試行してください。';
+        } else if (message.includes('ネットワーク') || message.includes('fetch')) {
+          errorMessage = 'ネットワーク接続エラーです。インターネット接続を確認してください。';
+        } else {
+          errorMessage = `採点エラー: ${message}`;
+        }
+      } else {
+        errorMessage = '不明なエラーが発生しました。';
+      }
       
       // エラーメッセージを含むスコアを返す
       const errorScore = this.getDefaultScore();
-      errorScore.comment = error instanceof Error ? 
-        `採点エラー: ${error.message}` : 
-        '採点に失敗しました。ネットワーク接続を確認してください。';
+      errorScore.comment = errorMessage;
       return errorScore;
     }
   }
