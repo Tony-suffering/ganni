@@ -59,11 +59,6 @@ export function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModa
     e.preventDefault()
     setError('')
 
-    // Check if we're in demo mode
-    if (!import.meta.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL === 'https://demo.supabase.co') {
-      setError('デモモードでは新規登録機能は利用できません。実際のSupabaseプロジェクトに接続するには、画面右上の「Connect to Supabase」ボタンをクリックしてください。')
-      return
-    }
     if (!formData.name.trim()) {
       setError('名前を入力してください')
       return
@@ -94,6 +89,10 @@ export function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModa
       if (error) {
         if (error.message.includes('User already registered')) {
           setError('このメールアドレスは既に登録されています')
+        } else if (error.message.includes('Invalid email')) {
+          setError('有効なメールアドレスを入力してください')
+        } else if (error.message.includes('Password')) {
+          setError('パスワードは6文字以上で入力してください')
         } else {
           setError(error.message)
         }
@@ -104,8 +103,13 @@ export function RegisterModal({ isOpen, onClose, onSwitchToLogin }: RegisterModa
         onClose()
         resetForm()
       }
-    } catch (error) {
-      setError('')
+    } catch (error: any) {
+      console.error('Registration error caught:', error);
+      if (error.message) {
+        setError(`登録エラー: ${error.message}`);
+      } else {
+        setError('ネットワークエラーが発生しました。インターネット接続を確認してください。');
+      }
     } finally {
       setIsLoading(false)
     }

@@ -22,7 +22,7 @@ interface PostCardProps {
   index?: number; // インデックス
 }
 
-const PostCard = ({ post, onClick, likePost, unlikePost, bookmarkPost, unbookmarkPost, deletePost, priority = false, index = 0 }: PostCardProps) => {
+const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost, unbookmarkPost, deletePost, priority = false, index = 0 }: PostCardProps) => {
   const { user: currentUser } = useAuth();
   const { author, title, userComment, imageUrl, likeCount, likedByCurrentUser, bookmarkedByCurrentUser, createdAt, commentCount } = post;
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
@@ -220,6 +220,6 @@ const PostCard = ({ post, onClick, likePost, unlikePost, bookmarkPost, unbookmar
       />
     </>
   );
-};
+});
 
 export default PostCard;

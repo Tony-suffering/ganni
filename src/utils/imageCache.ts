@@ -1,7 +1,7 @@
 class ImageCache {
   private cache = new Map<string, HTMLImageElement>();
   private preloadQueue = new Set<string>();
-  private maxCacheSize = 100; // 最大キャッシュ数
+  private maxCacheSize = 200; // 最大キャッシュ数を増加
   private currentSize = 0;
 
   constructor() {
@@ -47,6 +47,11 @@ class ImageCache {
           img.decoding = 'async';
         }
       }
+      
+      // 画像サイズ最適化のためのloading属性を追加
+      if ('loading' in img) {
+        img.loading = priority ? 'eager' : 'lazy';
+      }
 
       img.onload = () => {
         this.preloadQueue.delete(src);
@@ -63,9 +68,13 @@ class ImageCache {
     });
   }
 
-  // 画像を取得（キャッシュから）
+  // 画像を取得（キャッシュから）- LRU動作のためtouchも呼ぶ
   get(src: string): HTMLImageElement | null {
-    return this.cache.get(src) || null;
+    const img = this.cache.get(src) || null;
+    if (img) {
+      this.touch(src);
+    }
+    return img;
   }
 
   // キャッシュに追加
@@ -103,17 +112,42 @@ class ImageCache {
     return this.currentSize;
   }
 
-  // 近くの画像を先読み
-  preloadBatch(urls: string[], batchSize: number = 5) {
+  // 近くの画像を先読み（バッチサイズを増加）
+  preloadBatch(urls: string[], batchSize: number = 8) {
     const batch = urls.slice(0, batchSize);
     
-    batch.forEach(url => {
+    batch.forEach((url, index) => {
+      // 最初の3枚は優先読み込み
+      const isPriority = index < 3;
+      
       // プリロードを非同期で実行
-      this.preload(url).catch(() => {
+      this.preload(url, isPriority).catch(() => {
         // エラーは無視（ログに記録するかは任意）
         console.warn(`Failed to preload image: ${url}`);
       });
     });
+  }
+  
+  // LRU（Least Recently Used）キャッシュとして動作するよう改善
+  touch(src: string) {
+    if (this.cache.has(src)) {
+      const img = this.cache.get(src)!;
+      this.cache.delete(src);
+      this.cache.set(src, img); // 最後に移動
+    }
+  }
+  
+  // メモリ使用量を監視して自動的にキャッシュサイズを調整
+  getOptimalCacheSize(): number {
+    // 利用可能メモリに基づいてキャッシュサイズを動的に調整
+    const memory = (performance as any).memory;
+    if (memory && memory.usedJSHeapSize) {
+      const usedMemoryMB = memory.usedJSHeapSize / (1024 * 1024);
+      if (usedMemoryMB > 100) {
+        return Math.max(50, this.maxCacheSize - 20);
+      }
+    }
+    return this.maxCacheSize;
   }
 }
 

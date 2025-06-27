@@ -78,10 +78,45 @@ export class PhotoScoringService {
       console.log('📸 Starting photo scoring for:', imageUrl);
       const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
       
-      // 画像をfetchしてBase64に変換
-      console.log('🔄 Fetching image...');
+      // Base64データURLの場合はそのまま使用
+      if (imageUrl.startsWith('data:')) {
+        console.log('📄 Using base64 data URL directly');
+        const [header, base64] = imageUrl.split(',');
+        const mimeType = header.match(/data:([^;]+)/)?.[1] || 'image/jpeg';
+        
+        // Base64データサイズチェック
+        const sizeInBytes = (base64.length * 3) / 4;
+        console.log('📦 Image size:', sizeInBytes, 'bytes');
+        
+        if (sizeInBytes > 4 * 1024 * 1024) {
+          throw new Error(`画像サイズが大きすぎます: ${Math.round(sizeInBytes / 1024 / 1024)}MB (最大4MB)`);
+        }
+        
+        const prompt = this.createScoringPrompt(title, description);
+        console.log('💭 Sending to Gemini...');
+        
+        const result = await model.generateContent([
+          prompt,
+          {
+            inlineData: {
+              data: base64,
+              mimeType: mimeType
+            }
+          }
+        ]);
+        
+        const responseText = result.response.text();
+        console.log('✅ Gemini response received:', responseText.slice(0, 200) + '...');
+        
+        const score = this.parseScoreResponse(responseText);
+        console.log('🏆 Final score:', score.total);
+        
+        return score;
+      }
       
-      // CORS問題を回避するため、プロキシまたは異なる方法で画像を取得
+      // URLの場合は従来通りfetch
+      console.log('🔄 Fetching image from URL...');
+      
       let response: Response;
       try {
         // 最初は直接fetch
@@ -92,14 +127,32 @@ export class PhotoScoringService {
           }
         });
       } catch (corsError) {
-        console.log('🚫 CORS error, trying alternative method...');
-        // CORS失敗時はプロキシ経由で試行
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`;
-        response = await fetch(proxyUrl);
+        console.log('🚫 CORS error, trying alternative proxy...');
+        // 複数のプロキシを試行
+        const proxies = [
+          `https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`,
+          `https://corsproxy.io/?${encodeURIComponent(imageUrl)}`,
+          `https://cors-anywhere.herokuapp.com/${imageUrl}`
+        ];
+        
+        let proxyError = null;
+        for (const proxyUrl of proxies) {
+          try {
+            response = await fetch(proxyUrl);
+            if (response.ok) break;
+          } catch (e) {
+            proxyError = e;
+            continue;
+          }
+        }
+        
+        if (!response! || !response.ok) {
+          throw new Error('すべてのプロキシ経由でも画像の取得に失敗しました。画像のURLを確認してください。');
+        }
       }
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+        throw new Error(`画像の取得に失敗しました: ${response.status} ${response.statusText}`);
       }
       
       const contentType = response.headers.get('content-type') || 'image/jpeg';
@@ -110,7 +163,7 @@ export class PhotoScoringService {
       
       // 画像サイズが大きすぎる場合は制限
       if (arrayBuffer.byteLength > 4 * 1024 * 1024) { // 4MB制限
-        throw new Error(`Image too large: ${arrayBuffer.byteLength} bytes (max 4MB)`);
+        throw new Error(`画像サイズが大きすぎます: ${Math.round(arrayBuffer.byteLength / 1024 / 1024)}MB (最大4MB)`);
       }
       
       // 大きな画像でもスタックオーバーフローしない安全なBase64変換
@@ -151,11 +204,17 @@ export class PhotoScoringService {
       console.error('❌ Photo scoring error:', error);
       console.error('Error details:', {
         message: error instanceof Error ? error.message : String(error),
-        imageUrl,
+        imageUrl: imageUrl.slice(0, 100) + '...',
         title,
         description
       });
-      return this.getDefaultScore();
+      
+      // エラーメッセージを含むスコアを返す
+      const errorScore = this.getDefaultScore();
+      errorScore.comment = error instanceof Error ? 
+        `採点エラー: ${error.message}` : 
+        '採点に失敗しました。ネットワーク接続を確認してください。';
+      return errorScore;
     }
   }
 

@@ -129,7 +129,7 @@ export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = (
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8 scroll-container w-full overflow-x-hidden mt-20 md:mt-24">
+    <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-8 scroll-container w-full overflow-x-hidden">
       {/* Desktop Masonry Grid */}
       <div className="hidden md:grid md:grid-cols-3 gap-4">
         {columns.map((column, columnIndex) => (

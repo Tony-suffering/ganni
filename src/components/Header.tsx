@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Plane, Search, Plus, Filter, LogIn } from 'lucide-react';
+import { Search, Plus, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { AIStatusIndicator } from './AIStatusIndicator';
+// import { AIStatusIndicator } from './AIStatusIndicator';
 import { UserMenu } from './auth/UserMenu';
 import { LoginModal } from './auth/LoginModal';
 import { RegisterModal } from './auth/RegisterModal';

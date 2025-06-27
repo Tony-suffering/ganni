@@ -12,11 +12,11 @@ import { useHighlightUpdater } from './hooks/useHighlightUpdater';
 import { Header } from './components/Header';
 import { FilterPanel } from './components/FilterPanel';
 import { ActiveFilters } from './components/ActiveFilters';
-import { HighlightSection } from './components/HighlightSection';
+import { PhotoRankingSection } from './components/PhotoRankingSection';
 import { MasonryGrid } from './components/MasonryGrid';
 import { PostModal } from './components/PostModal';
 import { NewPostModal } from './components/NewPostModal';
-import { ProtectedRoute } from './components/ProtectedRoute';
+import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { LoginModal } from './components/auth/LoginModal';
 import { RegisterModal } from './components/auth/RegisterModal';
 import BottomNavBar from './components/BottomNavBar';
@@ -148,7 +148,7 @@ function AppContent() {
         onSearchChange={setSearchQuery}
       />
 
-      <main className="pb-20 md:pb-0">
+      <main className="pb-20 md:pb-0 mt-20 md:mt-24">
         <Routes>
           <Route
             path="/"
@@ -164,6 +164,12 @@ function AppContent() {
                   </div>
                 )}
                 
+                {/* 写真スコアランキングセクション */}
+                <PhotoRankingSection
+                  allPosts={allPosts}
+                  onPostClick={setSelectedPost}
+                  limit={10}
+                />
                 
                 <MasonryGrid
                   posts={posts}

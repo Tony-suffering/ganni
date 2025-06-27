@@ -153,7 +153,7 @@ export const ProfileEdit: React.FC = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto p-8 bg-white rounded-2xl shadow-lg mt-12 flex flex-col items-center">
+    <div className="max-w-md mx-auto p-8 bg-white rounded-2xl shadow-lg mt-20 md:mt-28 flex flex-col items-center">
       <button onClick={() => navigate(-1)} className="flex items-center text-sm text-neutral-500 hover:text-primary-500 mb-6 self-start">
         <ArrowLeft className="w-4 h-4 mr-1" /> 戻る
       </button>

@@ -78,7 +78,7 @@ const UserProfile = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="max-w-4xl mx-auto px-4 py-8 mt-20 md:mt-24">
         <div className="flex items-center mb-8">
              <Link to="/" className="p-2 rounded-full hover:bg-gray-100 mr-4">
                 <ArrowLeft className="w-6 h-6 text-gray-700" />

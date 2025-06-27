@@ -1,0 +1,21 @@
+name = "airplane-moments-blog"
+compatibility_date = "2024-06-27"
+
+[build]
+command = "npm run build"
+cwd = "/"
+watch_dir = "src"
+
+[build.upload]
+format = "service-worker"
+dir = "dist"
+main = "./dist"
+
+# Environment variables for Cloudflare Pages
+[env.production.vars]
+VITE_SUPABASE_URL = "https://dijtrtaydurrhkgmulnj.supabase.co"
+VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRpanRydGF5ZHVycmhrZ211bG5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk5MTg4NTcsImV4cCI6MjA2NTQ5NDg1N30.I1jlEi7lisjrUGj9qA77D_KKLhQPojw5t8wY-i0U7No"
+VITE_GEMINI_API_KEY = "AIzaSyAaNAp3cJzMc9_WloRU57EAvIJyycqgA8o"
+VITE_GOOGLE_SPEECH_API_KEY = "AIzaSyDZG8voAHFcMDf4ZsStn89XHwEDDN_ofng"
+VITE_GOOGLE_CLOUD_VISION_API_KEY = "AIzaSyBJCdfNDCAgQfCrN7GNuKRnXdzOYXtSDOE"
+VITE_VAPID_PUBLIC_KEY = "BNwTf8NFW2UfvYPCt07DBZRdAD0NArFPOrJr9E-OlRkPrGiHatf73M1ixIdvHlgt1JaG45xjFiY-ujfgZ4t75Mw"

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Post, FilterOptions, Database, Tag, AIComment } from '../types';
+import { Post, FilterOptions, Database } from '../types';
 import { supabase } from '../supabase';
-import { mockPosts } from '../data/mockData';
+// Dynamic import for mockData to reduce bundle size
 
 type PostWithRelations = Database['public']['Tables']['posts']['Row'] & {
   profiles: { id: string; name: string; avatar_url: string | null; };
@@ -186,7 +186,10 @@ export const usePosts = (): UsePostsReturn => {
       setError(`投稿の読み込みに失敗しました: ${e.message}`);
       console.error(e);
       setPosts([]); // エラー時は空にする
-      setFilteredPosts(mockPosts.slice(0, POSTS_PER_PAGE));
+      // Dynamic import for mockData
+      import('../data/mockData').then(({ mockPosts }) => {
+        setFilteredPosts(mockPosts.slice(0, POSTS_PER_PAGE));
+      });
       setLoading(false);
     }
   }, []);
@@ -303,10 +306,19 @@ export const usePosts = (): UsePostsReturn => {
       }
       const userId = user.id;
 
-      // 2. 画像アップロード
+      // 2. 画像アップロード（最適化版）
       const imageFile = await fetch(newPostInput.imageUrl).then(r => r.blob());
+      
+      // ファイルサイズチェック（5MB制限）
+      if (imageFile.size > 5 * 1024 * 1024) {
+        throw new Error('ファイルサイズが大きすぎます。5MB以下の画像をアップロードしてください。');
+      }
+      
       const imageName = `${userId}/${Date.now()}`;
-      const { error: imageError } = await supabase.storage.from('post-images').upload(imageName, imageFile);
+      const { error: imageError } = await supabase.storage.from('post-images').upload(imageName, imageFile, {
+        cacheControl: '86400', // 24時間キャッシュでパフォーマンス改善
+        upsert: false
+      });
       if (imageError) {
         console.error('画像アップロードエラー:', imageError);
         throw new Error('画像アップロードに失敗しました。');
@@ -351,6 +363,26 @@ export const usePosts = (): UsePostsReturn => {
         await supabase.from('ai_comments').insert(
           newPostInput.aiComments.map(comment => ({ post_id: postData.id, type: comment.type, content: comment.content }))
         );
+      }
+
+      // 6. 写真スコアを保存
+      if (newPostInput.photoScore) {
+        const { error: scoreError } = await supabase.from('photo_scores').insert({
+          post_id: postData.id,
+          technical_score: newPostInput.photoScore.technical_score,
+          composition_score: newPostInput.photoScore.composition_score,
+          creativity_score: newPostInput.photoScore.creativity_score,
+          engagement_score: newPostInput.photoScore.engagement_score,
+          total_score: newPostInput.photoScore.total_score,
+          score_level: newPostInput.photoScore.score_level,
+          level_description: newPostInput.photoScore.level_description,
+          ai_comment: newPostInput.photoScore.ai_comment
+        });
+        
+        if (scoreError) {
+          console.error('Error saving photo score:', scoreError);
+          // 写真スコアの保存に失敗してもエラーは投げない（投稿自体は成功させる）
+        }
       }
 
       // 投稿データを返す

@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react'
-import { useAuth } from '../contexts/AuthContext'
-import { LoginModal } from './auth/LoginModal'
-import { RegisterModal } from './auth/RegisterModal'
+import { useAuth } from '../../contexts/AuthContext'
+import { LoginModal } from './LoginModal'
+import { RegisterModal } from './RegisterModal'
 
 interface ProtectedRouteProps {
   children: ReactNode

@@ -37,6 +37,13 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
   const [photoScore, setPhotoScore] = useState<any>(null);
   const [isGeneratingScore, setIsGeneratingScore] = useState(false);
   
+  // TypeScript用の型定義
+  declare global {
+    interface Window {
+      geminiApiTested?: boolean;
+    }
+  }
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const modalContentRef = useRef<HTMLDivElement>(null);
@@ -141,6 +148,17 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
     try {
       setIsGeneratingScore(true);
       const scoringService = new PhotoScoringService();
+      
+      // APIキーのテスト（初回のみ）
+      if (!window.geminiApiTested) {
+        console.log('Testing Gemini API key...');
+        const isValid = await scoringService.testAPIKey();
+        if (!isValid) {
+          throw new Error('Gemini APIキーが無効です。環境変数を確認してください。');
+        }
+        window.geminiApiTested = true;
+      }
+      
       const score = await scoringService.scorePhoto(imagePreview, formData.title, formData.userComment);
       const levelInfo = PhotoScoringService.getScoreLevel(score.total);
       
@@ -154,9 +172,15 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
         level_description: levelInfo.description,
         ai_comment: score.comment
       });
+      
+      // エラーメッセージがある場合は表示
+      if (score.comment.includes('採点エラー:')) {
+        alert(score.comment);
+      }
     } catch (error) {
       console.error('Photo scoring failed:', error);
-      alert('AI写真採点中にエラーが発生しました。');
+      const errorMessage = error instanceof Error ? error.message : 'AI写真採点中にエラーが発生しました。';
+      alert(errorMessage);
     } finally {
       setIsGeneratingScore(false);
     }
@@ -188,9 +212,14 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedImage || !formData.userComment.trim() || !formData.title.trim() || !user || formData.tags.length === 0) {
+    if (!selectedImage || !formData.userComment.trim() || !formData.title.trim() || !user || formData.tags.length === 0 || !photoScore) {
       if (formData.tags.length === 0) {
         alert('少なくとも1つのタグを選択してください。');
+        return;
+      }
+      if (!photoScore) {
+        alert('投稿前にAI写真採点を実行してください。');
+        return;
       }
       return;
     }
@@ -208,7 +237,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
       let aiComments = formData.aiComments && formData.aiComments.length > 0
         ? formData.aiComments
         : await generateComments(formData.title, formData.userComment, aiDescription);
-      // 3. 投稿データ作成
+      // 3. 投稿データ作成（写真スコアを含める）
       const postData = {
         title: formData.title,
         imageUrl: imageUrl,
@@ -221,7 +250,8 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
           avatar: user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.name || user.email?.split('@')[0] || 'ユーザー')}&background=0072f5&color=fff`
         },
         aiComments: aiComments,
-        tags: formData.tags
+        tags: formData.tags,
+        photoScore: photoScore // 写真スコアを投稿データに含める
       };
       onSubmit(postData);
       onClose();

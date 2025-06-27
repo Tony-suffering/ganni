@@ -1,0 +1,13 @@
+# Cloudflare Pages SPA redirects
+/*    /index.html   200
+
+# Cache optimization for static assets
+/static/*  Cache-Control: max-age=31536000
+/assets/*  Cache-Control: max-age=31536000
+/*.js      Cache-Control: max-age=31536000
+/*.css     Cache-Control: max-age=31536000
+/*.png     Cache-Control: max-age=31536000
+/*.jpg     Cache-Control: max-age=31536000
+/*.jpeg    Cache-Control: max-age=31536000
+/*.webp    Cache-Control: max-age=31536000
+/*.svg     Cache-Control: max-age=31536000

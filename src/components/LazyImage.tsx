@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useLazyImage } from '../hooks/useLazyImage';
-import { imageCache } from '../utils/imageCache';
+// import { imageCache } from '../utils/imageCache';
 
 interface LazyImageProps {
   src: string;

@@ -81,25 +81,54 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     },
     // 新規登録関数を実装
     signUp: async (email, password, data) => {
-        const { data: signUpData, error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data, // ここで { name: 'Taro' } のようなユーザーメタデータを渡す
-            },
-        });
-        if (!error && signUpData?.user) {
-            // 認証ユーザー作成成功時、profilesテーブルに追加
-            const userId = signUpData.user.id;
-            const name = data.name || '';
-            const avatar_url = data.avatar_url || null;
-            await supabase.from('profiles').insert({
-                id: userId,
-                name,
-                avatar_url
+        console.log('Attempting signup for:', email);
+        
+        try {
+            // Supabaseの認証
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        name: data.name,
+                        avatar_url: data.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=0072f5&color=fff`
+                    },
+                    emailRedirectTo: window.location.origin,
+                },
             });
+
+            if (authError) {
+                console.error('Auth signup error:', authError);
+                return { error: authError };
+            }
+
+            // ユーザーが作成された場合、プロファイルを作成
+            if (authData.user && authData.user.id) {
+                console.log('Creating profile for user:', authData.user.id);
+                
+                const { error: profileError } = await supabase
+                    .from('profiles')
+                    .insert({
+                        id: authData.user.id,
+                        name: data.name,
+                        avatar_url: data.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(data.name)}&background=0072f5&color=fff`,
+                        created_at: new Date().toISOString()
+                    });
+
+                if (profileError) {
+                    console.error('Profile creation error:', profileError);
+                    // プロファイル作成エラーは認証エラーとは別として扱う
+                    return { error: new Error(`Database error saving new user: ${profileError.message}`) as any };
+                }
+
+                console.log('Profile created successfully');
+            }
+
+            return { error: null };
+        } catch (error) {
+            console.error('Signup process error:', error);
+            return { error: error as any };
         }
-        return { error };
     },
   };
 
