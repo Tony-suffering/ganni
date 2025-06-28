@@ -125,3 +125,6 @@ export interface RecommendationGroup {
   products: Product[];
   reason: string;
 }
+
+// 開発者専用1000点満点採点システム V2
+export * from './photoScoreV2';

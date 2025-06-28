@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { DetailedPhotoScore, ScoreBreakdown } from '../types/photoScoreV2';
+import { DetailedPhotoScore, ScoreBreakdown } from '../types';
 
 const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -19,122 +19,340 @@ export class PhotoScoringServiceV2 {
    */
   async scorePhotoDetailed(imageUrl: string, title: string, description: string): Promise<DetailedPhotoScore> {
     if (!this.model) {
+      console.warn('Gemini model not available, using mock data');
       return this.getMockDetailedScore();
     }
 
-    const prompt = this.createDetailedScoringPrompt(title, description);
-    
     try {
       const startTime = Date.now();
-      const result = await this.model.generateContent(prompt);
+      
+      // 画像を取得してBase64に変換
+      const imageData = await this.fetchImageAsBase64(imageUrl);
+      
+      // 画像付きでGemini APIを呼び出し
+      const prompt = this.createDetailedScoringPrompt(title, description);
+      const result = await this.model.generateContent([
+        prompt,
+        {
+          inlineData: {
+            data: imageData,
+            mimeType: "image/jpeg"
+          }
+        }
+      ]);
+      
       const response = await result.response;
       const processingTime = Date.now() - startTime;
       
       const analysisText = response.text();
+      console.log('🤖 Gemini API Response:', analysisText);
+      
       return this.parseDetailedScore(analysisText, processingTime);
     } catch (error) {
-      console.error('Detailed scoring failed:', error);
+      console.error('❌ Detailed scoring failed:', error);
+      console.log('📝 Falling back to mock data');
       return this.getMockDetailedScore();
+    }
+  }
+
+  /**
+   * 画像URLからBase64データを取得
+   */
+  private async fetchImageAsBase64(imageUrl: string): Promise<string> {
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = reader.result as string;
+          // "data:image/jpeg;base64," の部分を除去
+          const base64Data = base64String.split(',')[1];
+          resolve(base64Data);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Failed to fetch image as base64:', error);
+      throw error;
     }
   }
 
   private createDetailedScoringPrompt(title: string, description: string): string {
     return `
-あなたはプロフェッショナル写真評価AIです。以下の写真を1000点満点で詳細評価してください。
+あなたは国際的な写真コンテストの審査員で、厳格で精密な評価基準を持つプロフェッショナルです。提供された画像を分析し、1000点満点で極めて詳細に評価してください。
 
-写真情報:
-タイトル: ${title}
-説明: ${description}
+**画像情報:**
+- タイトル: "${title}"
+- 撮影者のコメント: "${description}"
 
-評価基準 (1000点満点):
+**超重要指示:**
+1. 画像を5秒以上じっくり観察し、細部まで分析してください
+2. 各項目で具体的な減点・加点理由を見つけてください
+3. 点数は1点単位で厳密に算出してください（例：47点、53点、61点など）
+4. 同じ写真でも微細な要素で点数が変動するよう、鋭敏に評価してください
 
-1. 技術的品質 (300点)
-   - 露出・明度 (60点): ハイライト・シャドウバランス、HDR活用、明度分布
-   - フォーカス・シャープネス (60点): 主被写体鮮明さ、被写界深度、手ブレ
-   - 色彩・画質 (60点): 色温度、彩度コントラスト、ノイズレベル
-   - 撮影技術 (60点): ISO、シャッタースピード、絞り値、レンズ活用
-   - 後処理技術 (60点): 自然な仕上がり、効果的補正
+**超詳細評価基準 (1000点満点):**
 
-2. 構図・アート性 (250点)
-   - 基本構図法 (80点): 三分割法、黄金比、対称性、視線誘導
-   - 空間構成 (70点): 前中背景層、奥行き表現、余白活用
-   - 視覚的バランス (50点): 重量感、色彩、明暗バランス
-   - 独創的視点 (50点): アングル独創性、切り取り方
+**1. 技術的品質 (300点満点)**
 
-3. 創造性・表現力 (250点)
-   - 光の表現 (80点): 自然光・人工光活用、影の効果
-   - 被写体・瞬間 (70点): 被写体選択、決定的瞬間、動き
-   - ストーリーテリング (60点): 物語性、感情表現、メッセージ
-   - 芸術的価値 (40点): 美的センス、独自性、文化的価値
+**露出・明度 (60点満点):**
+- ハイライトの飛び具合 (0-15点): 白飛びの有無・程度
+- シャドウの潰れ具合 (0-15点): 黒潰れの有無・階調
+- 全体的な明度バランス (0-15点): 適正露出の度合い
+- HDR処理の自然さ (0-15点): 不自然な処理の有無
 
-4. エンゲージメント・魅力度 (200点)
-   - 視覚的インパクト (70点): 第一印象、目を引く要素、驚き
-   - 共感・親近感 (60点): 親しみやすさ、共感度、温かみ
-   - SNS適性 (40点): SNS映え、シェア適性
-   - 記憶定着度 (30点): 印象度、ユニークさ
+**フォーカス・シャープネス (60点満点):**
+- 主被写体のピント精度 (0-20点): ピンポイントの精度
+- 被写界深度の効果的活用 (0-15点): ボケの美しさ・意図性
+- 画面全体のシャープネス (0-15点): 解像感
+- 手ブレ・被写体ブレ (0-10点): ブレの有無・影響度
 
-回答フォーマット (必ずこの形式で):
-TOTAL_SCORE: [総合点数 0-1000]
-LEVEL: [S+,S,A+,A,B+,B,C+,C,D,E]
-LEVEL_DESC: [レベル説明]
+**色彩・画質 (60点満点):**
+- 色温度の適切さ (0-15点): ホワイトバランスの精度
+- 彩度・コントラストバランス (0-15点): 色の鮮やかさと自然さ
+- ノイズレベル (0-15点): ISO感度によるノイズの影響
+- 色の階調・グラデーション (0-15点): 色の滑らかさ
 
-TECHNICAL: [技術点数 0-300]
-- EXPOSURE: [0-60]
-- FOCUS: [0-60] 
-- COLOR: [0-60]
-- TECHNIQUE: [0-60]
-- PROCESSING: [0-60]
+**撮影技術 (60点満点):**
+- シャッタースピードの選択 (0-15点): 動きの表現・手ブレ防止
+- 絞り値の効果的活用 (0-15点): 被写界深度の意図性
+- ISO感度の適切さ (0-15点): ノイズとのバランス
+- レンズ特性の活用 (0-15点): 歪み・収差の制御
 
-COMPOSITION: [構図点数 0-250]
-- BASIC: [0-80]
-- SPATIAL: [0-70]
-- BALANCE: [0-50]
-- CREATIVE: [0-50]
+**後処理技術 (60点満点):**
+- 編集の自然さ (0-20点): 過度な処理の有無
+- トーンカーブの調整 (0-15点): 明暗の調整技術
+- 色調補正の技術 (0-15点): 色味の調整センス
+- 細部の調整技術 (0-10点): シャープネス・ノイズ処理
 
-CREATIVITY: [創造性点数 0-250]
-- LIGHT: [0-80]
-- SUBJECT: [0-70]
-- STORY: [0-60]
-- ARTISTIC: [0-40]
+**2. 構図・アート性 (250点満点)**
 
-ENGAGEMENT: [魅力度点数 0-200]
-- IMPACT: [0-70]
-- RELATE: [0-60]
-- SOCIAL: [0-40]
-- MEMORY: [0-30]
+**基本構図法 (80点満点):**
+- 三分割法の活用 (0-20点): 分割線上の配置効果
+- 黄金比・白銀比の活用 (0-20点): 美的比率の意識
+- 対称性・非対称性 (0-20点): バランス感覚
+- 視線誘導・導線 (0-20点): 視線の流れの設計
 
-COMMENT: [全体的な評価コメント 200文字以内]
-STRENGTHS: [強み1],[強み2],[強み3]
-IMPROVEMENTS: [改善点1],[改善点2],[改善点3]
-TECHNICAL_ADVICE: [技術アドバイス1],[技術アドバイス2]
-CREATIVE_SUGGESTIONS: [創造的提案1],[創造的提案2]
-CONFIDENCE: [0.0-1.0の信頼度]
+**空間構成 (70点満点):**
+- 前景・中景・背景の層 (0-25点): 奥行きの表現力
+- 空間の使い方 (0-20点): 余白・詰め具合の効果
+- フレーミング効果 (0-15点): 自然なフレーム要素
+- パースペクティブ (0-10点): 遠近感の活用
+
+**視覚的バランス (50点満点):**
+- 重量感のバランス (0-15点): 要素の配置バランス
+- 色彩バランス (0-15点): 色の配分・調和
+- 明暗バランス (0-10点): 光と影の配置
+- 質感のバランス (0-10点): 異なる質感の調和
+
+**独創的視点 (50点満点):**
+- アングルの独創性 (0-20点): 一般的でない視点
+- 切り取り方の新鮮さ (0-15点): 予想外のトリミング
+- 時間軸の捉え方 (0-10点): 瞬間の選択センス
+- 空間軸の捉え方 (0-5点): 距離感・位置の工夫
+
+**3. 創造性・表現力 (250点満点)**
+
+**光の表現 (80点満点):**
+- 自然光の活用技術 (0-25点): 太陽光・空の光の使い方
+- 人工光の効果的利用 (0-20点): 人工照明の技術
+- 影の効果的活用 (0-20点): 影による立体感・ドラマ
+- 光の方向性・質感 (0-15点): ライティングの意図性
+
+**被写体・瞬間 (70点満点):**
+- 被写体選択の独創性 (0-20点): 着眼点の独特さ
+- 決定的瞬間の捕捉 (0-25点): タイミングの完璧さ
+- 表情・動きの捉え方 (0-15点): 生き生きとした表現
+- 被写体と環境の関係 (0-10点): 調和・対比の効果
+
+**ストーリーテリング (60点満点):**
+- 物語性の強さ (0-20点): 見る人に伝わる物語
+- 感情の表現力 (0-20点): 感情の伝達力
+- メッセージ性 (0-15点): 込められた意図・主張
+- 想像力を掻き立てる力 (0-5点): 続きを想像させる力
+
+**芸術的価値 (40点満点):**
+- 美的センス (0-15点): 普遍的な美しさ
+- 独自性・オリジナリティ (0-15点): 他にない個性
+- 文化的・時代的価値 (0-5点): 社会的意義
+- 技術革新性 (0-5点): 新しい表現技法
+
+**4. エンゲージメント・魅力度 (200点満点)**
+
+**視覚的インパクト (70点満点):**
+- 第一印象の強烈さ (0-25点): 瞬間的な驚き・感動
+- 目を引く要素の効果 (0-20点): 注意を惹く力
+- 色彩のインパクト (0-15点): 色による視覚効果
+- 構図のインパクト (0-10点): 意外性のある構図
+
+**共感・親近感 (60点満点):**
+- 親しみやすさ (0-20点): 一般的な共感のしやすさ
+- 感情的共鳴 (0-20点): 心に響く度合い
+- 人間性・温かみ (0-15点): 人間的な魅力
+- 普遍的テーマ (0-5点): 誰にでも関わるテーマ
+
+**SNS適性 (40点満点):**
+- シェアしたくなる度 (0-15点): 拡散したい衝動
+- コメントしたくなる度 (0-10点): 反応したい気持ち
+- ハッシュタグ適性 (0-10点): タグ付けのしやすさ
+- バイラル要素 (0-5点): 話題になる要素
+
+**記憶定着度 (30点満点):**
+- 印象に残る度合い (0-15点): 長期記憶への定着度
+- ユニークな要素 (0-10点): 他にない特徴
+- 思い出しやすさ (0-5点): 再認識のしやすさ
+
+**超重要: 点数付けの厳密さ**
+- 各項目で必ず1点単位で評価
+- 満点は滅多に付けない（完璧は稀）
+- 平均的な写真は各項目の50-70%程度
+- 優秀な写真でも80-90%程度
+- 例: 47/60点、23/25点、18/20点 など
+
+**必須回答フォーマット（厳密に従ってください）:**
+
+TOTAL_SCORE: [正確な合計点 例:687]
+LEVEL: [レベル]
+LEVEL_DESC: [評価説明]
+
+TECHNICAL: [技術合計点]
+EXPOSURE: [具体的な点数 例:47]
+FOCUS: [具体的な点数 例:52]
+COLOR: [具体的な点数 例:43]
+TECHNIQUE: [具体的な点数 例:38]
+PROCESSING: [具体的な点数 例:41]
+
+COMPOSITION: [構図合計点]
+BASIC: [具体的な点数 例:61]
+SPATIAL: [具体的な点数 例:48]
+BALANCE: [具体的な点数 例:33]
+CREATIVE: [具体的な点数 例:29]
+
+CREATIVITY: [創造性合計点]
+LIGHT: [具体的な点数 例:54]
+SUBJECT: [具体的な点数 例:42]
+STORY: [具体的な点数 例:37]
+ARTISTIC: [具体的な点数 例:23]
+
+ENGAGEMENT: [魅力度合計点]
+IMPACT: [具体的な点数 例:45]
+RELATE: [具体的な点数 例:39]
+SOCIAL: [具体的な点数 例:24]
+MEMORY: [具体的な点数 例:17]
+
+COMMENT: [写真の具体的で詳細な評価コメント]
+STRENGTHS: [具体的な強み1],[具体的な強み2],[具体的な強み3]
+IMPROVEMENTS: [具体的な改善点1],[具体的な改善点2],[具体的な改善点3]
+TECHNICAL_ADVICE: [技術的な具体的アドバイス1],[技術的な具体的アドバイス2]
+CREATIVE_SUGGESTIONS: [創造的な具体的提案1],[創造的な具体的提案2]
+CONFIDENCE: [0.8-0.95の範囲で厳密な数値]
+
+**最終確認:** 各項目の点数を足し算して、TOTAL_SCOREと一致することを確認してください。
 `;
   }
 
   private parseDetailedScore(analysisText: string, processingTime: number): DetailedPhotoScore {
+    console.log('🔍 Parsing Gemini response...');
+    
     const lines = analysisText.split('\n');
     const data: any = {};
     
+    // より柔軟なパーシング
     for (const line of lines) {
-      const [key, value] = line.split(':').map(s => s.trim());
-      if (key && value) {
-        data[key] = value;
+      const trimmedLine = line.trim();
+      if (trimmedLine.includes(':')) {
+        const colonIndex = trimmedLine.indexOf(':');
+        const key = trimmedLine.substring(0, colonIndex).trim();
+        const value = trimmedLine.substring(colonIndex + 1).trim();
+        
+        if (key && value) {
+          data[key] = value;
+        }
       }
     }
 
-    // パース関数
-    const parseScore = (value: string): number => parseInt(value.replace(/[^\d]/g, '')) || 0;
-    const parseList = (value: string): string[] => value.split(',').map(s => s.trim()).filter(s => s);
+    console.log('📊 Parsed data:', data);
+
+    // 超精密パース関数
+    const parseScore = (value: string | undefined): number => {
+      if (!value) return 0;
+      
+      // より厳密な数値抽出（小数点も含む）
+      const cleanValue = value.toString().replace(/[^\d.]/g, '');
+      const numMatch = cleanValue.match(/(\d+\.?\d*)/);
+      
+      if (numMatch) {
+        const num = parseFloat(numMatch[1]);
+        return Math.round(num); // 整数に丸める
+      }
+      return 0;
+    };
+    
+    const parseList = (value: string | undefined): string[] => {
+      if (!value) return [];
+      return value.split(',').map(s => s.trim()).filter(s => s && s.length > 0);
+    };
+    
+    const parseLevel = (value: string | undefined): any => {
+      if (!value) return 'C';
+      const validLevels = ['S+', 'S', 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D', 'E'];
+      const cleanValue = value.replace(/[^\w+]/g, '').toUpperCase();
+      return validLevels.includes(cleanValue) ? cleanValue : 'C';
+    };
     
     try {
+      // 個別スコアの詳細計算と検証
+      const exposureScore = parseScore(data['EXPOSURE']);
+      const focusScore = parseScore(data['FOCUS']);
+      const colorScore = parseScore(data['COLOR']);
+      const techniqueScore = parseScore(data['TECHNIQUE']);
+      const processingScore = parseScore(data['PROCESSING']);
+      const technicalTotal = exposureScore + focusScore + colorScore + techniqueScore + processingScore;
+      
+      const basicScore = parseScore(data['BASIC']);
+      const spatialScore = parseScore(data['SPATIAL']);
+      const balanceScore = parseScore(data['BALANCE']);
+      const creativeScore = parseScore(data['CREATIVE']);
+      const compositionTotal = basicScore + spatialScore + balanceScore + creativeScore;
+      
+      const lightScore = parseScore(data['LIGHT']);
+      const subjectScore = parseScore(data['SUBJECT']);
+      const storyScore = parseScore(data['STORY']);
+      const artisticScore = parseScore(data['ARTISTIC']);
+      const creativityTotal = lightScore + subjectScore + storyScore + artisticScore;
+      
+      const impactScore = parseScore(data['IMPACT']);
+      const relateScore = parseScore(data['RELATE']);
+      const socialScore = parseScore(data['SOCIAL']);
+      const memoryScore = parseScore(data['MEMORY']);
+      const engagementTotal = impactScore + relateScore + socialScore + memoryScore;
+
+      const calculatedTotal = technicalTotal + compositionTotal + creativityTotal + engagementTotal;
+      const declaredTotal = parseScore(data['TOTAL_SCORE']);
+      
+      // 超詳細ログ出力
+      console.log('🔢 Detailed scoring breakdown:', {
+        technical: { exposure: exposureScore, focus: focusScore, color: colorScore, technique: techniqueScore, processing: processingScore, total: technicalTotal },
+        composition: { basic: basicScore, spatial: spatialScore, balance: balanceScore, creative: creativeScore, total: compositionTotal },
+        creativity: { light: lightScore, subject: subjectScore, story: storyScore, artistic: artisticScore, total: creativityTotal },
+        engagement: { impact: impactScore, relate: relateScore, social: socialScore, memory: memoryScore, total: engagementTotal },
+        calculated: calculatedTotal,
+        declared: declaredTotal
+      });
+      
+      // より厳密な合計検証（5点以内の誤差なら宣言値を採用）
+      const finalTotal = Math.abs(calculatedTotal - declaredTotal) <= 5 ? declaredTotal : calculatedTotal;
+      
       const result: DetailedPhotoScore = {
-        totalScore: parseScore(data['TOTAL_SCORE']),
-        scoreLevel: data['LEVEL'] as any || 'C',
-        levelDescription: data['LEVEL_DESC'] || 'バランスの取れた写真',
+        totalScore: finalTotal,
+        scoreLevel: parseLevel(data['LEVEL']),
+        levelDescription: data['LEVEL_DESC'] || 'AI分析による評価',
         
         technical: {
-          total: parseScore(data['TECHNICAL']),
+          total: technicalTotal,
           exposure: parseScore(data['EXPOSURE']),
           focus: parseScore(data['FOCUS']),
           colorQuality: parseScore(data['COLOR']),
@@ -143,7 +361,7 @@ CONFIDENCE: [0.0-1.0の信頼度]
         },
         
         composition: {
-          total: parseScore(data['COMPOSITION']),
+          total: compositionTotal,
           basicComposition: parseScore(data['BASIC']),
           spatialComposition: parseScore(data['SPATIAL']),
           visualBalance: parseScore(data['BALANCE']),
@@ -151,7 +369,7 @@ CONFIDENCE: [0.0-1.0の信頼度]
         },
         
         creativity: {
-          total: parseScore(data['CREATIVITY']),
+          total: creativityTotal,
           lightExpression: parseScore(data['LIGHT']),
           subjectMoment: parseScore(data['SUBJECT']),
           storytelling: parseScore(data['STORY']),
@@ -159,14 +377,14 @@ CONFIDENCE: [0.0-1.0の信頼度]
         },
         
         engagement: {
-          total: parseScore(data['ENGAGEMENT']),
+          total: engagementTotal,
           visualImpact: parseScore(data['IMPACT']),
           relatability: parseScore(data['RELATE']),
           socialMedia: parseScore(data['SOCIAL']),
           memorability: parseScore(data['MEMORY'])
         },
         
-        overallComment: data['COMMENT'] || '総合的に良い写真です。',
+        overallComment: data['COMMENT'] || 'Gemini AIによる詳細分析が完了しました。',
         detailedFeedback: {
           strengths: parseList(data['STRENGTHS']),
           improvements: parseList(data['IMPROVEMENTS']),
@@ -174,82 +392,122 @@ CONFIDENCE: [0.0-1.0の信頼度]
           creativeSuggestions: parseList(data['CREATIVE_SUGGESTIONS'])
         },
         
-        analysisVersion: '2.0.0',
+        analysisVersion: '2.0.0-gemini',
         processingTime,
-        confidence: parseFloat(data['CONFIDENCE']) || 0.8
+        confidence: Math.max(0.1, Math.min(1.0, parseFloat(data['CONFIDENCE']?.toString()) || 0.85))
       };
+      
+      console.log('✅ Successfully parsed Gemini response:', {
+        totalScore: result.totalScore,
+        level: result.scoreLevel,
+        technical: result.technical.total,
+        composition: result.composition.total,
+        creativity: result.creativity.total,
+        engagement: result.engagement.total
+      });
       
       return result;
     } catch (error) {
-      console.error('Score parsing failed:', error);
+      console.error('❌ Score parsing failed:', error);
+      console.log('📝 Available data keys:', Object.keys(data));
       return this.getMockDetailedScore();
     }
   }
 
   private getMockDetailedScore(): DetailedPhotoScore {
+    // より変動的なモックデータを生成
+    const randomVariation = () => Math.floor(Math.random() * 20) - 10; // -10 to +10 の変動
+    
+    const baseTechnical = {
+      exposure: 50 + randomVariation(),
+      focus: 48 + randomVariation(),
+      colorQuality: 45 + randomVariation(),
+      shootingTechnique: 42 + randomVariation(),
+      postProcessing: 38 + randomVariation()
+    };
+    
+    const baseComposition = {
+      basicComposition: 65 + randomVariation(),
+      spatialComposition: 55 + randomVariation(),
+      visualBalance: 40 + randomVariation(),
+      creativeViewpoint: 35 + randomVariation()
+    };
+    
+    const baseCreativity = {
+      lightExpression: 60 + randomVariation(),
+      subjectMoment: 55 + randomVariation(),
+      storytelling: 45 + randomVariation(),
+      artisticValue: 30 + randomVariation()
+    };
+    
+    const baseEngagement = {
+      visualImpact: 55 + randomVariation(),
+      relatability: 48 + randomVariation(),
+      socialMedia: 32 + randomVariation(),
+      memorability: 25 + randomVariation()
+    };
+    
+    const technicalTotal = Object.values(baseTechnical).reduce((a, b) => a + b, 0);
+    const compositionTotal = Object.values(baseComposition).reduce((a, b) => a + b, 0);
+    const creativityTotal = Object.values(baseCreativity).reduce((a, b) => a + b, 0);
+    const engagementTotal = Object.values(baseEngagement).reduce((a, b) => a + b, 0);
+    const totalScore = technicalTotal + compositionTotal + creativityTotal + engagementTotal;
+    
+    const mockComments = [
+      'モックデータによる仮の評価です。実際の画像分析ではより詳細な評価が行われます。',
+      'Gemini APIが利用できない場合のサンプル結果です。技術的な要素を重視した評価となっています。',
+      'これはテスト用のデータです。実際の分析では写真の内容に基づいた具体的な評価が提供されます。'
+    ];
+    
     return {
-      totalScore: 742,
-      scoreLevel: 'A',
-      levelDescription: 'とても優秀な写真です',
+      totalScore,
+      scoreLevel: totalScore >= 800 ? 'A' : totalScore >= 700 ? 'B+' : totalScore >= 600 ? 'B' : 'C+',
+      levelDescription: 'モックデータによる評価',
       
       technical: {
-        total: 220,
-        exposure: 52,
-        focus: 48,
-        colorQuality: 45,
-        shootingTechnique: 40,
-        postProcessing: 35
+        total: technicalTotal,
+        ...baseTechnical
       },
       
       composition: {
-        total: 185,
-        basicComposition: 65,
-        spatialComposition: 55,
-        visualBalance: 35,
-        creativeViewpoint: 30
+        total: compositionTotal,
+        ...baseComposition
       },
       
       creativity: {
-        total: 195,
-        lightExpression: 68,
-        subjectMoment: 58,
-        storytelling: 45,
-        artisticValue: 24
+        total: creativityTotal,
+        ...baseCreativity
       },
       
       engagement: {
-        total: 142,
-        visualImpact: 58,
-        relatability: 45,
-        socialMedia: 25,
-        memorability: 14
+        total: engagementTotal,
+        ...baseEngagement
       },
       
-      overallComment: '光の使い方が巧みで、構図にも工夫が見られる魅力的な作品です。技術的な完成度も高く、見る人の心を引きつける力があります。',
+      overallComment: mockComments[Math.floor(Math.random() * mockComments.length)],
       detailedFeedback: {
         strengths: [
-          '光と影のコントラストが美しい',
-          '構図のバランスが絶妙',
-          '被写体の選択が印象的'
+          'モックデータによる強み評価1',
+          'モックデータによる強み評価2',
+          'モックデータによる強み評価3'
         ],
         improvements: [
-          'より大胆な構図にチャレンジ',
-          '色彩の統一感を意識',
-          'ストーリー性をより強化'
+          'モックデータによる改善提案1',
+          'モックデータによる改善提案2'
         ],
         technicalAdvice: [
-          'シャッタースピードをもう少し早めに',
-          'ISO感度を下げてノイズを軽減'
+          'モックデータによる技術アドバイス1',
+          'モックデータによる技術アドバイス2'
         ],
         creativeSuggestions: [
-          '異なるアングルからの撮影も試してみる',
-          '季節や時間帯を変えて同じ被写体を撮影'
+          'モックデータによる創造的提案1',
+          'モックデータによる創造的提案2'
         ]
       },
       
       analysisVersion: '2.0.0-mock',
-      processingTime: 1250,
-      confidence: 0.85
+      processingTime: 800 + Math.floor(Math.random() * 1000), // 800-1800ms
+      confidence: 0.1 + Math.random() * 0.2 // 0.1-0.3 (低い信頼度でモックと分かるように)
     };
   }
 

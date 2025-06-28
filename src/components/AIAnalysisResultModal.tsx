@@ -286,6 +286,10 @@ export const AIAnalysisResultModal: React.FC<AIAnalysisResultModalProps> = ({
                               {comment.type === 'ai_comment' && 'AIコメント'}
                               {comment.type === 'ai_question' && 'AI質問'}
                               {comment.type === 'ai_observation' && 'AI観察'}
+                              {comment.type === 'comment' && 'コメント'}
+                              {comment.type === 'question' && '質問'}
+                              {comment.type === 'observation' && '観察'}
+                              {!['ai_comment', 'ai_question', 'ai_observation', 'comment', 'question', 'observation'].includes(comment.type) && 'AIコメント'}
                             </span>
                           </div>
                           <p className="text-gray-700">{comment.content}</p>

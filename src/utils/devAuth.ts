@@ -1,4 +1,4 @@
-import { DevAuthConfig } from '../types/photoScoreV2';
+import { DevAuthConfig } from '../types';
 
 // 開発者専用機能のアクセス制御
 export class DevAuthService {
@@ -7,7 +7,7 @@ export class DevAuthService {
     'admin@example.com'
   ];
   
-  private static readonly DEV_SECRET_KEY = 'DEV_PHOTO_SCORING_V2_2024'; // 環境変数から取得すべき
+  private static readonly DEV_SECRET_KEY = '0529';
   
   /**
    * 現在のユーザーが開発者かどうかチェック

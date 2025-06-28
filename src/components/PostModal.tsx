@@ -4,9 +4,11 @@ import { Link } from 'react-router-dom';
 import { X, User, Calendar, Tag as TagIcon, MessageCircle, Star, HelpCircle, Eye, Heart } from 'lucide-react';
 import { LazyImage } from './LazyImage';
 import { PhotoScoreDisplay } from './PhotoScoreDisplay';
+import { DetailedPhotoScoreDisplayV2 } from './dev/DetailedPhotoScoreDisplayV2';
 import { Post, Comment } from '../types';
 import { supabase } from '../supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { DevAuthService } from '../utils/devAuth';
 
 interface PostModalProps {
   post: Post | null;
@@ -26,7 +28,10 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
   const commentTypeLabels = {
     comment: { icon: MessageCircle, label: 'ゴシップ記事（笑）', color: 'text-blue-600', bgColor: 'bg-blue-50' },
     question: { icon: HelpCircle, label: '質問です！', color: 'text-green-600', bgColor: 'bg-green-50' },
-    observation: { icon: Eye, label: 'また投稿してね！', color: 'text-purple-600', bgColor: 'bg-purple-50' }
+    observation: { icon: Eye, label: 'また投稿してね！', color: 'text-purple-600', bgColor: 'bg-purple-50' },
+    ai_comment: { icon: Star, label: 'AI評価', color: 'text-indigo-600', bgColor: 'bg-indigo-50' },
+    ai_question: { icon: HelpCircle, label: 'AI質問', color: 'text-pink-600', bgColor: 'bg-pink-50' },
+    ai_observation: { icon: Eye, label: 'AI観察', color: 'text-teal-600', bgColor: 'bg-teal-50' }
   };
 
   const formatDate = (dateString: string) => {
@@ -427,7 +432,8 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
                     </h3>
                     <div className="space-y-6">
                       {post.aiComments.map((comment, index) => {
-                        const typeInfo = commentTypeLabels[comment.type as keyof typeof commentTypeLabels];
+                        const typeInfo = commentTypeLabels[comment.type as keyof typeof commentTypeLabels] || 
+                                       { icon: MessageCircle, label: 'AIコメント', color: 'text-gray-600', bgColor: 'bg-gray-50' };
                         const CommentIcon = typeInfo.icon;
                         
                         return (
@@ -547,6 +553,17 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
                     title={post.title}
                     description={post.userComment}
                     initialScore={post.photoScore}
+                  />
+                </div>
+
+                {/* 開発者専用: 詳細採点システムV2 (1000点満点) */}
+                <div className="mt-6">
+                  <DetailedPhotoScoreDisplayV2
+                    postId={post.id}
+                    imageUrl={post.imageUrl}
+                    title={post.title}
+                    description={post.userComment}
+                    userEmail={user?.email}
                   />
                 </div>
 
