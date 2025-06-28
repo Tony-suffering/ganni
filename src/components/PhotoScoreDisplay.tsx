@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Award, Camera, Palette, Sparkles, Heart, RefreshCw } from 'lucide-react';
+import { Award, Camera, Palette, Star, Heart, RefreshCw } from 'lucide-react';
 import { PhotoScore } from '../types';
 import { PhotoScoringService } from '../services/photoScoringService';
 import { supabase } from '../supabase';
@@ -178,7 +178,7 @@ export const PhotoScoreDisplay: React.FC<PhotoScoreDisplayProps> = ({
             maxScore={25}
           />
           <ScoreItem
-            icon={<Sparkles className="w-4 h-4" />}
+            icon={<Star className="w-4 h-4" />}
             title="創造性"
             score={score.creativity_score}
             maxScore={25}

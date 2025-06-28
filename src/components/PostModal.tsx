@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { X, User, Calendar, Tag as TagIcon, MessageCircle, Sparkles, HelpCircle, Eye, Heart } from 'lucide-react';
+import { X, User, Calendar, Tag as TagIcon, MessageCircle, Star, HelpCircle, Eye, Heart } from 'lucide-react';
 import { LazyImage } from './LazyImage';
 import { PhotoScoreDisplay } from './PhotoScoreDisplay';
 import { Post, Comment } from '../types';
@@ -377,7 +377,7 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
                 {post.imageAIDescription && (
                   <div>
                     <h3 className="flex items-center text-lg font-display font-semibold text-indigo-900 mb-4">
-                      <Sparkles className="w-5 h-5 mr-2 text-indigo-500" />
+                      <Star className="w-5 h-5 mr-2 text-indigo-500" />
                       この画像のAI説明
                     </h3>
                     <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-2xl">
@@ -390,7 +390,7 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
                 {/* AI情景描写 → AIコメンテーター */}
                 <div>
                   <h3 className="flex items-center text-lg font-display font-semibold text-primary-900 mb-4">
-                    <Sparkles className="w-5 h-5 mr-2 text-primary-500" />
+                    <Star className="w-5 h-5 mr-2 text-primary-500" />
                     AIコメンテーター
                   </h3>
                   <div className="bg-gradient-to-r from-primary-50 to-accent-50 p-6 rounded-2xl">
