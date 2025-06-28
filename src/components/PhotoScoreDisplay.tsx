@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Award, Camera, Palette, Star, Heart, RefreshCw } from 'lucide-react';
+import { Award, Camera, Palette, Star, Heart } from 'lucide-react';
 import { PhotoScore } from '../types';
 import { PhotoScoringService } from '../services/photoScoringService';
 import { supabase } from '../supabase';
@@ -199,15 +199,6 @@ export const PhotoScoreDisplay: React.FC<PhotoScoreDisplayProps> = ({
           <p className="text-sm text-gray-600 leading-relaxed">{score.ai_comment}</p>
         </div>
 
-        {/* 再採点ボタン */}
-        <button
-          onClick={generateScore}
-          disabled={loading}
-          className="mt-4 w-full px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm"
-        >
-          <RefreshCw className="w-4 h-4 mr-2" />
-          再採点する
-        </button>
       </motion.div>
     </AnimatePresence>
   );

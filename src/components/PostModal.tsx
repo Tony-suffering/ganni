@@ -387,18 +387,20 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
                     </div>
                   </div>
                 )}
-                {/* AI情景描写 → AIコメンテーター */}
-                <div>
-                  <h3 className="flex items-center text-lg font-display font-semibold text-primary-900 mb-4">
-                    <Star className="w-5 h-5 mr-2 text-primary-500" />
-                    AIコメンテーター
-                  </h3>
-                  <div className="bg-gradient-to-r from-primary-50 to-accent-50 p-6 rounded-2xl">
-                    <p className="text-neutral-700 italic leading-relaxed text-base">
-                      "{post.aiDescription}"
-                    </p>
+                {/* AIコメンテーター */}
+                {post.aiComments && post.aiComments.length > 0 && (
+                  <div>
+                    <h3 className="flex items-center text-lg font-display font-semibold text-primary-900 mb-4">
+                      <Star className="w-5 h-5 mr-2 text-primary-500" />
+                      AIコメンテーター
+                    </h3>
+                    <div className="bg-gradient-to-r from-primary-50 to-accent-50 p-6 rounded-2xl">
+                      <p className="text-neutral-700 italic leading-relaxed text-base">
+                        "{post.aiComments[0].content}"
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* User Comment */}
                 <div>

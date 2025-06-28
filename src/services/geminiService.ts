@@ -53,46 +53,25 @@ ${imageAIDescription ? `🔍 ${imageAIDescription}` : ''}
   }
 
   /**
-   * 投稿に対するAIコメント群を生成
+   * 投稿に対する魅力的なAIコメントを1つ生成
    */
   async generateAIComments(title: string, userComment: string, aiDescription: string): Promise<AIComment[]> {
     if (!this.model) {
       return this.getFallbackComments();
     }
 
-    const commentPrompt = this.createCommentPrompt(title, userComment, aiDescription);
-    const questionPrompt = this.createQuestionPrompt(title, userComment, aiDescription);
-    const observationPrompt = this.createObservationPrompt(title, userComment, aiDescription);
+    const inspiringPrompt = this.createInspiringCommentPrompt(title, userComment, aiDescription);
 
     try {
-      const [commentResult, questionResult, observationResult] = await Promise.all([
-        this.model.generateContent(commentPrompt),
-        this.model.generateContent(questionPrompt),
-        this.model.generateContent(observationPrompt)
-      ]);
-
-      const commentResponse = await commentResult.response;
-      const questionResponse = await questionResult.response;
-      const observationResponse = await observationResult.response;
+      const result = await this.model.generateContent(inspiringPrompt);
+      const response = await result.response;
 
       return [
         {
           id: Date.now().toString(),
-          type: 'comment',
-          content: commentResponse.text().trim(),
+          type: 'ai_comment',
+          content: response.text().trim(),
           createdAt: new Date().toISOString()
-        },
-        {
-          id: (Date.now() + 1).toString(),
-          type: 'question',
-          content: questionResponse.text().trim(),
-          createdAt: new Date(Date.now() + 60000).toISOString()
-        },
-        {
-          id: (Date.now() + 2).toString(),
-          type: 'observation',
-          content: observationResponse.text().trim(),
-          createdAt: new Date(Date.now() + 120000).toISOString()
         }
       ];
     } catch (error) {
@@ -101,57 +80,24 @@ ${imageAIDescription ? `🔍 ${imageAIDescription}` : ''}
     }
   }
 
-  private createCommentPrompt(title: string, userComment: string, aiDescription: string): string {
+  private createInspiringCommentPrompt(title: string, userComment: string, aiDescription: string): string {
     return `
-この瞬間にウィットの効いたコメントを。センス良く、軽やかに。
+あなたは人気のフォトグラファーのAIアシスタントです。この素敵な投稿に、投稿者が喜び、「またこのアプリを使いたい」と思えるような魅力的なコメントを書いてください。
 
 📸 ${title}
 💭 ${userComment}
 🎯 ${aiDescription}
 
-求める雰囲気:
-• 100文字以内でスマート
-• さりげないユーモア
-• 共感できる視点
-• 今風の軽やかな表現
-• 親しみやすい口調
+コメントのガイドライン:
+• 120文字以内で印象的に
+• 投稿者の感性を褒める
+• 写真の技術的・芸術的価値を発見
+• 温かく、でもプロフェッショナルな視点
+• 「また撮りたい」気持ちを引き出す
+• センスが光る今風の表現
+• 絵文字を1-2個使って親しみやすく
 
-`;
-  }
-
-  private createQuestionPrompt(title: string, userComment: string, aiDescription: string): string {
-    return `
-この投稿にもっと詳しく聞いてみたい質問を、自然に会話が続くように。
-
-📸 ${title}
-💭 ${userComment}
-✨ ${aiDescription}
-
-質問のポイント:
-• 80文字以内で簡潔に
-• 撮影の瞬間や体験について
-• 続きが気になる質問
-• カジュアルで親しみやすく
-• 最後に「また聞かせて！」的な一言
-
-`;
-  }
-
-  private createObservationPrompt(title: string, userComment: string, aiDescription: string): string {
-    return `
-この投稿の新しい発見や気づきを、スマートに指摘。
-
-📸 ${title}
-💭 ${userComment}
-🔎 ${aiDescription}
-
-観察のスタイル:
-• 90文字以内で鋭く
-• 意外な視点や気づき
-• おしゃれで知的な表現
-• 写真の隠れた魅力を発見
-• 次も見たくなる一言
-
+投稿者が思わず嬉しくなって、友達にも見せたくなるようなコメントをお願いします。
 `;
   }
 
@@ -166,24 +112,19 @@ ${imageAIDescription ? `🔍 ${imageAIDescription}` : ''}
   }
 
   private getFallbackComments(): AIComment[] {
+    const inspiringComments = [
+      '素晴らしい瞬間をキャッチしましたね！📸 光の使い方がプロレベルで、見る人の心を惹きつける一枚です ✨',
+      'この構図、本当にセンスが光ってる！🌟 何気ない日常を芸術作品に変える、あなたの視点が素敵です',
+      '写真から感情が伝わってくる... 📷 技術的な完成度と芸術性のバランスが絶妙で、思わず見入ってしまいます',
+      '空気感の表現が見事！🎨 この瞬間を切り取るタイミングとセンス、フォトグラファーとしての才能を感じます'
+    ];
+    
     return [
       {
         id: Date.now().toString(),
-        type: 'comment',
-        content: '光と影のコントラストがエモすぎる ✨ 旅の始まりの高揚感が伝わってくる！',
+        type: 'ai_comment',
+        content: inspiringComments[Math.floor(Math.random() * inspiringComments.length)],
         createdAt: new Date().toISOString()
-      },
-      {
-        id: (Date.now() + 1).toString(),
-        type: 'question',
-        content: 'この瞬間の音の風景も気になる！どんなサウンドが聞こえてた？',
-        createdAt: new Date(Date.now() + 60000).toISOString()
-      },
-      {
-        id: (Date.now() + 2).toString(),
-        type: 'observation',
-        content: '建築と人の動きのコントラストが美しい 🏗️ 機能美の新しい表現だね',
-        createdAt: new Date(Date.now() + 120000).toISOString()
       }
     ];
   }

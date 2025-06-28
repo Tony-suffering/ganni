@@ -176,27 +176,14 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
         return;
       }
       
-      try {
-        setSelectedImage(file);
-        // 画像を圧縮してから使用
-        const compressedBase64 = await compressImage(file);
-        setImagePreview(compressedBase64);
-        
-        // 画像AIコメント生成
-        setFormData(prev => ({ ...prev, imageAIDescription: '', aiComments: [] })); // まず空に
-        setPhotoScore(null); // フォトスコアをリセット
-        
-        try {
-          const { description, comments } = await generateImageAIComments(compressedBase64);
-          setFormData(prev => ({ ...prev, imageAIDescription: description || 'AI説明の生成に失敗しました', aiComments: comments || [] }));
-        } catch (err) {
-          console.error('AI description generation failed:', err);
-          setFormData(prev => ({ ...prev, imageAIDescription: 'AI説明の生成に失敗しました', aiComments: [] }));
-        }
-      } catch (error) {
-        console.error('Image processing failed:', error);
-        alert('画像の処理中にエラーが発生しました。別の画像を試してください。');
-      }
+      setSelectedImage(file);
+      // 画像を圧縮してから使用
+      const compressedBase64 = await compressImage(file);
+      setImagePreview(compressedBase64);
+      
+      // 画像AIコメント生成は削除（投稿後に実行）
+      setFormData(prev => ({ ...prev, imageAIDescription: '', aiComments: [] }));
+      setPhotoScore(null);
     }
   };
 
@@ -364,23 +351,6 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                       >
                         <X className="w-4 h-4" />
                       </button>
-                      {/* 画像AI説明 */}
-                      <div className="space-y-6">
-                        <div>
-                          <h3 className="flex items-center text-lg font-display font-semibold text-indigo-900 mb-4">
-                            <Star className="w-5 h-5 mr-2 text-indigo-500" />
-                            この画像のAI説明
-                          </h3>
-                          <div className="bg-gradient-to-r from-indigo-50 to-blue-50 p-6 rounded-2xl">
-                            <p className="text-neutral-700 italic leading-relaxed text-base">
-                              {formData.imageAIDescription
-                                ? `"${formData.imageAIDescription}"`
-                                : 'あと数秒で表示されるので少し待っててね！'}
-                            </p>
-                          </div>
-                        </div>
-
-                      </div>
                     </div>
                   )}
                   <input
