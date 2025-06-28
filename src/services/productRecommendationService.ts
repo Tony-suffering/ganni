@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { amazonService } from './amazonService';
 
 // 商品情報の型定義
 export interface Product {
@@ -218,38 +219,78 @@ export class ProductRecommendationService {
    * コンテキストに基づいて商品を推薦
    */
   private async generateRecommendations(context: PostContext): Promise<RecommendationGroup[]> {
+    try {
+      // 1. AIで商品カテゴリとキーワードを生成
+      const searchKeywords = await this.generateSearchKeywords(context);
+      console.log('🔍 Generated search keywords:', searchKeywords);
+
+      // 2. Amazon APIで実際の商品を検索
+      const recommendations: RecommendationGroup[] = [];
+      
+      for (const keywordGroup of searchKeywords) {
+        try {
+          const products = await amazonService.searchItems(
+            keywordGroup.keywords.join(' '),
+            'All',
+            5
+          );
+          
+          if (products.length > 0) {
+            recommendations.push({
+              title: keywordGroup.category,
+              reason: keywordGroup.reason,
+              products: products.slice(0, 3) // 最大3商品
+            });
+          }
+        } catch (searchError) {
+          console.error(`Failed to search for ${keywordGroup.category}:`, searchError);
+        }
+      }
+
+      // 3. 商品が見つからない場合はフォールバック
+      if (recommendations.length === 0) {
+        console.log('No Amazon products found, using fallback');
+        return this.getDefaultRecommendations(context);
+      }
+
+      return recommendations;
+      
+    } catch (error) {
+      console.error('Amazon recommendation generation error:', error);
+      return this.getDefaultRecommendations(context);
+    }
+  }
+
+  /**
+   * AIでAmazon検索用のキーワードを生成
+   */
+  private async generateSearchKeywords(context: PostContext): Promise<Array<{
+    category: string;
+    keywords: string[];
+    reason: string;
+  }>> {
     const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
     
-    const prompt = `以下のコンテキストに基づいて、関連する商品を推薦してください。
-実際の商品名と価格を使い、自然な推薦理由を含めてください。
+    const prompt = `以下のコンテキストから、Amazon商品検索に適したキーワードを生成してください。
 
 コンテキスト:
 ${JSON.stringify(context, null, 2)}
 
-以下のJSON形式で3つのカテゴリで商品を推薦してください:
+以下のJSON形式で3つのカテゴリの検索キーワードを生成してください:
 {
-  "recommendations": [
+  "searchGroups": [
     {
-      "title": "カテゴリ名（例：ペット用品）",
-      "reason": "このカテゴリを推薦する理由",
-      "products": [
-        {
-          "id": "一意のID",
-          "name": "具体的な商品名",
-          "price": "¥価格",
-          "category": "商品カテゴリ",
-          "tags": ["タグ1", "タグ2"],
-          "reason": "この商品を推薦する理由"
-        }
-      ]
+      "category": "カテゴリ名",
+      "keywords": ["検索キーワード1", "検索キーワード2"],
+      "reason": "このカテゴリを推薦する理由"
     }
   ]
 }
 
 注意事項:
-- 各カテゴリに2-3個の商品を含める
-- 実在しそうな商品名と適切な価格を使用
-- 推薦理由は投稿内容と関連付ける`;
+- Amazon商品検索に有効な日本語キーワードを使用
+- 投稿内容と密接に関連するカテゴリを選択
+- 各カテゴリに2-3個のキーワードを含める`;
 
     try {
       const result = await model.generateContent(prompt);
@@ -259,89 +300,84 @@ ${JSON.stringify(context, null, 2)}
       const jsonText = responseText.slice(jsonStart, jsonEnd);
       
       const parsed = JSON.parse(jsonText);
-      
-      // affiliateUrlを追加（実際の実装では実際のアフィリエイトURLを使用）
-      return parsed.recommendations.map((group: any) => ({
-        ...group,
-        products: group.products.map((product: any) => ({
-          ...product,
-          affiliateUrl: `https://example.com/products/${product.id}`,
-          imageUrl: `/api/placeholder/150/150`
-        }))
-      }));
+      return parsed.searchGroups || [];
       
     } catch (error) {
-      console.error('Recommendation generation error:', error);
-      return this.getDefaultRecommendations(context);
+      console.error('Keyword generation error:', error);
+      // フォールバック用のキーワード
+      return [
+        {
+          category: 'おすすめ商品',
+          keywords: ['便利グッズ', '人気商品'],
+          reason: '多くの人に愛用されている商品'
+        }
+      ];
     }
   }
 
   /**
    * デフォルトの推薦（エラー時のフォールバック）
    */
-  private getDefaultRecommendations(context: PostContext): RecommendationGroup[] {
+  private async getDefaultRecommendations(context: PostContext): Promise<RecommendationGroup[]> {
     const recommendations: RecommendationGroup[] = [];
     
-    // ペットが検出された場合
-    if (context.objects.includes('犬') || context.objects.includes('猫') || context.objects.includes('ペット')) {
-      recommendations.push({
-        title: 'ペット用品',
-        reason: 'ペットの写真から、便利なペット用品をご提案します',
-        products: [
-          {
-            id: 'pet-1',
-            name: 'ペット用自動給餌器',
-            price: '¥6,980',
-            category: ProductCategories.PET,
-            tags: ['ペット', '便利グッズ'],
-            affiliateUrl: 'https://example.com/products/pet-1',
-            reason: 'お留守番時も安心の自動給餌器'
-          },
-          {
-            id: 'pet-2',
-            name: 'ペット用体重計',
-            price: '¥2,480',
-            category: ProductCategories.PET,
-            tags: ['ペット', '健康管理'],
-            affiliateUrl: 'https://example.com/products/pet-2',
-            reason: '健康管理に便利な体重計'
+    try {
+      // Amazon APIを使ってフォールバック商品を検索
+      const fallbackKeywords = [
+        { category: 'ペット用品', keywords: ['ペット', '犬', '猫'] },
+        { category: 'アウトドア用品', keywords: ['アウトドア', 'キャンプ'] },
+        { category: '便利グッズ', keywords: ['便利グッズ', 'ガジェット'] }
+      ];
+
+      for (const fallback of fallbackKeywords) {
+        // コンテキストに関連するキーワードを優先
+        const isRelevant = context.objects.some(obj => 
+          fallback.keywords.some(keyword => 
+            obj.includes(keyword) || keyword.includes(obj)
+          )
+        ) || context.scene.includes('屋外') && fallback.category.includes('アウトドア');
+
+        if (isRelevant || recommendations.length === 0) {
+          try {
+            const products = await amazonService.searchItems(
+              fallback.keywords.join(' '),
+              'All',
+              3
+            );
+            
+            if (products.length > 0) {
+              recommendations.push({
+                title: fallback.category,
+                reason: `${fallback.category}の人気商品をご提案します`,
+                products: products
+              });
+              
+              // 1つのカテゴリで十分な場合は終了
+              if (recommendations.length >= 1) break;
+            }
+          } catch (error) {
+            console.error(`Fallback search failed for ${fallback.category}:`, error);
           }
-        ]
-      });
+        }
+      }
+    } catch (error) {
+      console.error('Fallback recommendations failed:', error);
     }
-    
-    // アウトドアシーンの場合
-    if (context.scene.includes('屋外') || context.scene.includes('公園')) {
-      recommendations.push({
-        title: 'アウトドア用品',
-        reason: 'アウトドアをもっと楽しむための商品',
-        products: [
-          {
-            id: 'outdoor-1',
-            name: 'ポータブルチェア',
-            price: '¥3,980',
-            category: ProductCategories.OUTDOOR,
-            tags: ['アウトドア', 'キャンプ'],
-            affiliateUrl: 'https://example.com/products/outdoor-1',
-            reason: '持ち運び便利な折りたたみチェア'
-          }
-        ]
-      });
-    }
-    
-    // 推薦が空の場合は汎用的な商品を追加
+
+    // 最終的なフォールバック（静的なモック商品）
     if (recommendations.length === 0) {
       recommendations.push({
         title: 'おすすめ商品',
         reason: '人気の商品をご紹介します',
         products: [
           {
-            id: 'general-1',
-            name: 'モバイルバッテリー',
+            id: 'fallback-1',
+            name: 'モバイルバッテリー 大容量',
             price: '¥2,980',
             category: ProductCategories.ELECTRONICS,
             tags: ['ガジェット', '便利グッズ'],
-            affiliateUrl: 'https://example.com/products/general-1',
+            affiliateUrl: 'https://amazon.co.jp/',
+            imageUrl: '/api/placeholder/300/300',
             reason: '外出時の必需品'
           }
         ]

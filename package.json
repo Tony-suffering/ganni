@@ -9,7 +9,8 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "mcp:supabase": "supabase-mcp-claude",
-    "test:photo-scoring": "node scripts/test-photo-scoring.js"
+    "test:photo-scoring": "node scripts/test-photo-scoring.js",
+    "test:amazon-api": "node scripts/test-amazon-api.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.17.1",

@@ -1,14 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Upload, Sparkles, Tag as TagIcon, Type, MessageCircle, HelpCircle, Eye, Wifi, WifiOff, Award, ShoppingBag } from 'lucide-react';
-import { Tag, AIComment, ProductRecommendation } from '../types';
+import { X, Upload, Type, MessageCircle, HelpCircle, Eye, Star } from 'lucide-react';
+import { Tag, AIComment } from '../types';
 import { useAI } from '../hooks/useAI';
 import { useAuth } from '../contexts/AuthContext';
 import VoiceInputButton from "./VoiceInputButton";
 import { generateImageAIComments } from "../lib/gemini";
-import { PhotoScoringService } from '../services/photoScoringService';
-import { productRecommendationService } from '../services/productRecommendationService';
-import { RelatedProductsCompact } from './RelatedProducts';
 
 interface NewPostModalProps {
   isOpen: boolean;
@@ -36,10 +33,6 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
     tags: [] as Tag[],
   });
   
-  const [photoScore, setPhotoScore] = useState<any>(null);
-  const [isGeneratingScore, setIsGeneratingScore] = useState(false);
-  const [productRecommendations, setProductRecommendations] = useState<ProductRecommendation | null>(null);
-  const [isGeneratingRecommendations, setIsGeneratingRecommendations] = useState(false);
   
   // TypeScript用の型定義
   declare global {
@@ -55,13 +48,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isComposing, setIsComposing] = useState(false);
 
-  const { 
-    generateDescription, 
-    generateComments, 
-    isGeneratingDescription, 
-    isGeneratingComments,
-    apiStatus 
-  } = useAI();
+  const { apiStatus } = useAI();
 
   // Auto-resize textarea
   const autoResizeTextarea = () => {
@@ -213,87 +200,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
     }
   };
 
-  const handleGeneratePhotoScore = async () => {
-    if (!imagePreview || !formData.title.trim()) {
-      alert('画像とタイトルを入力してからAI写真採点を実行してください');
-      return;
-    }
-    
-    try {
-      setIsGeneratingScore(true);
-      const scoringService = new PhotoScoringService();
-      
-      // APIキーのテスト（初回のみ）
-      if (!window.geminiApiTested) {
-        console.log('Testing Gemini API key...');
-        const isValid = await scoringService.testAPIKey();
-        if (!isValid) {
-          throw new Error('Gemini APIキーが無効です。環境変数を確認してください。');
-        }
-        window.geminiApiTested = true;
-      }
-      
-      const score = await scoringService.scorePhoto(imagePreview, formData.title, formData.userComment);
-      const levelInfo = PhotoScoringService.getScoreLevel(score.total);
-      
-      setPhotoScore({
-        technical_score: score.technical,
-        composition_score: score.composition,
-        creativity_score: score.creativity,
-        engagement_score: score.engagement,
-        total_score: score.total,
-        score_level: levelInfo.level,
-        level_description: levelInfo.description,
-        ai_comment: score.comment
-      });
-      
-      // エラーメッセージがある場合は表示
-      if (score.comment.includes('採点エラー:')) {
-        alert(score.comment);
-      }
-    } catch (error) {
-      console.error('Photo scoring failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'AI写真採点中にエラーが発生しました。';
-      alert(errorMessage);
-    } finally {
-      setIsGeneratingScore(false);
-    }
-  };
 
-  const handleGenerateAIDescription = async () => {
-    if (!formData.title.trim() || !formData.userComment.trim()) {
-      alert('タイトルと感想を入力してからAI生成を実行してください');
-      return;
-    }
-    try {
-      const description = await generateDescription(formData.title, formData.userComment, formData.imageAIDescription);
-      setFormData(prev => ({ ...prev, textAIDescription: description }));
-    } catch (error) {
-      alert('AI描写生成中にエラーが発生しました。');
-    }
-  };
-
-  const handleGenerateProductRecommendations = async () => {
-    if (!imagePreview || !formData.title.trim() || !formData.userComment.trim()) {
-      alert('画像、タイトル、感想を入力してから商品推薦を生成してください');
-      return;
-    }
-
-    try {
-      setIsGeneratingRecommendations(true);
-      const recommendations = await productRecommendationService.analyzeAndRecommend(
-        imagePreview,
-        formData.title,
-        formData.userComment
-      );
-      setProductRecommendations(recommendations);
-    } catch (error) {
-      console.error('Product recommendation generation failed:', error);
-      alert('商品推薦の生成中にエラーが発生しました。');
-    } finally {
-      setIsGeneratingRecommendations(false);
-    }
-  };
 
   // タグ選択ハンドラ
   const handleTagToggle = (tag: Tag) => {
@@ -308,13 +215,9 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedImage || !formData.userComment.trim() || !formData.title.trim() || !user || formData.tags.length === 0 || !photoScore) {
+    if (!selectedImage || !formData.userComment.trim() || !formData.title.trim() || !user || formData.tags.length === 0) {
       if (formData.tags.length === 0) {
         alert('少なくとも1つのタグを選択してください。');
-        return;
-      }
-      if (!photoScore) {
-        alert('投稿前にAI写真採点を実行してください。');
         return;
       }
       return;
@@ -322,22 +225,11 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
 
     try {
       setIsLoading(true);
-      let imageUrl = imagePreview;
-      let aiDescription = formData.aiDescription;
-      // 1. AI説明文がなければ生成
-      if (!aiDescription) {
-        aiDescription = await generateDescription(formData.title, formData.userComment, formData.imageAIDescription);
-        setFormData(prev => ({ ...prev, aiDescription }));
-      }
-      // 2. AIコメントが未生成の場合のみ生成
-      let aiComments = formData.aiComments && formData.aiComments.length > 0
-        ? formData.aiComments
-        : await generateComments(formData.title, formData.userComment, aiDescription);
-      // 3. 投稿データ作成（写真スコアを含める）
+      
+      // シンプルな投稿データ作成（AI処理は投稿後に実行）
       const postData = {
         title: formData.title,
-        imageUrl: imageUrl,
-        aiDescription: aiDescription,
+        imageUrl: imagePreview,
         imageAIDescription: formData.imageAIDescription,
         userComment: formData.userComment,
         author: {
@@ -345,12 +237,17 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
           name: user.user_metadata?.name || user.email?.split('@')[0] || 'ユーザー',
           avatar: user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.name || user.email?.split('@')[0] || 'ユーザー')}&background=0072f5&color=fff`
         },
-        aiComments: aiComments,
         tags: formData.tags,
-        photoScore: photoScore // 写真スコアを投稿データに含める
+        // AI処理は投稿後に非同期で実行されるため、初期値を設定
+        aiDescription: '',
+        aiComments: [],
+        photoScore: null
       };
+      
       onSubmit(postData);
       onClose();
+      
+      // フォームをリセット
       setSelectedImage(null);
       setImagePreview('');
       setFormData({
@@ -362,7 +259,6 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
         aiComments: [],
         tags: []
       });
-      setPhotoScore(null);
       setScrollPosition(0);
     } catch (error) {
       console.error('Post submission failed:', error);
@@ -484,60 +380,6 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                           </div>
                         </div>
 
-                        {/* AI写真採点セクション */}
-                        <div>
-                          <div className="flex items-center justify-between mb-4">
-                            <h3 className="flex items-center text-lg font-display font-semibold text-purple-900">
-                              <Award className="w-5 h-5 mr-2 text-purple-500" />
-                              AI写真採点
-                            </h3>
-                            <button
-                              type="button"
-                              onClick={handleGeneratePhotoScore}
-                              disabled={isGeneratingScore || !imagePreview || !formData.title.trim()}
-                              className="flex items-center space-x-2 px-3 py-1.5 text-sm bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all duration-200 disabled:opacity-50"
-                            >
-                              <Award className="w-4 h-4" />
-                              <span>{isGeneratingScore ? '採点中...' : '採点開始'}</span>
-                            </button>
-                          </div>
-                          <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-2xl">
-                            {isGeneratingScore ? (
-                              <div className="flex items-center space-x-3 text-purple-600">
-                                <motion.div
-                                  animate={{ rotate: 360 }}
-                                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                  className="w-5 h-5 border-2 border-purple-600 border-t-transparent rounded-full"
-                                />
-                                <span className="text-sm">AI写真採点中です...</span>
-                              </div>
-                            ) : photoScore ? (
-                              <div className="space-y-4">
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-2">
-                                    <span className={`px-3 py-1 rounded-full text-white font-bold text-lg`} 
-                                          style={{ backgroundColor: PhotoScoringService.getScoreLevel(photoScore.total_score).color }}>
-                                      {photoScore.score_level}級
-                                    </span>
-                                    <span className="text-2xl font-bold text-purple-900">{photoScore.total_score}点</span>
-                                  </div>
-                                  <span className="text-sm text-purple-600">{photoScore.level_description}</span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3 text-sm">
-                                  <div>技術的品質: {photoScore.technical_score}/25</div>
-                                  <div>構図・バランス: {photoScore.composition_score}/25</div>
-                                  <div>創造性: {photoScore.creativity_score}/25</div>
-                                  <div>エンゲージメント: {photoScore.engagement_score}/25</div>
-                                </div>
-                                <p className="text-sm text-purple-700 italic">"{photoScore.ai_comment}"</p>
-                              </div>
-                            ) : (
-                              <p className="text-sm text-neutral-700 italic">
-                                画像とタイトルを入力してから「採点開始」ボタンを押してください
-                              </p>
-                            )}
-                          </div>
-                        </div>
                       </div>
                     </div>
                   )}
@@ -577,63 +419,31 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                   </div>
                 </div>
 
-                {/* AIコメンテーター */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="block text-sm font-medium text-neutral-700">
-                      AIコメンテーター
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleGenerateAIDescription}
-                      disabled={isGeneratingDescription || !formData.title.trim() || !formData.userComment.trim()}
-                      className="flex items-center space-x-2 px-3 py-1.5 text-sm bg-gradient-to-r from-primary-500 to-accent-500 text-white rounded-lg hover:from-primary-600 hover:to-accent-600 transition-all duration-200 disabled:opacity-50"
-                    >
-                      <Sparkles className="w-4 h-4" />
-                      <span>{isGeneratingDescription ? '生成中...' : 'AI生成'}</span>
-                    </button>
-                  </div>
-                  <div className="mt-4 p-4 bg-gradient-to-r from-primary-50 to-accent-50 rounded-xl min-h-[100px] flex items-center">
-                    {isGeneratingDescription ? (
-                      <div className="flex items-center space-x-3 text-primary-600">
-                        <motion.div
-                          animate={{ rotate: 360 }}
-                          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                          className="w-5 h-5 border-2 border-primary-600 border-t-transparent rounded-full"
-                        />
-                        <span className="text-sm">AIコメンテーターがコメントを生成中です...</span>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-neutral-700 italic">
-                        {formData.textAIDescription || 'タイトルと感想を入力してから「AI生成」ボタンを押してください'}
-                      </p>
-                    )}
-                  </div>
-                </div>
 
-                {/* AI Response Preview */}
+
+                {/* AI Analysis Preview */}
                 {formData.title && formData.userComment && (
                   <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-200">
                     <h4 className="flex items-center text-lg font-semibold text-indigo-900 mb-3">
-                      <Sparkles className="w-5 h-5 mr-2" />
-                      投稿してからまた開いたら見れるよ！
+                      <Eye className="w-5 h-5 mr-2" />
+                      投稿後のAI分析について
                     </h4>
                     <div className="space-y-3">
                       <div className="flex items-center space-x-2 text-sm">
                         <MessageCircle className="w-4 h-4 text-blue-600" />
-                        <span className="text-neutral-700">独創的なコメント</span>
+                        <span className="text-neutral-700">📊 写真採点 (100点満点)</span>
                       </div>
                       <div className="flex items-center space-x-2 text-sm">
                         <HelpCircle className="w-4 h-4 text-green-600" />
-                        <span className="text-neutral-700">対話を促す質問</span>
+                        <span className="text-neutral-700">💬 AIコメント (3つの応答)</span>
                       </div>
                       <div className="flex items-center space-x-2 text-sm">
                         <Eye className="w-4 h-4 text-purple-600" />
-                        <span className="text-neutral-700">新しい気づきの観察</span>
+                        <span className="text-neutral-700">🛍️ 関連商品推薦</span>
                       </div>
                     </div>
                     <p className="text-xs text-indigo-600 mt-3">
-                      投稿後、{apiStatus.provider}があなたの作品を分析して3つの応答を生成します
+                      投稿完了後、AIが自動的に分析を開始し、結果をポップアップでお知らせします
                     </p>
                   </div>
                 )}

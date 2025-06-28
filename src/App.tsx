@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { usePosts } from './hooks/usePosts';
 import { useTags } from './hooks/useTags';
 import { useHighlightUpdater } from './hooks/useHighlightUpdater';
+import { usePostAIAnalysis } from './hooks/usePostAIAnalysis';
 
 // Components
 import { Header } from './components/Header';
@@ -16,6 +17,7 @@ import { PhotoRankingSection } from './components/PhotoRankingSection';
 import { MasonryGrid } from './components/MasonryGrid';
 import { PostModal } from './components/PostModal';
 import { NewPostModal } from './components/NewPostModal';
+import { AIAnalysisResultModal } from './components/AIAnalysisResultModal';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { LoginModal } from './components/auth/LoginModal';
 import { RegisterModal } from './components/auth/RegisterModal';
@@ -43,6 +45,8 @@ function AppContent() {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<FilterOptions>({ tags: [], sortBy: 'newest' });
+  const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
+  const [analyzingPostId, setAnalyzingPostId] = useState<string | null>(null);
 
   // useAuthフックで認証状態とローディング状態を取得
   const { loading: authLoading } = useAuth();
@@ -55,6 +59,7 @@ function AppContent() {
     hasNextPage,
     loadMore,
     addPost,
+    updatePost,
     filterPosts,
     likePost,
     unlikePost,
@@ -67,6 +72,18 @@ function AppContent() {
   
   // タグデータを管理するカスタムフック
   const { tags } = useTags();
+
+  // AI分析を管理するカスタムフック
+  const {
+    isAnalyzing,
+    photoScore,
+    aiComments,
+    productRecommendations,
+    progress,
+    isAnalysisComplete,
+    analyzePost,
+    resetAnalysis
+  } = usePostAIAnalysis();
 
   // バックグラウンドでハイライトを自動更新
   useHighlightUpdater({
@@ -94,8 +111,38 @@ function AppContent() {
   // 新しい投稿データを処理する関数
   const handleNewPost = async (postData: Parameters<typeof addPost>[0]) => {
     const newPost = await addPost(postData);
-    if (newPost) { // Check if newPost is not null
-      setSelectedPost(newPost);
+    if (newPost) {
+      console.log('✅ Post created:', newPost.id);
+      
+      // 投稿後のAI分析を開始
+      setAnalyzingPostId(newPost.id);
+      setIsAnalysisModalOpen(true);
+      
+      // AI分析を非同期で開始
+      try {
+        const analysisResult = await analyzePost(
+          newPost.imageUrl,
+          newPost.title,
+          newPost.userComment,
+          newPost.imageAIDescription
+        );
+        
+        console.log('🎉 AI analysis completed for post:', newPost.id);
+        
+        // 分析結果でPostをデータベースに保存
+        try {
+          await updatePost(newPost.id, {
+            photoScore: analysisResult.photoScore,
+            aiComments: analysisResult.aiComments
+          });
+          console.log('✅ AI analysis results saved to database for post:', newPost.id);
+        } catch (updateError) {
+          console.error('❌ Failed to save AI analysis results to database:', updateError);
+        }
+        
+      } catch (error) {
+        console.error('❌ AI analysis failed for post:', newPost.id, error);
+      }
     }
   };
 
@@ -112,6 +159,23 @@ function AppContent() {
   };
 
   const handleToggleFilter = () => setIsFilterOpen(!isFilterOpen);
+
+  // AI分析モーダル関連の関数
+  const closeAnalysisModal = () => {
+    setIsAnalysisModalOpen(false);
+    setAnalyzingPostId(null);
+    resetAnalysis();
+  };
+
+  const viewAnalyzedPost = () => {
+    if (analyzingPostId) {
+      const post = posts.find(p => p.id === analyzingPostId);
+      if (post) {
+        setSelectedPost(post);
+        closeAnalysisModal();
+      }
+    }
+  };
 
   // 通知から投稿を開く機能
   const handlePostClick = (postId: string) => {
@@ -228,6 +292,17 @@ function AppContent() {
         isOpen={isRegisterOpen}
         onClose={() => setIsRegisterOpen(false)}
         onSwitchToLogin={switchToLogin}
+      />
+
+      <AIAnalysisResultModal
+        isOpen={isAnalysisModalOpen}
+        onClose={closeAnalysisModal}
+        onViewPost={viewAnalyzedPost}
+        photoScore={photoScore}
+        aiComments={aiComments}
+        productRecommendations={productRecommendations}
+        isAnalyzing={isAnalyzing}
+        analysisProgress={progress}
       />
 
       <BottomNavBar

@@ -19,6 +19,7 @@ interface UsePostsReturn {
   error: string | null;
   fetchPosts: () => Promise<void>;
   addPost: (postData: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author' | 'likeCount' | 'likedByCurrentUser' | 'bookmarkedByCurrentUser' | 'commentCount'>) => Promise<Post | null>;
+  updatePost: (postId: string, updates: Partial<Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author'>>) => Promise<void>;
   deletePost: (postId: string) => Promise<void>;
   likePost: (postId: string) => Promise<void>;
   unlikePost: (postId: string) => Promise<void>;
@@ -519,6 +520,7 @@ export const usePosts = (): UsePostsReturn => {
         await supabase.from('post_tags').insert(updates.tags.map(tag => ({ post_id: postId, tag_id: tag.id })));
       }
     }
+    
     // 3. AIコメント更新（全削除→再挿入）
     if (updates.aiComments) {
       await supabase.from('ai_comments').delete().eq('post_id', postId);
@@ -526,6 +528,43 @@ export const usePosts = (): UsePostsReturn => {
         await supabase.from('ai_comments').insert(updates.aiComments.map(comment => ({ post_id: postId, type: comment.type, content: comment.content })));
       }
     }
+    
+    // 4. 写真スコア更新（既存があれば更新、なければ挿入）
+    if (updates.photoScore) {
+      const { data: existingScore } = await supabase
+        .from('photo_scores')
+        .select('id')
+        .eq('post_id', postId)
+        .single();
+      
+      if (existingScore) {
+        // 既存スコア更新
+        await supabase.from('photo_scores').update({
+          technical_score: updates.photoScore.technical_score,
+          composition_score: updates.photoScore.composition_score,
+          creativity_score: updates.photoScore.creativity_score,
+          engagement_score: updates.photoScore.engagement_score,
+          total_score: updates.photoScore.total_score,
+          score_level: updates.photoScore.score_level,
+          level_description: updates.photoScore.level_description,
+          ai_comment: updates.photoScore.ai_comment
+        }).eq('post_id', postId);
+      } else {
+        // 新規スコア挿入
+        await supabase.from('photo_scores').insert({
+          post_id: postId,
+          technical_score: updates.photoScore.technical_score,
+          composition_score: updates.photoScore.composition_score,
+          creativity_score: updates.photoScore.creativity_score,
+          engagement_score: updates.photoScore.engagement_score,
+          total_score: updates.photoScore.total_score,
+          score_level: updates.photoScore.score_level,
+          level_description: updates.photoScore.level_description,
+          ai_comment: updates.photoScore.ai_comment
+        });
+      }
+    }
+    
     await fetchPosts();
   }, [fetchPosts]);
 
@@ -622,5 +661,5 @@ export const usePosts = (): UsePostsReturn => {
     }
   }, []);
 
-  return { posts: filteredPosts, allPosts: posts, loading, error, fetchPosts, addPost, deletePost, likePost, unlikePost, bookmarkPost, unbookmarkPost, filterPosts, hasNextPage, loadMore, isLoadingMore, isFiltering };
+  return { posts: filteredPosts, allPosts: posts, loading, error, fetchPosts, addPost, updatePost, deletePost, likePost, unlikePost, bookmarkPost, unbookmarkPost, filterPosts, hasNextPage, loadMore, isLoadingMore, isFiltering };
 };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Wifi, WifiOff, Sparkles } from 'lucide-react';
+import { Wifi, WifiOff, Star } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAI } from '../hooks/useAI';
 
@@ -19,7 +19,7 @@ export const AIStatusIndicator: React.FC = () => {
               animate={{ scale: [1, 1.2, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              <Sparkles className="w-4 h-4 text-green-500" />
+              <Star className="w-4 h-4 text-green-500" />
             </motion.div>
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
           </>

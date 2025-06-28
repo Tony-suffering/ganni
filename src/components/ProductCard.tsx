@@ -1,5 +1,5 @@
 import React from 'react';
-import { ExternalLink, Tag } from 'lucide-react';
+import { ExternalLink, Tag, Star, ShoppingCart } from 'lucide-react';
 import { Product } from '../types';
 
 interface ProductCardProps {
@@ -14,7 +14,15 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   size = 'medium'
 }) => {
   const handleClick = () => {
+    // Amazon商品ページを新しいタブで開く
     window.open(product.affiliateUrl, '_blank', 'noopener,noreferrer');
+    
+    // 分析用のトラッキング（オプション）
+    console.log('Product clicked:', {
+      id: product.id,
+      name: product.name,
+      category: product.category
+    });
   };
 
   const sizeClasses = {
@@ -54,11 +62,16 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     <div 
       className={`
         bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md 
-        transition-all duration-200 cursor-pointer hover:border-blue-300
+        transition-all duration-200 cursor-pointer hover:border-orange-300
+        hover:scale-[1.02] group relative
         ${sizeClasses[size]} ${className}
       `}
       onClick={handleClick}
     >
+      {/* Amazon バッジ */}
+      <div className="absolute top-2 right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+        Amazon
+      </div>
       {/* 商品画像 */}
       <div className="flex items-start space-x-3">
         {product.imageUrl ? (
@@ -81,9 +94,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           </h3>
           
           {/* 価格 */}
-          <p className={`${textSizeClasses[size].price} text-blue-600 mt-1`}>
-            {product.price}
-          </p>
+          <div className="flex items-center space-x-2 mt-1">
+            <p className={`${textSizeClasses[size].price} text-orange-600 font-bold`}>
+              {product.price}
+            </p>
+            {product.id.startsWith('B0') && (
+              <Star className="w-4 h-4 text-yellow-400 fill-current" />
+            )}
+          </div>
           
           {/* カテゴリ */}
           <p className={`${textSizeClasses[size].category} text-gray-500 mt-1`}>
@@ -117,8 +135,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           )}
         </div>
         
-        {/* 外部リンクアイコン */}
-        <ExternalLink className="w-4 h-4 text-gray-400 flex-shrink-0" />
+        {/* Amazon アイコン */}
+        <div className="flex-shrink-0 flex flex-col items-center space-y-1">
+          <ShoppingCart className="w-4 h-4 text-orange-500" />
+          <span className="text-xs text-orange-600 font-medium">Amazon</span>
+        </div>
       </div>
     </div>
   );
