@@ -262,8 +262,10 @@ function AppContent() {
                   searchQuery={searchQuery}
                 />
                 
-                {/* Floating CTA for Dashboard */}
-                <PersonalJourneyCTA variant="floating" />
+                {/* Floating CTA for Dashboard - Desktop only */}
+                <div className="hidden md:block">
+                  <PersonalJourneyCTA variant="floating" />
+                </div>
               </>
             }
           />

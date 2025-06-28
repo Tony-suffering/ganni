@@ -89,11 +89,11 @@ export const Header: React.FC<HeaderProps> = ({
                     </svg>
                   </div>
                 </div>
-                <div>
+                <div className="hidden sm:block">
                   <h1 className="text-xl sm:text-2xl font-bold italic text-gray-900 group-hover:text-black transition-colors duration-300 tracking-tight transform group-hover:scale-105">
                     AIコメンテーター
                   </h1>
-                  <p className="text-xs text-gray-500 -mt-1 hidden sm:block font-medium tracking-wide">あなたの感想・体験にコメントします</p>
+                  <p className="text-xs text-gray-500 -mt-1 font-medium tracking-wide">あなたの感想・体験にコメントします</p>
                 </div>
               </Link>
               
@@ -162,7 +162,7 @@ export const Header: React.FC<HeaderProps> = ({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleNewPost}
-                className="hidden md:flex items-center justify-center px-4 py-2.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-all duration-200 text-sm font-semibold"
+                className="hidden md:flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all duration-200 text-sm font-semibold"
               >
                 <Plus className="w-4 h-4 mr-1.5" />
                 投稿

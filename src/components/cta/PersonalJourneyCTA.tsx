@@ -78,8 +78,8 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
           whileHover={{ scale: 1.02 }}
           className="relative overflow-hidden"
         >
-          {/* シルバー背景 */}
-          <div className="absolute inset-0 bg-gradient-to-r from-gray-400 via-gray-300 to-gray-500 rounded-lg opacity-90 group-hover:opacity-100 transition-opacity" />
+          {/* グレー背景 */}
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-600 to-gray-700 rounded-lg group-hover:from-gray-700 group-hover:to-gray-800 transition-all" />
           
           {/* 光るエフェクト */}
           <motion.div
@@ -103,8 +103,8 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
               <Target className="w-5 h-5" />
             </motion.div>
             
-            <span className="font-medium text-sm whitespace-nowrap">
-              あなたの分析を見る
+            <span className="font-medium text-sm whitespace-nowrap hidden sm:inline">
+              分析
             </span>
             
             <ArrowRight className="w-4 h-4" />
@@ -152,12 +152,12 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
               <div className="bg-white shadow-xl rounded-lg p-4 border border-gray-200 w-64">
                 <div className="text-center">
                   <div className="text-sm font-semibold text-gray-900 mb-2">
-                    🎯 パーソナル分析結果
+                    パーソナル分析結果
                   </div>
                   <div className="text-xs text-gray-600 space-y-1">
-                    <div>✨ あなただけの性格診断</div>
-                    <div>🛒 専用おすすめ商品</div>
-                    <div>📈 成長トラッキング</div>
+                    <div>あなただけの性格診断</div>
+                    <div>専用おすすめ商品</div>
+                    <div>成長トラッキング</div>
                   </div>
                   <div className="mt-3 text-xs text-purple-600 font-medium">
                     クリックして詳細を確認 →
@@ -181,14 +181,14 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
       >
         <motion.div
           whileHover={{ scale: 1.05 }}
-          className="relative"
+          className="relative inline-flex flex-col items-center justify-center"
         >
-          {/* シルバー背景 */}
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-400 via-gray-300 to-gray-500 rounded-lg opacity-90" />
+          {/* グレー背景 */}
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg" />
 
-          <div className="relative flex flex-col items-center justify-center p-3 text-white">
-            <BarChart3 className="w-6 h-6" />
-            <span className="text-xs font-medium mt-1">分析</span>
+          <div className="relative flex flex-col items-center justify-center px-2 py-1.5 text-white min-w-12 min-h-12">
+            <BarChart3 className="w-5 h-5" />
+            <span className="text-xs font-medium mt-0.5">分析</span>
           </div>
         </motion.div>
       </Link>
@@ -212,8 +212,8 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
             whileHover={{ scale: 1.05 }}
             className="relative"
           >
-            {/* シルバー背景 */}
-            <div className="absolute inset-0 bg-gradient-to-r from-gray-400 via-gray-300 to-gray-500 rounded-full shadow-lg" />
+            {/* グレー背景 */}
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-600 to-gray-700 rounded-full shadow-lg" />
             
             {/* リップルエフェクト */}
             <motion.div
@@ -226,7 +226,7 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
                 repeat: Infinity,
                 ease: "easeOut"
               }}
-              className="absolute inset-0 bg-gradient-to-r from-gray-300 via-gray-200 to-gray-400 rounded-full"
+              className="absolute inset-0 bg-gray-600 rounded-full"
             />
 
             <div className="relative flex items-center justify-center w-14 h-14 text-white">
@@ -234,23 +234,6 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
             </div>
           </motion.div>
 
-          {/* 吹き出し */}
-          <motion.div
-            initial={{ opacity: 0, x: 15 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 }}
-            className="absolute right-full top-1/2 transform -translate-y-1/2 mr-2"
-          >
-            <div className="bg-white shadow-md rounded-lg px-3 py-2 border border-gray-100 whitespace-nowrap">
-              <div className="text-xs font-medium text-gray-800">
-                あなたの分析結果
-              </div>
-              {/* 矢印 */}
-              <div className="absolute left-full top-1/2 transform -translate-y-1/2">
-                <div className="w-0 h-0 border-l-3 border-l-white border-t-3 border-t-transparent border-b-3 border-b-transparent"></div>
-              </div>
-            </div>
-          </motion.div>
         </Link>
       </motion.div>
     );

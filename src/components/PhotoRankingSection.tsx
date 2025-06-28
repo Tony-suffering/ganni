@@ -48,22 +48,22 @@ export const PhotoRankingSection: React.FC<PhotoRankingSectionProps> = ({
       case 1:
         return (
           <div className="flex items-center space-x-1">
-            <Trophy className="w-4 h-4 text-yellow-500" />
-            <span className="text-sm font-bold text-yellow-600">1</span>
+            <Trophy className="w-4 h-4 text-gray-600" />
+            <span className="text-sm font-bold text-gray-600">1</span>
           </div>
         );
       case 2:
         return (
           <div className="flex items-center space-x-1">
-            <Medal className="w-4 h-4 text-gray-400" />
-            <span className="text-sm font-bold text-gray-600">2</span>
+            <Medal className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-bold text-gray-500">2</span>
           </div>
         );
       case 3:
         return (
           <div className="flex items-center space-x-1">
-            <Award className="w-4 h-4 text-orange-500" />
-            <span className="text-sm font-bold text-orange-600">3</span>
+            <Award className="w-4 h-4 text-gray-500" />
+            <span className="text-sm font-bold text-gray-500">3</span>
           </div>
         );
       default:
@@ -79,11 +79,11 @@ export const PhotoRankingSection: React.FC<PhotoRankingSectionProps> = ({
   const getRankBgColor = (rank: number) => {
     switch (rank) {
       case 1:
-        return 'bg-gradient-to-r from-yellow-50 to-amber-50 border-yellow-200';
+        return 'bg-gradient-to-r from-gray-50 to-gray-100 border-gray-300';
       case 2:
-        return 'bg-gradient-to-r from-gray-50 to-slate-50 border-gray-200';
+        return 'bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200';
       case 3:
-        return 'bg-gradient-to-r from-orange-50 to-red-50 border-orange-200';
+        return 'bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200';
       default:
         return 'bg-white border-gray-200';
     }
@@ -111,11 +111,11 @@ export const PhotoRankingSection: React.FC<PhotoRankingSectionProps> = ({
     return (
       <div className="max-w-7xl mx-auto px-4 pt-0 pb-2">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5">
+          <div className="bg-gradient-to-r from-gray-600 to-gray-700 px-4 py-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Trophy className="w-4 h-4 text-white" />
-                <h2 className="text-sm font-bold text-white">🏆 スコアランキング</h2>
+                <h2 className="text-sm font-bold text-white">スコアランキング</h2>
               </div>
               <div className="flex space-x-1">
                 <button
@@ -161,7 +161,7 @@ export const PhotoRankingSection: React.FC<PhotoRankingSectionProps> = ({
     <div className="max-w-7xl mx-auto px-4 pt-0 pb-2">
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         {/* ヘッダーとタブ */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2.5">
+        <div className="bg-gradient-to-r from-gray-600 to-gray-700 px-4 py-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Trophy className="w-4 h-4 text-white" />
@@ -172,7 +172,7 @@ export const PhotoRankingSection: React.FC<PhotoRankingSectionProps> = ({
                 onClick={() => setActiveTab('today')}
                 className={`px-3 py-1.5 text-xs font-medium rounded transition-colors cursor-pointer ${
                   activeTab === 'today'
-                    ? 'bg-white text-blue-600'
+                    ? 'bg-white text-gray-700'
                     : 'text-white/70 hover:text-white hover:bg-white/10'
                 }`}
                 type="button"
@@ -183,7 +183,7 @@ export const PhotoRankingSection: React.FC<PhotoRankingSectionProps> = ({
                 onClick={() => setActiveTab('all')}
                 className={`px-3 py-1.5 text-xs font-medium rounded transition-colors cursor-pointer ${
                   activeTab === 'all'
-                    ? 'bg-white text-blue-600'
+                    ? 'bg-white text-gray-700'
                     : 'text-white/70 hover:text-white hover:bg-white/10'
                 }`}
                 type="button"
@@ -232,7 +232,7 @@ export const PhotoRankingSection: React.FC<PhotoRankingSectionProps> = ({
                   {/* 投稿情報 */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
-                      <h3 className="font-medium text-gray-900 text-xs leading-tight line-clamp-1 flex-1">
+                      <h3 className="font-medium text-gray-700 text-xs leading-tight line-clamp-1 flex-1">
                         {post.title}
                       </h3>
                       {/* スコアレベル */}
@@ -247,7 +247,7 @@ export const PhotoRankingSection: React.FC<PhotoRankingSectionProps> = ({
 
                   {/* 総合スコア */}
                   <div className="text-right">
-                    <div className="text-lg font-bold text-gray-900">
+                    <div className="text-lg font-bold text-gray-700">
                       {score.total_score}
                     </div>
                     <div className="text-xs text-gray-400">
@@ -270,7 +270,7 @@ export const PhotoRankingSection: React.FC<PhotoRankingSectionProps> = ({
               >
                 <button
                   onClick={() => setShowAll(!showAll)}
-                  className="w-full flex items-center justify-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+                  className="w-full flex items-center justify-center space-x-2 text-gray-600 hover:text-gray-700 transition-colors"
                 >
                   <span className="text-xs font-medium">
                     {showAll ? '上位3位のみ表示' : `残り${rankedPosts.length - 3}位まで表示`}

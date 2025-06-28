@@ -57,8 +57,8 @@ const BottomNavBar = ({ onNewPostClick, onLoginClick, onToggleFilter, onPostClic
         </button>
         {/* Enhanced Dashboard CTA / Filter */}
         {user ? (
-          <div className="inline-flex flex-col items-center justify-center px-3">
-            <PersonalJourneyCTA variant="mobile" className="scale-75" />
+          <div className="inline-flex flex-col items-center justify-center px-1">
+            <PersonalJourneyCTA variant="mobile" />
           </div>
         ) : (
           <button onClick={onToggleFilter} type="button" className={`inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-700 group relative ${hasActiveFilters ? 'bg-blue-50' : ''}`}>
@@ -72,7 +72,7 @@ const BottomNavBar = ({ onNewPostClick, onLoginClick, onToggleFilter, onPostClic
           </button>
         )}
         {/* New Post */}
-        <button onClick={handleNewPostClick} type="button" className="inline-flex flex-col items-center justify-center px-3 hover:bg-gray-50 dark:hover:bg-gray-700 group">
+        <button onClick={handleNewPostClick} type="button" className="inline-flex flex-col items-center justify-center px-2 hover:bg-gray-50 dark:hover:bg-gray-700 group">
           <svg className={`${iconStyle} ${inactiveIconStyle}`} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 18 18">
               <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 1v16M1 9h16"/>
           </svg>
@@ -94,7 +94,7 @@ const BottomNavBar = ({ onNewPostClick, onLoginClick, onToggleFilter, onPostClic
           <div className="inline-flex flex-col items-center justify-center px-3"></div>
         )}
         {/* Profile / Login */}
-        <div className="inline-flex flex-col items-center justify-center px-5 group">
+        <div className="inline-flex flex-col items-center justify-center px-2 group">
             {user ? (
                 <UserMenu direction="up" />
             ) : (
