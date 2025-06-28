@@ -9,6 +9,9 @@ import { useTags } from './hooks/useTags';
 import { useHighlightUpdater } from './hooks/useHighlightUpdater';
 import { usePostAIAnalysis } from './hooks/usePostAIAnalysis';
 
+// Services
+import { analyticsService } from './services/analyticsService';
+
 // Components
 import { Header } from './components/Header';
 import { FilterPanel } from './components/FilterPanel';
@@ -21,6 +24,7 @@ import { AIAnalysisResultModal } from './components/AIAnalysisResultModal';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { LoginModal } from './components/auth/LoginModal';
 import { RegisterModal } from './components/auth/RegisterModal';
+import { PersonalJourneyCTA } from './components/cta/PersonalJourneyCTA';
 import BottomNavBar from './components/BottomNavBar';
 import UserProfile from './pages/UserProfile';
 
@@ -28,6 +32,7 @@ import UserProfile from './pages/UserProfile';
 import { ProfileEdit } from './pages/ProfileEdit';
 import { Settings } from './pages/Settings';
 import { Bookmarks } from './pages/Bookmarks';
+import { PersonalDashboard } from './pages/PersonalDashboard';
 
 // Data and Types
 import { Post, FilterOptions } from './types';
@@ -49,7 +54,14 @@ function AppContent() {
   const [analyzingPostId, setAnalyzingPostId] = useState<string | null>(null);
 
   // useAuthフックで認証状態とローディング状態を取得
-  const { loading: authLoading } = useAuth();
+  const { loading: authLoading, user } = useAuth();
+
+  // ユーザー情報をアナリティクスサービスに設定
+  useEffect(() => {
+    if (user) {
+      analyticsService.setUser(user.id);
+    }
+  }, [user]);
   
   // 投稿データを管理するカスタムフック
   const {
@@ -249,6 +261,9 @@ function AppContent() {
                   deletePost={deletePost}
                   searchQuery={searchQuery}
                 />
+                
+                {/* Floating CTA for Dashboard */}
+                <PersonalJourneyCTA variant="floating" />
               </>
             }
           />
@@ -256,6 +271,7 @@ function AppContent() {
           <Route path="/profile-edit" element={<ProtectedRoute><ProfileEdit /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/bookmarks" element={<ProtectedRoute><Bookmarks /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute><PersonalDashboard /></ProtectedRoute>} />
         </Routes>
       </main>
 

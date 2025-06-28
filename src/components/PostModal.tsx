@@ -5,6 +5,7 @@ import { X, User, Calendar, Tag as TagIcon, MessageCircle, Star, HelpCircle, Eye
 import { LazyImage } from './LazyImage';
 import { PhotoScoreDisplay } from './PhotoScoreDisplay';
 import { DetailedPhotoScoreDisplayV2 } from './dev/DetailedPhotoScoreDisplayV2';
+import { PersonalCuratorDisplay } from './curator/PersonalCuratorDisplay';
 import { Post, Comment } from '../types';
 import { supabase } from '../supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -564,6 +565,16 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
                     title={post.title}
                     description={post.userComment}
                     userEmail={user?.email}
+                  />
+                </div>
+
+                {/* AIパーソナルキュレーター */}
+                <div className="mt-8">
+                  <PersonalCuratorDisplay
+                    postId={post.id}
+                    userId={post.author.id}
+                    userPosts={[]} // 実際の実装では投稿者の他の投稿を取得
+                    userLocation={undefined} // 位置情報があれば設定
                   />
                 </div>
 

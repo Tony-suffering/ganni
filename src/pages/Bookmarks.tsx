@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Bookmark, Search } from 'lucide-react';
+import { ArrowLeft, Sparkles, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../supabase';
@@ -349,15 +349,15 @@ export const Bookmarks: React.FC = () => {
                 <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
               </button>
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                  <Bookmark className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                <div className="p-2 bg-gradient-to-br from-yellow-100 to-yellow-200 dark:from-yellow-900 dark:to-yellow-800 rounded-lg shadow-md">
+                  <Sparkles className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
                 </div>
                 <div>
                   <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                    ブックマーク
+                    コレクション
                   </h1>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {bookmarkedPosts.length}件の投稿
+                    {bookmarkedPosts.length}件の特別な投稿
                   </p>
                 </div>
               </div>
@@ -369,7 +369,7 @@ export const Bookmarks: React.FC = () => {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="ブックマークを検索..."
+                  placeholder="コレクションを検索..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -393,16 +393,16 @@ export const Bookmarks: React.FC = () => {
               animate={{ opacity: 1, scale: 1 }}
               className="text-center"
             >
-              <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-6">
-                <Bookmark className="w-12 h-12 text-gray-400" />
+              <div className="w-24 h-24 bg-gradient-to-br from-yellow-100 to-yellow-200 dark:from-yellow-900 dark:to-yellow-800 rounded-full flex items-center justify-center mb-6 shadow-lg">
+                <Sparkles className="w-12 h-12 text-yellow-600 dark:text-yellow-400" />
               </div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-                {searchQuery ? '検索結果が見つかりません' : 'ブックマークがありません'}
+                {searchQuery ? '検索結果が見つかりません' : 'コレクションがありません'}
               </h3>
               <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-md">
                 {searchQuery 
                   ? '別のキーワードで検索してみてください'
-                  : '気に入った投稿をブックマークして、後で簡単に見つけられます'
+                  : '特別な投稿をコレクションに追加して、後で簡単に見つけられます'
                 }
               </p>
               {!searchQuery && (

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, MessageCircle, Send, Bookmark, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Heart, MessageCircle, Send, Sparkles, MoreHorizontal, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { Post } from '../types';
@@ -190,8 +190,18 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
                   <Send className="w-6 h-6" />
                 </button>
               </div>
-              <button onClick={handleBookmarkClick} className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
-                <Bookmark className={`w-6 h-6 ${bookmarkedByCurrentUser ? 'fill-current' : ''}`} />
+              <button 
+                onClick={handleBookmarkClick} 
+                className={`relative transition-all duration-300 ${
+                  bookmarkedByCurrentUser 
+                    ? 'text-yellow-500 drop-shadow-lg hover:scale-110' 
+                    : 'text-yellow-600 hover:text-yellow-500 hover:scale-105'
+                }`}
+                style={{
+                  filter: bookmarkedByCurrentUser ? 'drop-shadow(0 0 8px rgba(255, 215, 0, 0.6))' : 'none'
+                }}
+              >
+                <Sparkles className={`w-7 h-7 ${bookmarkedByCurrentUser ? 'fill-current' : ''}`} />
               </button>
             </div>
 

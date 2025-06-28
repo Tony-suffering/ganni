@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Filter } from 'lucide-react';
+import { Search, Plus, Filter, BarChart3 } from 'lucide-react';
 import { motion } from 'framer-motion';
 // import { AIStatusIndicator } from './AIStatusIndicator';
 import { UserMenu } from './auth/UserMenu';
@@ -7,6 +7,7 @@ import { LoginModal } from './auth/LoginModal';
 import { RegisterModal } from './auth/RegisterModal';
 import { NotificationBell } from './NotificationBell';
 import { HighlightSection } from './HighlightSection';
+import { PersonalJourneyCTA } from './cta/PersonalJourneyCTA';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -134,23 +135,27 @@ export const Header: React.FC<HeaderProps> = ({
                 />
               </div>
               
-              {/* Filter Button */}
-              <button
-                onClick={onToggleFilter}
-                className={`hidden md:flex p-2.5 rounded-lg transition-all duration-200 border relative ${
-                  hasActiveFilters
-                    ? 'text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 border-gray-200 hover:border-gray-300'
-                }`}
-                aria-label="フィルター"
-              >
-                <Filter className="w-5 h-5" />
-                {hasActiveFilters && (
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center">
-                    <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                  </div>
-                )}
-              </button>
+              {/* Enhanced Dashboard CTA / Filter */}
+              {(user || isDemo) && !loading ? (
+                <PersonalJourneyCTA variant="header" />
+              ) : (
+                <button
+                  onClick={onToggleFilter}
+                  className={`flex p-2.5 rounded-lg transition-all duration-200 border relative ${
+                    hasActiveFilters
+                      ? 'text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 border-gray-200 hover:border-gray-300'
+                  }`}
+                  aria-label="フィルター"
+                >
+                  <Filter className="w-4 h-4 md:w-5 md:h-5" />
+                  {hasActiveFilters && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full flex items-center justify-center">
+                      <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                    </div>
+                  )}
+                </button>
+              )}
               
               {/* New Post Button */}
               <motion.button

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Settings, LogOut, ChevronDown, Bookmark } from 'lucide-react';
+import { User, Settings, LogOut, ChevronDown, Sparkles } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 
@@ -104,11 +104,11 @@ export function UserMenu({ direction = 'down' }: { direction?: 'up' | 'down' }) 
               
               <Link
                 to="/bookmarks"
-                className="flex items-center space-x-3 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 transition-colors"
+                className="flex items-center space-x-3 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-yellow-50 transition-colors group"
                 onClick={() => setIsOpen(false)}
               >
-                <Bookmark className="w-4 h-4 text-neutral-500" />
-                <span>ブックマーク</span>
+                <Sparkles className="w-4 h-4 text-yellow-600 group-hover:text-yellow-700" />
+                <span>コレクション</span>
               </Link>
               
               <Link
