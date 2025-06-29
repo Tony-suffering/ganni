@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Heart, MessageCircle, Send, Sparkles, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Heart, MessageCircle, Send, Lightbulb, MoreHorizontal, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { Post } from '../types';
@@ -24,7 +24,8 @@ interface PostCardProps {
 
 const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost, unbookmarkPost, deletePost, priority = false, index = 0 }: PostCardProps) => {
   const { user: currentUser } = useAuth();
-  const { author, title, userComment, imageUrl, likeCount, likedByCurrentUser, bookmarkedByCurrentUser, createdAt, commentCount } = post;
+  const navigate = useNavigate();
+  const { author, title, userComment, imageUrl, likeCount, likedByCurrentUser, bookmarkedByCurrentUser, createdAt, commentCount, inspiration } = post;
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -42,13 +43,13 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
     }
   };
   
-  const handleBookmarkClick = (e: React.MouseEvent) => {
+  const handleInspirationClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (bookmarkedByCurrentUser) {
-      unbookmarkPost(post.id);
-    } else {
-      bookmarkPost(post.id);
+    if (!currentUser) {
+      // ログインが必要な場合の処理は後で追加
+      return;
     }
+    navigate(`/inspiration/${post.id}`);
   };
   
   const handleDeleteClick = (e: React.MouseEvent) => {
@@ -119,6 +120,31 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
               )}
             </div>
           </div>
+          
+          {/* Inspiration Info */}
+          {inspiration && inspiration.source_post && (
+            <div className="px-3 pb-2">
+              <Link 
+                to={`/inspiration/${inspiration.source_post_id}`}
+                className="flex items-center space-x-2 text-sm bg-gray-100 dark:bg-gray-800 rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Lightbulb className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                <span className="text-gray-700 dark:text-gray-300">
+                  <span className="font-medium">{inspiration.source_post.author.name}</span>
+                  さんの「{inspiration.source_post.title}」からインスパイア
+                </span>
+                <span className="ml-auto px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded">
+                  {getInspirationTypeLabel(inspiration.type)}
+                </span>
+              </Link>
+              {inspiration.note && (
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 px-2 italic">
+                  「{inspiration.note}」
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Post Image with Padding */}
           <div className="p-4">
@@ -191,17 +217,14 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
                 </button>
               </div>
               <button 
-                onClick={handleBookmarkClick} 
-                className={`relative transition-all duration-300 ${
-                  bookmarkedByCurrentUser 
-                    ? 'text-yellow-500 drop-shadow-lg hover:scale-110' 
-                    : 'text-yellow-600 hover:text-yellow-500 hover:scale-105'
-                }`}
-                style={{
-                  filter: bookmarkedByCurrentUser ? 'drop-shadow(0 0 8px rgba(255, 215, 0, 0.6))' : 'none'
-                }}
+                onClick={handleInspirationClick} 
+                className="relative transition-all duration-300 text-purple-600 hover:text-purple-500 hover:scale-105 group"
+                title="インスピレーション・ラボを開く"
               >
-                <Sparkles className={`w-7 h-7 ${bookmarkedByCurrentUser ? 'fill-current' : ''}`} />
+                <Lightbulb className="w-7 h-7 group-hover:drop-shadow-lg" />
+                <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                  インスピレーション
+                </span>
               </button>
             </div>
 
@@ -231,5 +254,18 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
     </>
   );
 });
+
+// インスピレーションタイプのラベル取得
+const getInspirationTypeLabel = (type: string) => {
+  const typeLabels = {
+    direct: '直接的',
+    style: 'スタイル',
+    concept: 'コンセプト',
+    technique: '技法',
+    composition: '構図',
+    mood: 'ムード'
+  };
+  return typeLabels[type as keyof typeof typeLabels] || type;
+};
 
 export default PostCard;

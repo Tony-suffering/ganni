@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useSearchParams } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 
 // Providers and Hooks
@@ -33,6 +33,7 @@ import { ProfileEdit } from './pages/ProfileEdit';
 import { Settings } from './pages/Settings';
 import { Bookmarks } from './pages/Bookmarks';
 import { PersonalDashboard } from './pages/PersonalDashboard';
+import { InspirationLab } from './pages/InspirationLab';
 
 // Data and Types
 import { Post, FilterOptions } from './types';
@@ -43,6 +44,7 @@ import { Post, FilterOptions } from './types';
  * useAuthフックを使用するため、AuthProviderの子要素である必要があります。
  */
 function AppContent() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isNewPostOpen, setIsNewPostOpen] = useState(false);
@@ -62,6 +64,15 @@ function AppContent() {
       analyticsService.setUser(user.id);
     }
   }, [user]);
+
+  // URLパラメータでinspiration指定時に新規投稿モーダルを自動開く
+  useEffect(() => {
+    const inspirationId = searchParams.get('inspiration');
+    if (inspirationId && user && !isNewPostOpen) {
+      console.log('🎨 インスピレーション投稿モードで新規投稿モーダルを開く:', inspirationId);
+      setIsNewPostOpen(true);
+    }
+  }, [searchParams, user, isNewPostOpen]);
   
   // 投稿データを管理するカスタムフック
   const {
@@ -274,6 +285,7 @@ function AppContent() {
           <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/bookmarks" element={<ProtectedRoute><Bookmarks /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><PersonalDashboard /></ProtectedRoute>} />
+          <Route path="/inspiration/:postId" element={<ProtectedRoute><InspirationLab /></ProtectedRoute>} />
         </Routes>
       </main>
 
@@ -295,9 +307,17 @@ function AppContent() {
 
       <NewPostModal
         isOpen={isNewPostOpen}
-        onClose={() => setIsNewPostOpen(false)}
+        onClose={() => {
+          setIsNewPostOpen(false);
+          // inspirationパラメータをクリア
+          if (searchParams.get('inspiration')) {
+            console.log('🧹 inspirationパラメータをクリア');
+            setSearchParams({});
+          }
+        }}
         tags={tags}
         onSubmit={handleNewPost}
+        inspirationPostId={searchParams.get('inspiration') || undefined}
       />
       
       <LoginModal

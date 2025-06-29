@@ -19,6 +19,22 @@ export interface Post {
   bookmarkedByCurrentUser: boolean;
   commentCount: number;
   photoScore?: PhotoScore;
+  inspiration?: {
+    source_post_id: string;
+    source_post?: {
+      id: string;
+      title: string;
+      imageUrl: string;
+      author: {
+        id: string;
+        name: string;
+        avatar: string;
+      };
+    };
+    type: string;
+    note?: string;
+    chain_level: number;
+  };
 }
 
 export interface PhotoScore {

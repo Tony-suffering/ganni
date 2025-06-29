@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Bell, Heart, MessageCircle, X } from 'lucide-react';
+import { Bell, Heart, MessageCircle, X, Lightbulb, Users, Trophy } from 'lucide-react';
 import { supabase } from '../supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
@@ -7,12 +7,20 @@ import { ja } from 'date-fns/locale';
 
 interface Notification {
   id: string;
-  sender_id: string;
-  post_id: string;
-  type: 'like' | 'comment';
-  content?: string;
+  recipient_id: string;
+  sender_id?: string;
+  notification_type: string;
+  title: string;
+  message: string;
+  related_post_id?: string;
+  related_inspiration_id?: string;
+  related_user_id?: string;
+  metadata: Record<string, any>;
   is_read: boolean;
+  is_archived: boolean;
+  priority: string;
   created_at: string;
+  updated_at: string;
   sender_name?: string;
   sender_avatar?: string;
   post_title?: string;
@@ -46,6 +54,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
         .from('notifications')
         .select('*')
         .eq('recipient_id', user.id)
+        .eq('is_archived', false)
         .order('created_at', { ascending: false })
         .limit(20);
 
@@ -57,7 +66,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
       if (data) {
         // ユーザー情報と投稿情報を取得
         const senderIds = [...new Set(data.map(n => n.sender_id).filter(Boolean))];
-        const postIds = [...new Set(data.map(n => n.post_id).filter(Boolean))];
+        const postIds = [...new Set(data.map(n => n.related_post_id).filter(Boolean))];
 
         // ユーザー情報を取得（空の配列チェック付き）
         let usersData = null;
@@ -95,9 +104,9 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
           const senderUser = usersMap.get(notification.sender_id);
           return {
             ...notification,
-            sender_name: senderUser?.name || 'ユーザー',
+            sender_name: senderUser?.name || notification.metadata?.sender_name || 'システム',
             sender_avatar: senderUser?.avatar_url,
-            post_title: postsMap.get(notification.post_id)?.title || '投稿'
+            post_title: postsMap.get(notification.related_post_id)?.title || '投稿'
           };
         });
 
@@ -238,6 +247,40 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
     };
   }, []);
 
+  // 通知タイプに応じたアイコンを取得
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'inspiration_received':
+      case 'inspiration_given':
+        return <Lightbulb className="w-3 h-3 md:w-4 md:h-4 text-gray-600 flex-shrink-0" />;
+      case 'like':
+        return <Heart className="w-3 h-3 md:w-4 md:h-4 text-gray-600 flex-shrink-0" />;
+      case 'comment':
+        return <MessageCircle className="w-3 h-3 md:w-4 md:h-4 text-gray-600 flex-shrink-0" />;
+      case 'follow':
+        return <Users className="w-3 h-3 md:w-4 md:h-4 text-gray-600 flex-shrink-0" />;
+      case 'achievement_unlocked':
+        return <Trophy className="w-3 h-3 md:w-4 md:h-4 text-gray-600 flex-shrink-0" />;
+      default:
+        return <Bell className="w-3 h-3 md:w-4 md:h-4 text-gray-600 flex-shrink-0" />;
+    }
+  };
+
+  // 通知クリック時の処理
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.is_read) {
+      markAsRead(notification.id);
+    }
+    
+    // インスピレーション関連の通知の場合はインスピレーション・ラボに移動
+    if (notification.notification_type === 'inspiration_received' && notification.related_post_id) {
+      window.location.href = `/inspiration/${notification.related_post_id}`;
+    } else if (notification.related_post_id && onPostClick) {
+      onPostClick(notification.related_post_id);
+    }
+    setIsOpen(false);
+  };
+
   if (!user) return null;
 
   return (
@@ -342,56 +385,48 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
                   className={`p-3 md:p-4 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${
                     !notification.is_read ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                   }`}
-                  onClick={() => {
-                    if (!notification.is_read) {
-                      markAsRead(notification.id);
-                    }
-                    // 投稿へジャンプ
-                    if (onPostClick) {
-                      onPostClick(notification.post_id);
-                    }
-                    setIsOpen(false); // 通知パネルを閉じる
-                  }}
+                  onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="flex items-start space-x-2 md:space-x-3">
                     <img
                       src={
                         notification.sender_avatar ||
-                        `https://ui-avatars.com/api/?name=${encodeURIComponent(notification.sender_name || 'ユーザー')}&background=random&size=32`
+                        `https://ui-avatars.com/api/?name=${encodeURIComponent(notification.sender_name || 'システム')}&background=random&size=32`
                       }
                       alt={notification.sender_name}
                       className="w-7 h-7 md:w-8 md:h-8 rounded-full flex-shrink-0"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2">
-                        {notification.type === 'like' ? (
-                          <Heart className="w-3 h-3 md:w-4 md:h-4 text-red-500 flex-shrink-0" />
-                        ) : (
-                          <MessageCircle className="w-3 h-3 md:w-4 md:h-4 text-blue-500 flex-shrink-0" />
-                        )}
+                        {getNotificationIcon(notification.notification_type)}
                         <span className="text-xs md:text-sm font-medium text-gray-900 dark:text-white truncate">
-                          {notification.sender_name}
+                          {notification.title}
                         </span>
                       </div>
                       <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300 mt-1 leading-tight">
-                        {notification.type === 'like'
-                          ? `あなたの投稿「${notification.post_title}」にいいねしました`
-                          : `あなたの投稿「${notification.post_title}」にコメントしました`}
+                        {notification.message}
                       </p>
-                      {notification.content && (
+                      {notification.metadata?.inspiration_note && (
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 italic line-clamp-2">
-                          "{notification.content}"
+                          「{notification.metadata.inspiration_note}」
                         </p>
                       )}
-                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                        {formatDistanceToNow(new Date(notification.created_at), {
-                          addSuffix: true,
-                          locale: ja
-                        })}
-                      </p>
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-xs text-gray-400 dark:text-gray-500">
+                          {formatDistanceToNow(new Date(notification.created_at), {
+                            addSuffix: true,
+                            locale: ja
+                          })}
+                        </p>
+                        {notification.priority === 'high' && (
+                          <span className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded">
+                            重要
+                          </span>
+                        )}
+                      </div>
                     </div>
                     {!notification.is_read && (
-                      <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1"></div>
+                      <div className="w-2 h-2 bg-gray-600 rounded-full flex-shrink-0 mt-1"></div>
                     )}
                   </div>
                 </div>

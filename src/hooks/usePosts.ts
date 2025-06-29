@@ -18,7 +18,7 @@ interface UsePostsReturn {
   loading: boolean;
   error: string | null;
   fetchPosts: () => Promise<void>;
-  addPost: (postData: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author' | 'likeCount' | 'likedByCurrentUser' | 'bookmarkedByCurrentUser' | 'commentCount'>) => Promise<Post | null>;
+  addPost: (postData: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author' | 'likeCount' | 'likedByCurrentUser' | 'bookmarkedByCurrentUser' | 'commentCount'> & { inspirationSourceId?: string | null }) => Promise<Post | null>;
   updatePost: (postId: string, updates: Partial<Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author'>>) => Promise<void>;
   deletePost: (postId: string) => Promise<void>;
   likePost: (postId: string) => Promise<void>;
@@ -111,13 +111,27 @@ export const usePosts = (): UsePostsReturn => {
 
       const { data: { user: currentUser } } = await supabase.auth.getUser();
 
-      // いいね、ブックマーク、コメント、photo_scores情報を並列で取得
+      // いいね、ブックマーク、コメント、photo_scores、inspirations情報を並列で取得
       const postIds = (data as PostWithRelations[]).map(post => post.id);
-      const [likesData, bookmarksData, commentsData, photoScoresData] = await Promise.all([
+      const [likesData, bookmarksData, commentsData, photoScoresData, inspirationsData] = await Promise.all([
         supabase.from('likes').select('post_id, user_id').in('post_id', postIds),
         currentUser ? supabase.from('bookmarks').select('post_id').eq('user_id', currentUser.id) : Promise.resolve({ data: [], error: null }),
         supabase.from('comments').select('post_id').in('post_id', postIds),
-        supabase.from('photo_scores').select('*').in('post_id', postIds)
+        supabase.from('photo_scores').select('*').in('post_id', postIds),
+        supabase.from('inspirations').select(`
+          inspired_post_id,
+          source_post_id,
+          inspiration_type,
+          inspiration_note,
+          chain_level,
+          source_post:source_post_id (
+            id,
+            title,
+            image_url,
+            author_id,
+            profiles:author_id (id, name, avatar_url)
+          )
+        `).in('inspired_post_id', postIds)
       ]);
 
 
@@ -127,6 +141,9 @@ export const usePosts = (): UsePostsReturn => {
       if (photoScoresData.error) {
         console.warn('photo_scores取得エラー:', photoScoresData.error);
       }
+      if (inspirationsData.error) {
+        console.warn('inspirations取得エラー:', inspirationsData.error);
+      }
       
       const bookmarkedPostIds = new Set((bookmarksData.data ?? []).map(b => b.post_id));
       
@@ -134,6 +151,12 @@ export const usePosts = (): UsePostsReturn => {
       const photoScoresMap = new Map();
       (photoScoresData.data ?? []).forEach(score => {
         photoScoresMap.set(score.post_id, score);
+      });
+      
+      // inspirationsをpost_idでマップ化
+      const inspirationsMap = new Map();
+      (inspirationsData.data ?? []).forEach(inspiration => {
+        inspirationsMap.set(inspiration.inspired_post_id, inspiration);
       });
 
       const formattedPosts = (data as PostWithRelations[]).map(post => {
@@ -147,6 +170,28 @@ export const usePosts = (): UsePostsReturn => {
         const photoScoreFromMap = photoScoresMap.get(post.id);
         const finalPhotoScore = photoScoreFromMap || photoScoreFromJoin;
         
+        // inspirationを別途取得したデータから設定
+        const inspirationData = inspirationsMap.get(post.id);
+        let inspiration = undefined;
+        
+        if (inspirationData && inspirationData.source_post) {
+          inspiration = {
+            source_post_id: inspirationData.source_post_id,
+            source_post: {
+              id: inspirationData.source_post.id,
+              title: inspirationData.source_post.title,
+              imageUrl: inspirationData.source_post.image_url,
+              author: {
+                id: inspirationData.source_post.profiles?.id ?? '',
+                name: inspirationData.source_post.profiles?.name ?? '',
+                avatar: inspirationData.source_post.profiles?.avatar_url ?? ''
+              }
+            },
+            type: inspirationData.inspiration_type,
+            note: inspirationData.inspiration_note,
+            chain_level: inspirationData.chain_level
+          };
+        }
         
         return {
           id: post.id,
@@ -173,7 +218,8 @@ export const usePosts = (): UsePostsReturn => {
           likedByCurrentUser,
           bookmarkedByCurrentUser: bookmarkedPostIds.has(post.id),
           commentCount,
-          photoScore: finalPhotoScore || undefined
+          photoScore: finalPhotoScore || undefined,
+          inspiration
         };
       });
 
@@ -298,7 +344,7 @@ export const usePosts = (): UsePostsReturn => {
     }
   }, [page, posts, hasNextPage, loading, isLoadingMore, currentFilters, currentSearchQuery, randomSeed, filteredPosts.length]);
 
-  const addPost = useCallback(async (newPostInput: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author' | 'likeCount' | 'likedByCurrentUser' | 'bookmarkedByCurrentUser' | 'commentCount'>) => {
+  const addPost = useCallback(async (newPostInput: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author' | 'likeCount' | 'likedByCurrentUser' | 'bookmarkedByCurrentUser' | 'commentCount'> & { inspirationSourceId?: string | null }) => {
     try {
       // 1. ユーザーID取得
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -383,6 +429,38 @@ export const usePosts = (): UsePostsReturn => {
         if (scoreError) {
           console.error('Error saving photo score:', scoreError);
           // 写真スコアの保存に失敗してもエラーは投げない（投稿自体は成功させる）
+        }
+      }
+
+      // 7. インスピレーション情報を保存
+      if (newPostInput.inspirationSourceId) {
+        // URLパラメータから追加情報を取得
+        const urlParams = new URLSearchParams(window.location.search);
+        const inspirationType = urlParams.get('type') || 'direct';
+        const inspirationNote = urlParams.get('note') || '';
+        
+        // チェーンレベルを計算
+        const { data: chainLevelData } = await supabase
+          .rpc('calculate_inspiration_chain_level', {
+            source_post_id: newPostInput.inspirationSourceId
+          });
+        
+        const chainLevel = chainLevelData || 1;
+        
+        const { error: inspirationError } = await supabase.from('inspirations').insert({
+          source_post_id: newPostInput.inspirationSourceId,
+          inspired_post_id: postData.id,
+          creator_id: userId,
+          inspiration_type: inspirationType,
+          inspiration_note: inspirationNote ? decodeURIComponent(inspirationNote) : null,
+          chain_level: chainLevel
+        });
+        
+        if (inspirationError) {
+          console.error('Error saving inspiration:', inspirationError);
+          // インスピレーション情報の保存に失敗してもエラーは投げない（投稿自体は成功させる）
+        } else {
+          console.log('Inspiration saved successfully');
         }
       }
 

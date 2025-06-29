@@ -1,24 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Upload, Type, MessageCircle, HelpCircle, Eye, Star } from 'lucide-react';
-import { Tag, AIComment } from '../types';
+import { X, Upload, Type, MessageCircle, HelpCircle, Eye, Star, Lightbulb } from 'lucide-react';
+import { Tag, AIComment, Post } from '../types';
 import { useAI } from '../hooks/useAI';
 import { useAuth } from '../contexts/AuthContext';
 import VoiceInputButton from "./VoiceInputButton";
 import { generateImageAIComments } from "../lib/gemini";
+import { supabase } from '../supabase';
 
 interface NewPostModalProps {
   isOpen: boolean;
   onClose: () => void;
   tags: Tag[];
   onSubmit: (postData: any) => void;
+  inspirationPostId?: string;
 }
 
 export const NewPostModal: React.FC<NewPostModalProps> = ({
   isOpen,
   onClose,
   tags,
-  onSubmit
+  onSubmit,
+  inspirationPostId
 }) => {
   const { user } = useAuth();
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
@@ -47,8 +50,88 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
   const [scrollPosition, setScrollPosition] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isComposing, setIsComposing] = useState(false);
+  const [inspirationPost, setInspirationPost] = useState<Post | null>(null);
 
   const { apiStatus } = useAI();
+
+  // インスピレーション元の投稿を取得
+  useEffect(() => {
+    const fetchInspirationPost = async () => {
+      console.log('🔍 インスピレーション元ID:', inspirationPostId);
+      if (!inspirationPostId) {
+        console.log('❌ インスピレーション元IDが見つかりません');
+        setInspirationPost(null);
+        return;
+      }
+
+      try {
+        const { data: postData, error } = await supabase
+          .from('posts')
+          .select('*')
+          .eq('id', inspirationPostId)
+          .single();
+
+        if (error) {
+          console.error('インスピレーション元投稿取得エラー:', error);
+          return;
+        }
+
+        if (postData) {
+          // 作成者情報を取得
+          let authorData = null;
+          if (postData.author_id) {
+            const { data: userData } = await supabase
+              .from('users')
+              .select('id, name, avatar_url')
+              .eq('id', postData.author_id)
+              .single();
+
+            if (!userData) {
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('id, name, avatar_url')
+                .eq('id', postData.author_id)
+                .single();
+              authorData = profileData;
+            } else {
+              authorData = userData;
+            }
+          }
+
+          const authorName = authorData?.name || '匿名ユーザー';
+          const avatarUrl = authorData?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=random`;
+
+          const formattedPost: Post = {
+            id: postData.id,
+            title: postData.title,
+            imageUrl: postData.image_url,
+            aiDescription: postData.ai_description || '',
+            userComment: postData.user_comment || '',
+            author: {
+              id: postData.author_id,
+              name: authorName,
+              avatar: avatarUrl
+            },
+            tags: [],
+            createdAt: postData.created_at,
+            updatedAt: postData.updated_at,
+            likeCount: 0,
+            likedByCurrentUser: false,
+            bookmarkedByCurrentUser: false,
+            aiComments: [],
+            commentCount: 0
+          };
+
+          setInspirationPost(formattedPost);
+          console.log('✅ インスピレーション元投稿を設定:', formattedPost.title);
+        }
+      } catch (error) {
+        console.error('インスピレーション元投稿取得エラー:', error);
+      }
+    };
+
+    fetchInspirationPost();
+  }, [inspirationPostId]);
 
   // Auto-resize textarea
   const autoResizeTextarea = () => {
@@ -228,7 +311,9 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
         // AI処理は投稿後に非同期で実行されるため、初期値を設定
         aiDescription: '',
         aiComments: [],
-        photoScore: null
+        photoScore: null,
+        // インスピレーション元の情報を追加
+        inspirationSourceId: inspirationPostId || null
       };
       
       onSubmit(postData);
@@ -278,6 +363,11 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
               <div className="flex items-center justify-between">
                 <h2 className="text-2xl font-display font-semibold text-neutral-900">
                   新しい投稿
+                  {inspirationPostId && (
+                    <span className="text-sm font-normal text-purple-600 block">
+                      インスピレーション投稿
+                    </span>
+                  )}
                 </h2>
                 <button
                   onClick={onClose}
@@ -294,6 +384,43 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
               className="flex-1 overflow-y-auto scroll-container p-3 sm:p-4 md:p-6 pb-2"
             >
               <form id="new-post-form" onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
+                {/* Inspiration Source */}
+                {inspirationPost && (
+                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <Lightbulb className="w-5 h-5 text-purple-600" />
+                      <span className="text-sm font-medium text-purple-800">インスピレーション元</span>
+                    </div>
+                    <div className="flex space-x-3">
+                      <img
+                        src={inspirationPost.imageUrl}
+                        alt={inspirationPost.title}
+                        className="w-16 h-16 rounded-lg object-cover"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-medium text-gray-900 truncate">
+                          {inspirationPost.title}
+                        </h4>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <img
+                            src={inspirationPost.author.avatar}
+                            alt={inspirationPost.author.name}
+                            className="w-4 h-4 rounded-full"
+                          />
+                          <span className="text-xs text-gray-600">
+                            {inspirationPost.author.name}
+                          </span>
+                        </div>
+                        {inspirationPost.userComment && (
+                          <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                            {inspirationPost.userComment}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Title */}
                 <div>
                   <label className="flex items-center text-sm font-medium text-neutral-700 mb-3">
@@ -306,7 +433,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                       value={formData.title}
                       onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                       className="w-full px-3 py-2 border border-neutral-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                      placeholder="例：夕焼けと飛行機雲"
+                      placeholder="例：黄金時間の街並み"
                       required
                     />
                   </div>
