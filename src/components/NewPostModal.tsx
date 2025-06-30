@@ -266,7 +266,6 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
       
       // 画像AIコメント生成は削除（投稿後に実行）
       setFormData(prev => ({ ...prev, imageAIDescription: '', aiComments: [] }));
-      setPhotoScore(null);
     }
   };
 

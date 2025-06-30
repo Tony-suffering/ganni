@@ -418,28 +418,37 @@ export const usePosts = (): UsePostsReturn => {
           note: newPostInput.inspirationNote
         });
         
-        // チェーンレベルを計算
-        const { data: chainLevelData } = await supabase
-          .rpc('calculate_inspiration_chain_level', {
-            source_post_id: newPostInput.inspirationSourceId
+        // チェーンレベルを計算（関数が存在しない場合は1を使用）
+        let chainLevel = 1;
+        try {
+          const { data: chainLevelData } = await supabase
+            .rpc('get_inspiration_chain_depth', {
+              post_id: newPostInput.inspirationSourceId
+            });
+          chainLevel = (chainLevelData || 0) + 1; // 深度 + 1 = チェーンレベル
+        } catch (error) {
+          console.log('チェーンレベル計算をスキップ:', error);
+        }
+        
+        try {
+          const { error: inspirationError } = await supabase.from('inspirations').insert({
+            source_post_id: newPostInput.inspirationSourceId,
+            inspired_post_id: postData.id,
+            creator_id: userId,
+            inspiration_type: newPostInput.inspirationType || 'direct',
+            inspiration_note: newPostInput.inspirationNote ? decodeURIComponent(newPostInput.inspirationNote) : null,
+            chain_level: chainLevel
           });
-        
-        const chainLevel = chainLevelData || 1;
-        
-        const { error: inspirationError } = await supabase.from('inspirations').insert({
-          source_post_id: newPostInput.inspirationSourceId,
-          inspired_post_id: postData.id,
-          creator_id: userId,
-          inspiration_type: newPostInput.inspirationType || 'direct',
-          inspiration_note: newPostInput.inspirationNote ? decodeURIComponent(newPostInput.inspirationNote) : null,
-          chain_level: chainLevel
-        });
-        
-        if (inspirationError) {
-          console.error('❌ インスピレーション保存エラー:', inspirationError);
-          // インスピレーション情報の保存に失敗してもエラーは投げない（投稿自体は成功させる）
-        } else {
-          console.log('✅ インスピレーション保存成功！');
+          
+          if (inspirationError) {
+            console.error('❌ インスピレーション保存エラー:', inspirationError);
+            // ポイント関連のエラーでも投稿自体は成功させる
+          } else {
+            console.log('✅ インスピレーション保存成功！');
+          }
+        } catch (error) {
+          console.error('❌ インスピレーション保存で予期しないエラー:', error);
+          // どんなエラーでも投稿は継続
         }
       }
 
@@ -552,8 +561,11 @@ export const usePosts = (): UsePostsReturn => {
         console.log('新規投稿通知の送信に失敗:', error);
       }
 
-      await fetchPosts();
-      setTimeout(fetchPosts, 500);
+      // 新規投稿をpostsの先頭に追加（fetchPostsを呼ばずに直接追加）
+      setPosts(prevPosts => [newPost, ...prevPosts]);
+      setAllPosts(prevAllPosts => [newPost, ...prevAllPosts]);
+      console.log('✅ 新規投稿をPosts配列に直接追加しました');
+      
       return newPost;
     } catch (error) {
       console.error("Failed to add post:", error);
