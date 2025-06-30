@@ -9,7 +9,7 @@ import {
   Award
 } from 'lucide-react';
 import { Post } from '../../types';
-import { UserPostService } from '../../services/UserPostService';
+import { UserPostService } from '../../services/userPostService';
 import { GrowthTracker } from './GrowthTracker';
 import { PersonalityAnalysis } from './PersonalityAnalysis';
 
