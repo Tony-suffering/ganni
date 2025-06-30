@@ -13,6 +13,21 @@ interface PhotoScore {
     engagement: EngagementScore;
   };
   comment: string;     // 詳細なフィードバック
+  imageAnalysis?: {    // 詳細画像分析データ（深層心理分析用）
+    mainColors: string[];
+    colorTemperature: string;
+    compositionType: string;
+    mainSubject: string;
+    specificContent: string;  // 具体的な内容物、固有名詞
+    backgroundElements: string[];
+    lightingQuality: string;
+    moodAtmosphere: string;
+    shootingAngle: string;
+    depthPerception: string;
+    visualImpactDescription: string;
+    emotionalTrigger: string;
+    technicalSignature: string;
+  };
 }
 
 interface TechnicalScore {
@@ -138,7 +153,8 @@ export class PhotoScoringService {
         }
         
         const responseText = result.response.text();
-        console.log('✅ Gemini response received:', responseText.slice(0, 200) + '...');
+        console.log('✅ Gemini response received (full):', responseText);
+        console.log('📸 画像分析指示送信済み - タイトル:', title, 'サイズ:', sizeInBytes, 'bytes');
         
         const score = this.parseScoreResponse(responseText);
         console.log('🏆 Final score:', score.total);
@@ -281,7 +297,7 @@ export class PhotoScoringService {
    * AIプロンプトを作成
    */
   private createScoringPrompt(title?: string, description?: string): string {
-    return `この写真を100点満点で詳細に採点してください。
+    return `この写真を100点満点で詳細に採点し、深層心理分析用の詳細な画像データも提供してください。
 
 【採点基準】
 1. 技術的品質 (25点満点)
@@ -309,6 +325,14 @@ export class PhotoScoringService {
 
 ${title ? `タイトル: ${title}` : ''}
 ${description ? `説明: ${description}` : ''}
+
+**重要指示：** 画像を詳細に観察し、以下を具体的に分析してください：
+- 写っている具体的な物、人、場所、建物、料理、商品、ブランド名、店名など（固有名詞を含む）
+- 読み取れる文字、看板、ラベル、商品名などのテキスト情報
+- 色彩、構図、被写体、雰囲気、光の質、技術的特徴
+- 写真から読み取れる状況、シーン、ストーリー、感情
+
+以下の分析データも含めてください：
 
 以下のJSON形式で回答してください:
 {
@@ -340,7 +364,22 @@ ${description ? `説明: ${description}` : ''}
     "total": 数値
   },
   "total": 数値,
-  "comment": "詳細なフィードバック（日本語200文字程度）"
+  "comment": "詳細なフィードバック（日本語200文字程度）",
+  "imageAnalysis": {
+    "mainColors": ["主要色彩1", "主要色彩2", "主要色彩3"],
+    "colorTemperature": "色温度の印象（例：温かみのある、クールな、ニュートラル）",
+    "compositionType": "構図タイプ（例：三分割法、中央配置、対角線構図）",
+    "mainSubject": "主被写体の詳細説明（具体的な物、人、場所、固有名詞を含む）",
+    "specificContent": "写真に写っている具体的な内容物、文字、ブランド名、店名、地名など",
+    "backgroundElements": ["背景要素1", "背景要素2"],
+    "lightingQuality": "光の質（例：自然光、間接光、ドラマチック）",
+    "moodAtmosphere": "写真の雰囲気（例：穏やか、エネルギッシュ、ノスタルジック）",
+    "shootingAngle": "撮影角度（例：水平、仰角、俯瞰）",
+    "depthPerception": "奥行き感（例：強い奥行き、平面的、層構造）",
+    "visualImpactDescription": "視覚的インパクトの説明",
+    "emotionalTrigger": "感情的トリガー（例：懐かしさ、興奮、安らぎ）",
+    "technicalSignature": "技術的特徴（例：ボケ味、長時間露光、粒状感）"
+  }
 }`;
   }
 
@@ -360,7 +399,7 @@ ${description ? `説明: ${description}` : ''}
       const jsonText = responseText.slice(jsonStart, jsonEnd);
       const parsed = JSON.parse(jsonText);
       
-      return {
+      const result: PhotoScore = {
         technical: parsed.technical.total,
         composition: parsed.composition.total,
         creativity: parsed.creativity.total,
@@ -372,8 +411,34 @@ ${description ? `説明: ${description}` : ''}
           creativity: parsed.creativity,
           engagement: parsed.engagement
         },
-        comment: parsed.comment
+        comment: parsed.comment,
+        imageAnalysis: parsed.imageAnalysis
       };
+
+      // 画像分析データが含まれている場合は追加
+      if (parsed.imageAnalysis) {
+        console.log('🔍 画像分析データが見つかりました:', parsed.imageAnalysis);
+        result.imageAnalysis = {
+          mainColors: parsed.imageAnalysis.mainColors || [],
+          colorTemperature: parsed.imageAnalysis.colorTemperature || '',
+          compositionType: parsed.imageAnalysis.compositionType || '',
+          mainSubject: parsed.imageAnalysis.mainSubject || '',
+          specificContent: parsed.imageAnalysis.specificContent || '',
+          backgroundElements: parsed.imageAnalysis.backgroundElements || [],
+          lightingQuality: parsed.imageAnalysis.lightingQuality || '',
+          moodAtmosphere: parsed.imageAnalysis.moodAtmosphere || '',
+          shootingAngle: parsed.imageAnalysis.shootingAngle || '',
+          depthPerception: parsed.imageAnalysis.depthPerception || '',
+          visualImpactDescription: parsed.imageAnalysis.visualImpactDescription || '',
+          emotionalTrigger: parsed.imageAnalysis.emotionalTrigger || '',
+          technicalSignature: parsed.imageAnalysis.technicalSignature || ''
+        };
+        console.log('✅ 保存する画像分析データ:', result.imageAnalysis);
+      } else {
+        console.log('❌ 画像分析データが見つかりませんでした');
+      }
+
+      return result;
       
     } catch (error) {
       console.error('Score parsing error:', error);

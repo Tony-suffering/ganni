@@ -144,7 +144,7 @@ export interface LifestylePattern {
  */
 export interface PersonalizedSuggestion {
   id: string;
-  type: 'experience' | 'location' | 'activity' | 'cultural' | 'growth';
+  type: 'experience' | 'location' | 'activity' | 'cultural' | 'growth' | 'food' | 'fitness' | 'education' | 'lifestyle';
   title: string;
   description: string;
   reasoning: string;         // 提案理由
@@ -168,8 +168,16 @@ export interface PersonalizedSuggestion {
   estimatedEngagement: number;  // 予想エンゲージメント (0-1)
   expirationDate?: string;      // 提案の有効期限
   
+  // マネタイゼーション情報
+  monetization?: {
+    category: string;
+    estimatedValue: number;
+    affiliateOpportunity: string;
+    conversionPotential: 'low' | 'medium' | 'high';
+  };
+  
   createdAt: string;
-  generatedBy: 'ai_curator' | 'lifestyle_concierge' | 'growth_partner';
+  generatedBy: 'ai_curator' | 'lifestyle_concierge' | 'growth_partner' | 'premium_ai_curator';
 }
 
 /**
@@ -285,6 +293,16 @@ export interface AnalysisRequest {
       longitude: number;
     };
     tags: string[];
+    photoScore?: {
+      technical_score: number;
+      composition_score: number;
+      creativity_score: number;
+      engagement_score: number;
+      total_score: number;
+      score_level: string;
+      level_description: string;
+      ai_comment: string;
+    };
   }[];
   timeframe?: {
     start: string;

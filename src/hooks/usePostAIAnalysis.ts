@@ -89,7 +89,22 @@ export const usePostAIAnalysis = () => {
           total_score: score.total,
           score_level: levelInfo.level,
           level_description: levelInfo.description,
-          ai_comment: score.comment
+          ai_comment: score.comment,
+          image_analysis: score.imageAnalysis ? {
+            mainColors: score.imageAnalysis.mainColors || [],
+            colorTemperature: score.imageAnalysis.colorTemperature || '',
+            compositionType: score.imageAnalysis.compositionType || '',
+            mainSubject: score.imageAnalysis.mainSubject || '',
+            specificContent: score.imageAnalysis.specificContent || '',
+            backgroundElements: score.imageAnalysis.backgroundElements || [],
+            lightingQuality: score.imageAnalysis.lightingQuality || '',
+            moodAtmosphere: score.imageAnalysis.moodAtmosphere || '',
+            shootingAngle: score.imageAnalysis.shootingAngle || '',
+            depthPerception: score.imageAnalysis.depthPerception || '',
+            visualImpact: score.imageAnalysis.visualImpactDescription || score.imageAnalysis.visualImpact || '',
+            emotionalTrigger: score.imageAnalysis.emotionalTrigger || '',
+            technicalSignature: score.imageAnalysis.technicalSignature || ''
+          } : undefined
         };
 
         result.photoScore = photoScore;

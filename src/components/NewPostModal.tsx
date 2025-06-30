@@ -296,6 +296,18 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
     try {
       setIsLoading(true);
       
+      // インスピレーション情報をデバッグ
+      const urlParams = new URLSearchParams(window.location.search);
+      const inspirationType = urlParams.get('type') || 'direct';
+      const inspirationNote = urlParams.get('note') || '';
+      
+      console.log('🎯 NewPostModal - インスピレーション情報:', {
+        inspirationPostId,
+        inspirationType,
+        inspirationNote,
+        urlParams: Object.fromEntries(urlParams.entries())
+      });
+
       // シンプルな投稿データ作成（AI処理は投稿後に実行）
       const postData = {
         title: formData.title,
@@ -313,8 +325,25 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
         aiComments: [],
         photoScore: null,
         // インスピレーション元の情報を追加
-        inspirationSourceId: inspirationPostId || null
+        inspirationSourceId: inspirationPostId || null,
+        // URLパラメータから追加情報を取得
+        inspirationType,
+        inspirationNote
       };
+      
+      console.log('📤 NewPostModal - 送信する投稿データ:', postData);
+      
+      // デバッグ: インスピレーション情報をログ出力
+      console.log('🔍 NewPostModal デバッグ情報:');
+      console.log('  - inspirationPostId:', inspirationPostId);
+      console.log('  - inspirationType:', postData.inspirationType);
+      console.log('  - inspirationNote:', postData.inspirationNote);
+      console.log('  - inspirationSourceId:', postData.inspirationSourceId);
+      console.log('  - URLパラメータ:');
+      urlParams.forEach((value, key) => {
+        console.log(`    ${key}: ${value}`);
+      });
+      console.log('  - 投稿データ全体:', postData);
       
       onSubmit(postData);
       onClose();
@@ -364,7 +393,7 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
                 <h2 className="text-2xl font-display font-semibold text-neutral-900">
                   新しい投稿
                   {inspirationPostId && (
-                    <span className="text-sm font-normal text-purple-600 block">
+                    <span className="text-sm font-normal text-gray-600 block">
                       インスピレーション投稿
                     </span>
                   )}
@@ -386,10 +415,10 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
               <form id="new-post-form" onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
                 {/* Inspiration Source */}
                 {inspirationPost && (
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                     <div className="flex items-center space-x-2 mb-3">
-                      <Lightbulb className="w-5 h-5 text-purple-600" />
-                      <span className="text-sm font-medium text-purple-800">インスピレーション元</span>
+                      <Lightbulb className="w-5 h-5 text-gray-600" />
+                      <span className="text-sm font-medium text-gray-800">インスピレーション元</span>
                     </div>
                     <div className="flex space-x-3">
                       <img
@@ -520,22 +549,19 @@ export const NewPostModal: React.FC<NewPostModalProps> = ({
 
                 {/* AI Analysis Preview */}
                 {formData.title && formData.userComment && (
-                  <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-200">
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-xl border border-gray-200">
                     <h4 className="flex items-center text-lg font-semibold text-indigo-900 mb-3">
                       <Eye className="w-5 h-5 mr-2" />
                       投稿後のAI分析について
                     </h4>
                     <div className="space-y-3">
                       <div className="flex items-center space-x-2 text-sm">
-                        <MessageCircle className="w-4 h-4 text-blue-600" />
                         <span className="text-neutral-700">📊 写真採点 (100点満点)</span>
                       </div>
                       <div className="flex items-center space-x-2 text-sm">
-                        <HelpCircle className="w-4 h-4 text-green-600" />
-                        <span className="text-neutral-700">💬 AIコメント (3つの応答)</span>
+                        <span className="text-neutral-700">💬 AIコメント</span>
                       </div>
                       <div className="flex items-center space-x-2 text-sm">
-                        <Eye className="w-4 h-4 text-purple-600" />
                         <span className="text-neutral-700">🛍️ 関連商品推薦</span>
                       </div>
                     </div>

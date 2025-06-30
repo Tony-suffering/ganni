@@ -7,6 +7,9 @@ import { Post, User } from '../types';
 import { supabase } from '../supabase';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import useGamification from '../hooks/useGamification';
+import { UserPointsDisplay } from '../components/gamification/UserPointsDisplay';
+import { UserBadgesDisplay } from '../components/gamification/UserBadgesDisplay';
 
 const UserProfile = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -18,6 +21,21 @@ const UserProfile = () => {
   const [postCount, setPostCount] = useState(0);
   
   const isMyProfile = currentUser?.id === userId;
+  
+  // ゲーミフィケーション情報を取得（自分のプロフィールの場合のみ）
+  const { userPoints, userBadges, levelInfo, toggleBadgeDisplay, loading: gamificationLoading, error: gamificationError } = useGamification();
+  
+  // デバッグ用ログ
+  console.log('🔍 UserProfile デバッグ:', {
+    isMyProfile,
+    userPoints,
+    levelInfo,
+    userBadges: userBadges?.length,
+    gamificationLoading,
+    gamificationError,
+    currentUserId: currentUser?.id,
+    profileUserId: userId
+  });
 
   useEffect(() => {
     const fetchUserProfile = async () => {
@@ -101,6 +119,43 @@ const UserProfile = () => {
                 )}
             </div>
         </div>
+
+        {/* ゲーミフィケーション情報（自分のプロフィールの場合のみ） */}
+        {isMyProfile && (
+          <div className="mb-8 space-y-6">
+            {/* デバッグ情報表示 */}
+            <div className="bg-yellow-100 dark:bg-yellow-900 p-4 rounded-lg text-sm">
+              <p><strong>デバッグ情報:</strong></p>
+              <p>ローディング: {gamificationLoading ? 'はい' : 'いいえ'}</p>
+              <p>エラー: {gamificationError || 'なし'}</p>
+              <p>ポイント: {userPoints ? 'あり' : 'なし'}</p>
+              <p>レベル情報: {levelInfo ? 'あり' : 'なし'}</p>
+              <p>バッジ数: {userBadges?.length || 0}</p>
+            </div>
+            
+            {userPoints && levelInfo ? (
+              <>
+                <UserPointsDisplay 
+                  userPoints={userPoints} 
+                  levelInfo={levelInfo} 
+                />
+                <UserBadgesDisplay 
+                  userBadges={userBadges} 
+                  onToggleDisplay={toggleBadgeDisplay}
+                />
+              </>
+            ) : (
+              <div className="bg-red-100 dark:bg-red-900 p-4 rounded-lg">
+                <p className="text-red-800 dark:text-red-200">
+                  ゲーミフィケーション情報の読み込みに問題があります
+                </p>
+                {gamificationError && (
+                  <p className="text-sm mt-2">エラー: {gamificationError}</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         <hr className="my-8" />
 

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { imageCache } from '../utils/imageCache';
 
 interface UseLazyImageProps {
@@ -17,7 +17,19 @@ export const useLazyImage = ({
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isError, setIsError] = useState(false);
-  const imgRef = useRef<HTMLImageElement | null>(null);
+  const imgRef = useRef<HTMLDivElement | null>(null);
+  
+  // 画像のonLoadハンドラー
+  const handleImageLoad = useCallback(() => {
+    setIsLoaded(true);
+  }, []);
+
+  // 画像のonErrorハンドラー
+  const handleImageError = useCallback(() => {
+    setIsError(true);
+    setIsLoaded(false);
+    setImageSrc(null);
+  }, []);
 
   // 即座に読み込む関数
   const loadImage = () => {
@@ -40,6 +52,7 @@ export const useLazyImage = ({
       .catch(() => {
         setIsError(true);
         setIsLoaded(false);
+        setImageSrc(null);
       });
   };
 
@@ -82,5 +95,7 @@ export const useLazyImage = ({
     imageSrc,
     isLoaded,
     isError,
+    handleImageLoad,
+    handleImageError,
   };
 };

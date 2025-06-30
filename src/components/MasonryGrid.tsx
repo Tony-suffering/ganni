@@ -75,16 +75,16 @@ export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = (
     </motion.div>
   ), [onPostClick, likePost, unlikePost, bookmarkPost, unbookmarkPost, deletePost]);
 
-  // 画像プリロード効果
+  // 画像プリロード効果（無限ローディング対応）
   useEffect(() => {
-    // 表示中の投稿の次の5枚をプリロード
+    // 現在表示中の投稿の画像のみプリロード（バッチサイズを制限）
     const imageUrls = posts
-      .slice(0, 20) // 最初の20投稿の画像をプリロード
+      .slice(0, 12) // 最初の12投稿をプリロード
       .map(post => post.imageUrl)
       .filter(Boolean);
     
     if (imageUrls.length > 0) {
-      imageCache.preloadBatch(imageUrls, 5);
+      imageCache.preloadBatch(imageUrls, 6); // バッチサイズを増加
     }
   }, [posts]);
 
@@ -134,7 +134,11 @@ export const MasonryGrid: React.FC<MasonryGridProps & { loading?: boolean }> = (
       <div className="hidden md:grid md:grid-cols-3 gap-4">
         {columns.map((column, columnIndex) => (
           <div key={columnIndex} className="space-y-4">
-            {column.map((post, index) => renderPostCard(post, columnIndex * Math.ceil(posts.length / 3) + index))}
+            {column.map((post, index) => {
+              // 正しいグローバルインデックスを計算（元の投稿順序を維持）
+              const globalIndex = posts.findIndex(p => p.id === post.id);
+              return renderPostCard(post, globalIndex);
+            })}
           </div>
         ))}
       </div>

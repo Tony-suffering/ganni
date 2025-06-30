@@ -38,18 +38,35 @@ export class UserPostService {
 
       console.log(`✅ Found ${postsData.length} posts for user`);
 
-      // いいね数を取得
+      // いいね数と写真スコアを取得
       const postIds = postsData.map(post => post.id);
-      const { data: likesData } = await supabase
-        .from('likes')
-        .select('post_id')
-        .in('post_id', postIds);
+      const [likesResult, photoScoresResult] = await Promise.all([
+        supabase
+          .from('likes')
+          .select('post_id')
+          .in('post_id', postIds),
+        supabase
+          .from('photo_scores')
+          .select('*')
+          .in('post_id', postIds)
+      ]);
+      
+      const { data: likesData } = likesResult;
+      const { data: photoScoresData } = photoScoresResult;
 
       // 投稿ごとのいいね数をカウント
       const likeCounts: Record<string, number> = {};
       likesData?.forEach(like => {
         likeCounts[like.post_id] = (likeCounts[like.post_id] || 0) + 1;
       });
+
+      // 写真スコアをpost_idでマップ化
+      const photoScoresMap = new Map();
+      photoScoresData?.forEach(score => {
+        photoScoresMap.set(score.post_id, score);
+      });
+
+      console.log(`📸 Found ${photoScoresData?.length || 0} photo scores for ${postIds.length} posts`);
 
       // ユーザー情報を取得（作成者情報として使用）
       const { data: userData, error: userError } = await supabase
@@ -83,26 +100,40 @@ export class UserPostService {
       } : defaultUser;
 
       // 投稿データを適切な形式に変換
-      const formattedPosts: Post[] = postsData.map(post => ({
-        id: post.id,
-        title: post.title,
-        userComment: post.description || '',
-        imageUrl: post.image_url,
-        createdAt: post.created_at,
-        author: author,
-        tags: this.formatTags(post.tags),
-        likeCount: likeCounts[post.id] || 0,
-        likedByCurrentUser: false, // ダッシュボードでは不要
-        aiDescription: post.ai_description,
-        aiComments: this.parseAIComments(post.ai_comments),
-        photoScore: null, // 必要に応じて後で取得
-        // ダッシュボード用の追加情報
-        location: post.location ? {
-          latitude: post.location.latitude,
-          longitude: post.location.longitude,
-          address: post.location.address
-        } : undefined
-      }));
+      const formattedPosts: Post[] = postsData.map(post => {
+        const photoScore = photoScoresMap.get(post.id);
+        
+        return {
+          id: post.id,
+          title: post.title,
+          userComment: post.description || '',
+          imageUrl: post.image_url,
+          createdAt: post.created_at,
+          author: author,
+          tags: this.formatTags(post.tags),
+          likeCount: likeCounts[post.id] || 0,
+          likedByCurrentUser: false, // ダッシュボードでは不要
+          aiDescription: post.ai_description,
+          aiComments: this.parseAIComments(post.ai_comments),
+          photoScore: photoScore ? {
+            technical_score: photoScore.technical_score,
+            composition_score: photoScore.composition_score,
+            creativity_score: photoScore.creativity_score,
+            engagement_score: photoScore.engagement_score,
+            total_score: photoScore.total_score,
+            score_level: photoScore.score_level,
+            level_description: photoScore.level_description,
+            ai_comment: photoScore.ai_comment,
+            image_analysis: photoScore.image_analysis
+          } : undefined,
+          // ダッシュボード用の追加情報
+          location: post.location ? {
+            latitude: post.location.latitude,
+            longitude: post.location.longitude,
+            address: post.location.address
+          } : undefined
+        };
+      });
 
       return formattedPosts;
       

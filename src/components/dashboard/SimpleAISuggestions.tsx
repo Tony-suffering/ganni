@@ -332,7 +332,7 @@ async function createSuggestionsFromAnalysis(data: {
       actionText: 'これまで撮影したことのないジャンル（人物、建築、マクロなど）に1つ挑戦してみましょう。',
       priority: 'medium',
       icon: Palette,
-      color: 'bg-purple-500',
+      color: 'bg-gray-500',
       estimatedImpact: 7
     });
   }
@@ -449,7 +449,7 @@ function getDefaultSuggestions(): SimpleSuggestion[] {
       actionText: '花、昆虫、水滴など、小さな被写体に可能な限り近づいて撮影してみましょう。',
       priority: 'medium',
       icon: Palette,
-      color: 'bg-purple-500',
+      color: 'bg-gray-500',
       estimatedImpact: 7
     }
   ];

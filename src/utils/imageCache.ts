@@ -20,8 +20,33 @@ class ImageCache {
         return;
       }
 
-      // 既にプリロード中の場合はスキップ（優先度が高い場合は除く）
+      // 既にプリロード中の場合は待機用のPromiseを返す（優先度が高い場合は除く）
       if (this.preloadQueue.has(src) && !priority) {
+        // 既にプリロード中の場合は、完了まで待機（タイムアウト付き）
+        const checkCache = () => {
+          return new Promise<HTMLImageElement>((resolveWait, rejectWait) => {
+            let timeoutCount = 0;
+            const maxTimeout = 500; // 5秒タイムアウト（10ms * 500 = 5000ms）
+            
+            const interval = setInterval(() => {
+              timeoutCount++;
+              
+              if (this.cache.has(src)) {
+                clearInterval(interval);
+                resolveWait(this.cache.get(src)!);
+              } else if (!this.preloadQueue.has(src)) {
+                // プリロードが失敗した場合
+                clearInterval(interval);
+                rejectWait(new Error(`Image preload failed or cancelled: ${src}`));
+              } else if (timeoutCount >= maxTimeout) {
+                // タイムアウトした場合
+                clearInterval(interval);
+                rejectWait(new Error(`Image preload timeout: ${src}`));
+              }
+            }, 10);
+          });
+        };
+        checkCache().then(resolve).catch(reject);
         return;
       }
 
@@ -29,13 +54,12 @@ class ImageCache {
 
       const img = new Image();
       
-      // 優先読み込みの場合はcrossOriginとfetchPriorityを設定
+      // fetchPriorityとデコードヒントを設定（crossOriginは削除してSupabase互換性を向上）
       if (priority) {
-        img.crossOrigin = 'anonymous';
         if ('fetchPriority' in img) {
           (img as any).fetchPriority = 'high';
         }
-        // デコードヒントを設定
+        // 優先読み込み時は同期デコード
         if ('decoding' in img) {
           img.decoding = 'sync';
         }
@@ -48,9 +72,9 @@ class ImageCache {
         }
       }
       
-      // 画像サイズ最適化のためのloading属性を追加
+      // プリロードでは常にeagerで読み込み（lazyにするとIntersectionObserverで検出しても読み込まれない）
       if ('loading' in img) {
-        img.loading = priority ? 'eager' : 'lazy';
+        img.loading = 'eager';
       }
 
       img.onload = () => {
@@ -122,8 +146,7 @@ class ImageCache {
       
       // プリロードを非同期で実行
       this.preload(url, isPriority).catch(() => {
-        // エラーは無視（ログに記録するかは任意）
-        console.warn(`Failed to preload image: ${url}`);
+        // エラーは無視
       });
     });
   }

@@ -250,53 +250,47 @@ LIFESTYLE_SUMMARY: [ライフスタイルの要約 150文字以内]
    * パーソナライズ提案プロンプト作成
    */
   private createSuggestionPrompt(emotionAnalysis: EmotionAnalysis, lifestylePattern: LifestylePattern): string {
+    const currentHour = new Date().getHours();
+    const isWeekend = [0, 6].includes(new Date().getDay());
+    const season = this.getCurrentSeason();
+    
     return `
-あなたは個人の幸福度向上を専門とするライフスタイルコンサルタントです。
-以下のデータを基に、この人の生活をより豊かにする具体的な提案を3つ作成してください。
+あなたは超精密パーソナライゼーションの専門家です。一般的な提案ではなく、今すぐ実行できる超具体的な提案を1つだけ作成してください。
 
-【現在の感情状態】
-喜び: ${emotionAnalysis.emotions.joy}
-平安: ${emotionAnalysis.emotions.peace}
-興奮: ${emotionAnalysis.emotions.excitement}
-憂愁: ${emotionAnalysis.emotions.melancholy}
-好奇心: ${emotionAnalysis.emotions.curiosity}
-ストレス: ${emotionAnalysis.emotions.stress}
+【現在の状況】
+時刻: ${currentHour}時
+曜日: ${isWeekend ? '休日' : '平日'}
+季節: ${season}
 
-【生活パターン】
-活動レベル: ${lifestylePattern.behaviorPatterns.activityLevel}
-投稿頻度: ${lifestylePattern.behaviorPatterns.averagePostingFrequency}回/週
-行動半径: ${lifestylePattern.behaviorPatterns.travelRadius}km
+【ユーザー分析】
+感情状態: 好奇心${emotionAnalysis.emotions.curiosity.toFixed(1)}, ストレス${emotionAnalysis.emotions.stress.toFixed(1)}, 喜び${emotionAnalysis.emotions.joy.toFixed(1)}
+活動パターン: ${lifestylePattern.behaviorPatterns.activityLevel}レベル, 週${lifestylePattern.behaviorPatterns.averagePostingFrequency}回投稿
+行動範囲: 半径${lifestylePattern.behaviorPatterns.travelRadius}km
+好みの場所: ${lifestylePattern.behaviorPatterns.favoriteLocations.slice(0,2).join(', ')}
 
-【提案方針】
-1. 現在の感情状態を改善する体験
-2. 生活パターンに適合した提案
-3. 新しい発見と成長機会の提供
+【絶対条件】
+- 「明日の14:30」のように具体的時刻指定
+- 「新宿駅から徒歩5分」のように正確な位置
+- 「1時間で500円」のように時間とコスト明記
+- 曖昧な表現禁止(「カフェ巡り」「美術館」等)
+- 実在する店名・施設名を使用
 
-**回答フォーマット（3つの提案）:**
+**必須回答フォーマット:**
 
-SUGGESTION_1:
-TITLE: [提案タイトル]
-DESCRIPTION: [詳細説明 100文字以内]
-REASONING: [提案理由 80文字以内]
-ACTION: [具体的行動]
-LOCATION_TYPE: [restaurant|cafe|park|viewpoint|cultural_site|shop]
-TIME_BEST: [最適な時間帯]
-DURATION: [所要時間]
-PRIORITY: [low|medium|high|urgent]
-ENGAGEMENT: [0.0-1.0の期待エンゲージメント]
+ULTRA_SPECIFIC_SUGGESTION:
+TITLE: [アクション目的の具体タイトル 20文字以内]
+DESCRIPTION: [「いつ、どこで、何を、どうする」が全て明確 80文字以内]
+SPECIFIC_TIME: [明日の15:30のように精密時刻]
+EXACT_LOCATION: [施設名 + 駅からの正確な距離と時間]
+ACTION_STEPS: [ステップバイステップの具体的行動 3ステップ]
+COST_TIME: [所要時間 + おおよその費用]
+EXPECTED_RESULT: [期待される具体的成果]
+PRIORITY: [urgent のみ - 今すぐ実行すべき]
+ENGAGEMENT: [0.9以上の高エンゲージメントのみ]
 
-SUGGESTION_2:
-[同様の形式]
-
-SUGGESTION_3:
-[同様の形式]
-
-【重要な考慮事項】
-- 季節感と現在の天候
-- 個人の興味・関心分野
-- 実現可能性と利便性
-- 予算的な配慮
-- 一人でも楽しめる内容
+【提案例】
+× 悪い例: 「新しいカフェを探してみる」
+○ 良い例: 「明日の16:15、新宿南口から徒歩3分のBlue Seal Coffeeでオキナワ特製アイスコーヒー(税込450円)を注文し、窓際席で40分間読書」
 `;
   }
 
@@ -461,7 +455,12 @@ SUGGESTION_3:
       }
     });
 
-    return suggestions.length > 0 ? suggestions : this.getMockPersonalizedSuggestions();
+    // 提案を最高の1つに絞り込み
+    const bestSuggestion = suggestions.length > 0 ? 
+      suggestions.sort((a, b) => b.estimatedEngagement - a.estimatedEngagement)[0] : 
+      this.getMockPersonalizedSuggestions()[0];
+    
+    return [bestSuggestion];
   }
 
   private parseFloatSafe(value: string | undefined, defaultValue: number): number {
@@ -584,70 +583,43 @@ SUGGESTION_3:
   }
 
   /**
-   * モックパーソナライズ提案データ
+   * 現在の季節を取得
+   */
+  private getCurrentSeason(): string {
+    const month = new Date().getMonth() + 1;
+    if (month >= 3 && month <= 5) return '春';
+    if (month >= 6 && month <= 8) return '夏';
+    if (month >= 9 && month <= 11) return '秋';
+    return '冬';
+  }
+
+  /**
+   * 超具体的モック提案データ
    */
   private getMockPersonalizedSuggestions(): PersonalizedSuggestion[] {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowFormatted = tomorrow.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+    
     return [
       {
-        id: 'lifestyle-suggestion-1',
+        id: 'ultra-specific-suggestion-1',
         type: 'experience',
-        title: '朝活フォトウォーク',
-        description: '早朝の静かな街で写真撮影しながら散歩。新しい発見と健康的な習慣作り。',
-        reasoning: '活動パターンから朝の時間帯を好む傾向があり、写真への興味も高いため',
+        title: '明日の14:30、ブルーシールコーヒーでアイスコーヒー',
+        description: `${tomorrowFormatted}の14:30、新宿南口から徒歩3分のBlue Seal Coffeeでオキナワ特製アイスコーヒー(税込450円)を注文。窓際席で読書しながらリフレッシュ。`,
+        reasoning: '好奇心が高くストレスを抑えたい状態で、新しい体験とリラックスを両立できるため',
         content: {
-          primaryAction: '明日の朝6:30に近所の公園で30分間の写真散歩',
+          primaryAction: `${tomorrowFormatted}14:30に新宿南口東口から徒歩3分のBlue Seal Coffee新宿店へ`,
           timeRecommendation: {
-            bestTime: '早朝6:30-7:30',
-            duration: '30-60分'
+            bestTime: '14:30-15:30',
+            duration: '60分'
           },
-          preparations: ['カメラまたはスマートフォン', '歩きやすい靴', '水分補給用の飲み物'],
-          followUpActions: ['撮影した写真をSNSでシェア', '週2回の朝活習慣化', '撮影スポットマップ作成']
+          preparations: ['読みたい本', 'スマートフォン', '現金450円'],
+          followUpActions: ['アイスコーヒーの味を記録', '窓際の景色を写真撮影', '次回のメニューをチェック']
         },
-        priority: 'medium',
-        tags: ['健康', '写真', '朝活'],
-        estimatedEngagement: 0.8,
-        createdAt: new Date().toISOString(),
-        generatedBy: 'lifestyle_concierge'
-      },
-      {
-        id: 'lifestyle-suggestion-2',
-        type: 'cultural',
-        title: '一人美術館巡り',
-        description: '自分のペースで芸術鑑賞。感性を磨き、新しいインスピレーションを得る。',
-        reasoning: 'アートへの関心が高く、一人時間を大切にする傾向から',
-        content: {
-          primaryAction: '今度の休日に近隣の美術館で2時間の鑑賞時間',
-          timeRecommendation: {
-            bestTime: '平日午後または休日午前',
-            duration: '2-3時間'
-          },
-          preparations: ['美術館の展示情報確認', 'オーディオガイド利用検討'],
-          followUpActions: ['気に入った作品の写真撮影（可能な場合）', '感想をノートに記録', '関連書籍の読書']
-        },
-        priority: 'medium',
-        tags: ['アート', '文化', '自己啓発'],
-        estimatedEngagement: 0.75,
-        createdAt: new Date().toISOString(),
-        generatedBy: 'lifestyle_concierge'
-      },
-      {
-        id: 'lifestyle-suggestion-3',
-        type: 'activity',
-        title: '季節を感じるカフェ探索',
-        description: '地域の隠れ家カフェで季節限定メニューを楽しみ、新しい出会いを発見。',
-        reasoning: '食への興味と地域探索の傾向、季節感を大切にする性格から',
-        content: {
-          primaryAction: '今月中に未訪問のカフェ3店舗を巡る',
-          timeRecommendation: {
-            bestTime: '午後3-5時',
-            duration: '各店舗1-1.5時間'
-          },
-          preparations: ['カフェリサーチ', '評価記録用ノート'],
-          followUpActions: ['お気に入りカフェマップ作成', '店主との会話', '季節メニューの写真記録']
-        },
-        priority: 'low',
-        tags: ['グルメ', '探索', '季節'],
-        estimatedEngagement: 0.7,
+        priority: 'urgent',
+        tags: ['アイスコーヒー', '新宿', '読書'],
+        estimatedEngagement: 0.95,
         createdAt: new Date().toISOString(),
         generatedBy: 'lifestyle_concierge'
       }

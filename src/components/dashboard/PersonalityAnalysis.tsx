@@ -152,7 +152,7 @@ export const PersonalityAnalysis: React.FC<PersonalityAnalysisProps> = ({ posts,
           destinations: ['美術館', 'フォトジェニックスポット', '歴史的建造物']
         },
         icon: Palette,
-        color: 'bg-purple-500',
+        color: 'bg-gray-500',
         score: traits.aesthetic
       },
       {

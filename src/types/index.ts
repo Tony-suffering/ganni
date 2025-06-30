@@ -50,6 +50,22 @@ export interface PhotoScore {
   ai_comment: string;
   created_at?: string;
   updated_at?: string;
+  // 深層心理分析用の詳細画像データ
+  image_analysis?: {
+    mainColors: string[];
+    colorTemperature: string;
+    compositionType: string;
+    mainSubject: string;
+    specificContent: string;  // 具体的な内容物、固有名詞
+    backgroundElements: string[];
+    lightingQuality: string;
+    moodAtmosphere: string;
+    shootingAngle: string;
+    depthPerception: string;
+    visualImpact: string;
+    emotionalTrigger: string;
+    technicalSignature: string;
+  };
 }
 
 export interface AIComment {
@@ -140,6 +156,106 @@ export interface RecommendationGroup {
   title: string;
   products: Product[];
   reason: string;
+}
+
+// ========================================
+// ゲーミフィケーション・ポイントシステム
+// ========================================
+
+// ユーザーポイント
+export interface UserPoints {
+  id: string;
+  user_id: string;
+  learning_points: number; // 学習ポイント (LP)
+  influence_points: number; // 影響力ポイント (IP)
+  total_points: number; // 総合ポイント
+  level: number; // ユーザーレベル
+  created_at: string;
+  updated_at: string;
+}
+
+// ポイント履歴
+export interface PointHistory {
+  id: string;
+  user_id: string;
+  point_type: 'learning' | 'influence';
+  points: number;
+  action_type: string; // 'inspiration_created', 'inspiration_received', 'chain_bonus'
+  related_post_id?: string;
+  related_inspiration_id?: string;
+  description?: string;
+  created_at: string;
+}
+
+// バッジ定義
+export interface Badge {
+  id: string;
+  name: string;
+  display_name: string;
+  description?: string;
+  icon: string; // emoji
+  category: 'learner' | 'mentor' | 'special';
+  requirement_type: string; // 'inspiration_count', 'inspired_count', 'chain_level'
+  requirement_value: number;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  color: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+// ユーザーバッジ
+export interface UserBadge {
+  id: string;
+  user_id: string;
+  badge_id: string;
+  earned_at: string;
+  is_displayed: boolean;
+  badge?: Badge; // JOIN時に含まれる
+}
+
+// ユーザー統計
+export interface UserInspirationStats {
+  id: string;
+  user_id: string;
+  inspiration_given_count: number; // 与えたインスピレーション数
+  inspiration_received_count: number; // 受けたインスピレーション数
+  max_chain_level: number; // 最大チェーンレベル
+  different_types_used: number; // 使用した異なるタイプ数
+  weekly_inspiration_count: number; // 今週のインスピレーション数
+  monthly_inspiration_count: number; // 今月のインスピレーション数
+  last_inspiration_date?: string;
+  streak_days: number; // 連続インスピレーション日数
+  created_at: string;
+  updated_at: string;
+}
+
+// ユーザープロフィール拡張（ポイント・バッジ情報含む）
+export interface ExtendedUser extends User {
+  points?: UserPoints;
+  badges?: UserBadge[];
+  stats?: UserInspirationStats;
+  level?: number;
+  displayBadges?: Badge[]; // 表示用のバッジ情報
+}
+
+// レベル情報
+export interface LevelInfo {
+  level: number;
+  currentPoints: number;
+  nextLevelPoints: number;
+  progressPercentage: number;
+  levelName: string;
+}
+
+// ランキング項目
+export interface RankingUser {
+  user_id: string;
+  name: string;
+  avatar: string;
+  points: number;
+  level: number;
+  rank: number;
+  badges: Badge[];
 }
 
 // 開発者専用1000点満点採点システム V2

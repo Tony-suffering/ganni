@@ -574,7 +574,12 @@ GROWTH_SUGGESTION_3:
       }
     });
 
-    return suggestions.length > 0 ? suggestions : this.getMockGrowthSuggestions();
+    // 成長提案を最高の1つに絞り込み
+    const bestSuggestion = suggestions.length > 0 ? 
+      suggestions.sort((a, b) => b.estimatedEngagement - a.estimatedEngagement)[0] : 
+      this.getMockGrowthSuggestions()[0];
+    
+    return [bestSuggestion];
   }
 
   private parseFloatSafe(value: string | undefined, defaultValue: number): number {
@@ -649,25 +654,29 @@ GROWTH_SUGGESTION_3:
    * モック成長提案データ
    */
   private getMockGrowthSuggestions(): PersonalizedSuggestion[] {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowFormatted = tomorrow.toLocaleDateString('ja-JP', { month: 'numeric', day: 'numeric' });
+    
     return [
       {
-        id: 'growth-suggestion-technical',
+        id: 'growth-suggestion-ultra-specific',
         type: 'growth',
-        title: 'ゴールデンアワー撮影マスター',
-        description: '日の出・日の入り時間の光を使った撮影技術を極める。光の質と方向性を理解し、ドラマチックな作品を創造。',
-        reasoning: '技術スコアの向上と光表現力の強化が必要なため',
+        title: `${tomorrowFormatted}の17:30、新宿御苑でゴールデンアワー撮影`,
+        description: `${tomorrowFormatted}の17:30、新宿御苑入口から徒歩5分の芝生エリアで夕日を背景にした人物シルエット撮影。光の方向と影の使い方を学習し技術レベルを向上。`,
+        reasoning: '技術スコアの向上と光表現力の強化が必要で、具体的な時間と場所で実践的に学習できるため',
         content: {
-          primaryAction: '今週末、日の出30分前から90分間の撮影セッション',
+          primaryAction: `${tomorrowFormatted}17:30に新宿御苑新宿門から入園し、芝生エリアでゴールデンアワー撮影実習`,
           timeRecommendation: {
-            bestTime: '日の出30分前〜日の出後60分',
-            duration: '2週間のチャレンジ'
+            bestTime: '17:30-18:30',
+            duration: '60分'
           },
-          preparations: ['三脚', 'NDフィルター', '天気予報確認'],
-          followUpActions: ['撮影設定記録', '同じ場所での異なる時間比較', '光の変化をタイムラプス']
+          preparations: ['カメラ(スマホ可)', '入園料200円', '三脚(あれば)'],
+          followUpActions: ['撮影設定をメモ', '光の変化を3枚で記録', 'SNSに投稿して反応確認']
         },
-        priority: 'high',
-        tags: ['技術向上', '光', 'ゴールデンアワー'],
-        estimatedEngagement: 0.9,
+        priority: 'urgent',
+        tags: ['技術向上', 'ゴールデンアワー', '新宿御苑'],
+        estimatedEngagement: 0.95,
         createdAt: new Date().toISOString(),
         generatedBy: 'growth_partner'
       },
@@ -736,7 +745,7 @@ GROWTH_SUGGESTION_3:
         {
           label: '芸術性',
           data: history.map(point => point.scores.artistic || 0),
-          color: '#8B5CF6'
+          color: '#6B7280'
         },
         {
           label: '自信度',

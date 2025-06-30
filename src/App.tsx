@@ -8,14 +8,13 @@ import { usePosts } from './hooks/usePosts';
 import { useTags } from './hooks/useTags';
 import { useHighlightUpdater } from './hooks/useHighlightUpdater';
 import { usePostAIAnalysis } from './hooks/usePostAIAnalysis';
+import './utils/updateExistingPhotoScores'; // グローバル関数を有効化
 
 // Services
 import { analyticsService } from './services/analyticsService';
 
 // Components
 import { Header } from './components/Header';
-import { FilterPanel } from './components/FilterPanel';
-import { ActiveFilters } from './components/ActiveFilters';
 import { PhotoRankingSection } from './components/PhotoRankingSection';
 import { MasonryGrid } from './components/MasonryGrid';
 import { PostModal } from './components/PostModal';
@@ -27,6 +26,8 @@ import { RegisterModal } from './components/auth/RegisterModal';
 import { PersonalJourneyCTA } from './components/cta/PersonalJourneyCTA';
 import BottomNavBar from './components/BottomNavBar';
 import UserProfile from './pages/UserProfile';
+import { ImageDebugTest } from './components/ImageDebugTest';
+import { LazyImageDirectTest } from './components/LazyImageDirectTest';
 
 // Pages
 import { ProfileEdit } from './pages/ProfileEdit';
@@ -36,7 +37,7 @@ import { PersonalDashboard } from './pages/PersonalDashboard';
 import { InspirationLab } from './pages/InspirationLab';
 
 // Data and Types
-import { Post, FilterOptions } from './types';
+import { Post } from './types';
 
 /**
  * AppContentコンポーネント
@@ -46,12 +47,9 @@ import { Post, FilterOptions } from './types';
 function AppContent() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isNewPostOpen, setIsNewPostOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState<FilterOptions>({ tags: [], sortBy: 'newest' });
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
   const [analyzingPostId, setAnalyzingPostId] = useState<string | null>(null);
 
@@ -83,14 +81,12 @@ function AppContent() {
     loadMore,
     addPost,
     updatePost,
-    filterPosts,
     likePost,
     unlikePost,
     bookmarkPost,
     unbookmarkPost,
     deletePost,
-    isLoadingMore,
-    isFiltering
+    isLoadingMore
   } = usePosts();
   
   // タグデータを管理するカスタムフック
@@ -115,13 +111,7 @@ function AppContent() {
     enabled: !authLoading && !postsLoading
   });
 
-  // フィルターや検索クエリが変更された時に投稿を再フィルタリング
-  useEffect(() => {
-    // 投稿のローディングが終わって、フィルター・検索が初期値でない場合のみフィルタリングを実行
-    if (!postsLoading && posts.length > 0 && (filters.sortBy !== 'newest' || filters.tags.length > 0 || searchQuery.trim())) {
-      filterPosts(filters, searchQuery);
-    }
-  }, [filters, searchQuery, postsLoading, posts, filterPosts]); // 適切な依存関係を設定
+  // フィルター機能は削除済み - シンプルな無限ローディングのみ
 
   // 認証または投稿データの読み込み中はローディングスピナーを表示
   if (authLoading) { // postsLoadingよりもauthLoadingを優先
@@ -133,6 +123,12 @@ function AppContent() {
   }
   // 新しい投稿データを処理する関数
   const handleNewPost = async (postData: Parameters<typeof addPost>[0]) => {
+    console.log('🔍 App.handleNewPost - 受信した投稿データ:');
+    console.log('  - inspirationSourceId:', postData.inspirationSourceId);
+    console.log('  - inspirationType:', postData.inspirationType);
+    console.log('  - inspirationNote:', postData.inspirationNote);
+    console.log('  - 投稿データ全体:', postData);
+    
     const newPost = await addPost(postData);
     if (newPost) {
       console.log('✅ Post created:', newPost.id);
@@ -181,7 +177,6 @@ function AppContent() {
     setIsLoginOpen(true);
   };
 
-  const handleToggleFilter = () => setIsFilterOpen(!isFilterOpen);
 
   // AI分析モーダル関連の関数
   const closeAnalysisModal = () => {
@@ -209,30 +204,16 @@ function AppContent() {
     }
   };
 
-  const hasActiveFilters = filters.tags.length > 0 || filters.sortBy !== 'newest' || searchQuery.trim();
 
   // ユーザーがログインしている場合の表示
   return (
     <div className="bg-neutral-50 w-full min-h-screen">
       <Header
         onNewPost={() => setIsNewPostOpen(true)}
-        onToggleFilter={handleToggleFilter}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
         onLoginClick={openLoginModal}
         onPostClick={handlePostClick}
-        hasActiveFilters={hasActiveFilters}
         allPosts={allPosts}
         onHighlightPostClick={setSelectedPost}
-      />
-
-      {/* Active Filters */}
-      <ActiveFilters
-        tags={tags}
-        filters={filters}
-        onFiltersChange={setFilters}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
       />
 
       <main className="pb-20 md:pb-0 mt-20 md:mt-24">
@@ -241,15 +222,6 @@ function AppContent() {
             path="/"
             element={
               <>
-                {/* Filter Loading Overlay */}
-                {isFiltering && (
-                  <div className="fixed top-16 left-0 right-0 bg-blue-50 border-b border-blue-200 z-40 px-4 py-3">
-                    <div className="max-w-7xl mx-auto flex items-center justify-center space-x-3">
-                      <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                      <span className="text-blue-700 font-medium">フィルターを適用中...</span>
-                    </div>
-                  </div>
-                )}
                 
                 {/* 写真スコアランキングセクション */}
                 <PhotoRankingSection
@@ -270,7 +242,6 @@ function AppContent() {
                   bookmarkPost={bookmarkPost}
                   unbookmarkPost={unbookmarkPost}
                   deletePost={deletePost}
-                  searchQuery={searchQuery}
                 />
                 
                 {/* Floating CTA for Dashboard - Desktop only */}
@@ -289,13 +260,6 @@ function AppContent() {
         </Routes>
       </main>
 
-      <FilterPanel
-        isOpen={isFilterOpen}
-        onClose={() => setIsFilterOpen(false)}
-        tags={tags}
-        filters={filters}
-        onFiltersChange={setFilters}
-      />
 
       <PostModal
         post={selectedPost}
@@ -316,8 +280,8 @@ function AppContent() {
           }
         }}
         tags={tags}
-        onSubmit={handleNewPost}
         inspirationPostId={searchParams.get('inspiration') || undefined}
+        onSubmit={handleNewPost}
       />
       
       <LoginModal
@@ -346,9 +310,7 @@ function AppContent() {
       <BottomNavBar
         onNewPostClick={() => setIsNewPostOpen(true)}
         onLoginClick={openLoginModal}
-        onToggleFilter={handleToggleFilter}
         onPostClick={handlePostClick}
-        hasActiveFilters={hasActiveFilters}
       />
     </div>
   );

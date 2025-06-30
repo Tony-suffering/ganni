@@ -80,7 +80,7 @@ export const PostingTimeChart: React.FC<PostingTimeChartProps> = ({ posts }) => 
           if (hour >= 6 && hour < 12) return '#FDE047'; // 朝: 黄色
           if (hour >= 12 && hour < 18) return '#FB923C'; // 昼: オレンジ
           if (hour >= 18 && hour < 22) return '#F87171'; // 夕: 赤
-          return '#8B5CF6'; // 夜: 紫
+          return '#6B7280'; // 夜: グレー
         },
         borderColor: '#E5E7EB',
         borderWidth: 1,
@@ -101,7 +101,7 @@ export const PostingTimeChart: React.FC<PostingTimeChartProps> = ({ posts }) => 
           '#3B82F650', // 月曜: 青系
           '#10B98150', // 火曜: 緑系
           '#F59E0B50', // 水曜: 黄系
-          '#8B5CF650', // 木曜: 紫系
+          '#6B728050', // 木曜: グレー系
           '#EC489950', // 金曜: ピンク系
           '#6B728050'  // 土曜: グレー系
         ],
@@ -110,7 +110,7 @@ export const PostingTimeChart: React.FC<PostingTimeChartProps> = ({ posts }) => 
           '#3B82F6',
           '#10B981',
           '#F59E0B',
-          '#8B5CF6',
+          '#6B7280',
           '#EC4899',
           '#6B7280'
         ],
@@ -255,7 +255,7 @@ export const PostingTimeChart: React.FC<PostingTimeChartProps> = ({ posts }) => 
       { type: '朝型', value: morning, color: 'text-yellow-600' },
       { type: '昼型', value: afternoon, color: 'text-orange-600' },
       { type: '夕方型', value: evening, color: 'text-red-600' },
-      { type: '夜型', value: night, color: 'text-purple-600' }
+      { type: '夜型', value: night, color: 'text-gray-600' }
     ];
     
     const dominant = patterns.reduce((max, current) => 
@@ -300,7 +300,7 @@ export const PostingTimeChart: React.FC<PostingTimeChartProps> = ({ posts }) => 
             </p>
           </div>
           
-          <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg">
+          <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-4 rounded-lg">
             <h4 className="font-medium text-gray-800 mb-2">ライフスタイル分析</h4>
             <p className="text-sm text-gray-600">
               あなたは <span className={`font-semibold ${timePattern.color}`}>{timePattern.type}人間</span> です

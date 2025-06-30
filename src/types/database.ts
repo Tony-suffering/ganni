@@ -222,6 +222,7 @@ export interface Database {
           score_level: string;
           level_description: string;
           ai_comment: string;
+          image_analysis?: any; // JSON column for detailed image analysis
           created_at: string;
           updated_at: string;
         };
@@ -236,6 +237,7 @@ export interface Database {
           score_level: string;
           level_description: string;
           ai_comment: string;
+          image_analysis?: any;
           created_at?: string;
           updated_at?: string;
         };
@@ -250,6 +252,7 @@ export interface Database {
           score_level?: string;
           level_description?: string;
           ai_comment?: string;
+          image_analysis?: any;
           created_at?: string;
           updated_at?: string;
         };

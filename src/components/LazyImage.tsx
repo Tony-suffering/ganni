@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useLazyImage } from '../hooks/useLazyImage';
-// import { imageCache } from '../utils/imageCache';
+import { imageCache } from '../utils/imageCache';
 
 interface LazyImageProps {
   src: string;
@@ -26,10 +26,10 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   priority = false,
   index = 0
 }) => {
-  // 最初の3枚または優先読み込みフラグがある場合は即座に読み込み
-  const shouldLoadImmediately = priority || index < 3;
+  // 表示中の画像のみ即座に読み込み（無限ローディング対応）
+  const shouldLoadImmediately = priority;
   
-  const { imgRef, imageSrc, isLoaded, isError } = useLazyImage({ 
+  const { imgRef, imageSrc, isLoaded, isError, handleImageLoad, handleImageError } = useLazyImage({ 
     src, 
     threshold: shouldLoadImmediately ? 1 : threshold, // 即座に読み込む場合は閾値を1に
     rootMargin: shouldLoadImmediately ? '0px' : rootMargin,
@@ -76,7 +76,15 @@ export const LazyImage: React.FC<LazyImageProps> = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: isLoaded ? 1 : 0 }}
           transition={{ duration: 0.3 }}
-          onLoad={() => {/* 追加の処理があれば */}}
+          onLoad={() => {
+            // onLoadが呼ばれた場合も確実にisLoadedを更新
+            if (!isLoaded) {
+              handleImageLoad();
+            }
+          }}
+          onError={() => {
+            handleImageError();
+          }}
         />
       )}
       

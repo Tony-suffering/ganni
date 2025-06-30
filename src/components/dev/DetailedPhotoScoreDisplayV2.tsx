@@ -255,7 +255,7 @@ export const DetailedPhotoScoreDisplayV2: React.FC<DetailedPhotoScoreDisplayV2Pr
             title="構図・アート性"
             score={score.composition.total}
             maxScore={250}
-            color="#8B5CF6"
+            color="#9CA3AF"
             breakdown={[
               { label: '基本構図法', score: score.composition.basicComposition, max: 80 },
               { label: '空間構成', score: score.composition.spatialComposition, max: 70 },

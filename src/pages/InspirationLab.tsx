@@ -398,7 +398,7 @@ export const InspirationLab: React.FC = () => {
     if (!user || !postId) return;
     
     // インスピレーション情報をURLパラメータで渡して新規投稿画面へ
-    navigate(`/new-post?inspiration=${postId}&type=${selectedInspirationType}&note=${encodeURIComponent(selectedInspirationNote)}`);
+    navigate(`/?inspiration=${postId}&type=${selectedInspirationType}&note=${encodeURIComponent(selectedInspirationNote)}`);
   };
 
   const getInspirationTypeLabel = (type: string) => {
@@ -539,6 +539,51 @@ export const InspirationLab: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                 インスピレーション・アクション
               </h3>
+              
+              {/* インスピレーションタイプ選択 */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  インスピレーションのタイプ
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: 'direct', label: '直接的', desc: 'そのまま真似' },
+                    { value: 'style', label: 'スタイル', desc: '撮影スタイル' },
+                    { value: 'concept', label: 'コンセプト', desc: 'アイデア' },
+                    { value: 'technique', label: '技法', desc: '撮影技法' },
+                    { value: 'composition', label: '構図', desc: '構図設計' },
+                    { value: 'mood', label: 'ムード', desc: '雰囲気' }
+                  ].map((type) => (
+                    <button
+                      key={type.value}
+                      onClick={() => setSelectedInspirationType(type.value)}
+                      className={`p-3 text-left rounded-lg border transition-all ${
+                        selectedInspirationType === type.value
+                          ? 'border-gray-800 bg-gray-800 text-white'
+                          : 'border-gray-300 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-400'
+                      }`}
+                    >
+                      <div className="font-medium text-sm">{type.label}</div>
+                      <div className="text-xs opacity-75">{type.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* インスピレーションメモ */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  インスピレーションメモ（任意）
+                </label>
+                <textarea
+                  value={selectedInspirationNote}
+                  onChange={(e) => setSelectedInspirationNote(e.target.value)}
+                  placeholder="どこに魅力を感じましたか？（例：色使いが素敵、構図が印象的）"
+                  className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 resize-none"
+                  rows={3}
+                />
+              </div>
+
               <div className="space-y-3">
                 <button
                   onClick={handleCreateInspiredPost}

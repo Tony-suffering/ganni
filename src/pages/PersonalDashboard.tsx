@@ -19,7 +19,7 @@ import { Post } from '../types';
 import { UserPostService } from '../services/userPostService';
 import { UserStatsDisplay } from '../components/dashboard/UserStatsDisplay';
 import { PostGallery } from '../components/dashboard/PostGallery';
-import { SimpleAISuggestions } from '../components/dashboard/SimpleAISuggestions';
+import { PersonalCuratorDisplay } from '../components/curator/PersonalCuratorDisplay';
 
 export const PersonalDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -65,7 +65,7 @@ export const PersonalDashboard: React.FC = () => {
             ログインが必要です
           </h2>
           <p className="text-gray-600">
-            パーソナルダッシュボードを利用するにはログインしてください
+            エクスペリエンス画面を利用するにはログインしてください
           </p>
         </div>
       </div>
@@ -79,8 +79,8 @@ export const PersonalDashboard: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-center py-16">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-              <span className="text-lg text-gray-600">あなたのジャーニーを分析中...</span>
+              <div className="w-8 h-8 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
+              <span className="text-lg text-gray-600">あなたのエクスペリエンスを分析中...</span>
             </div>
           </div>
         </div>
@@ -162,7 +162,7 @@ export const PersonalDashboard: React.FC = () => {
                         onClick={() => setViewMode('grid')}
                         className={`p-2 rounded-lg transition-colors ${
                           viewMode === 'grid'
-                            ? 'bg-indigo-100 text-indigo-600'
+                            ? 'bg-gray-100 text-gray-700'
                             : 'text-gray-400 hover:text-gray-600'
                         }`}
                       >
@@ -172,7 +172,7 @@ export const PersonalDashboard: React.FC = () => {
                         onClick={() => setViewMode('timeline')}
                         className={`p-2 rounded-lg transition-colors ${
                           viewMode === 'timeline'
-                            ? 'bg-indigo-100 text-indigo-600'
+                            ? 'bg-gray-100 text-gray-700'
                             : 'text-gray-400 hover:text-gray-600'
                         }`}
                       >
@@ -204,7 +204,12 @@ export const PersonalDashboard: React.FC = () => {
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <SimpleAISuggestions posts={posts} user={user} />
+                  <PersonalCuratorDisplay 
+                    postId={posts[0]?.id || 'dashboard'}
+                    userId={user.id}
+                    userPosts={posts}
+                    userLocation={undefined}
+                  />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -246,7 +251,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   };
 
   return (
-    <div className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white">
+    <div className="bg-gradient-to-r from-gray-800 to-gray-900 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -263,10 +268,10 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
             </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">
-                🧠 {getUserDisplayName()}のパーソナルジャーニー
+                ✨ {getUserDisplayName()}のエクスペリエンス
               </h1>
               {!isLoading && (
-                <div className="flex items-center space-x-6 mt-2 text-indigo-100">
+                <div className="flex items-center space-x-6 mt-2 text-gray-200">
                   <div className="flex items-center space-x-2">
                     <Camera className="w-4 h-4" />
                     <span>総投稿数: {postsCount}</span>
@@ -285,7 +290,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           </div>
           <div className="hidden md:block">
             <div className="text-right">
-              <p className="text-sm text-indigo-100">最終更新</p>
+              <p className="text-sm text-gray-200">最終更新</p>
               <p className="text-lg font-semibold">
                 {new Date().toLocaleDateString('ja-JP')}
               </p>
@@ -317,7 +322,7 @@ const TabButton: React.FC<TabButtonProps> = ({
     onClick={onClick}
     className={`flex items-center space-x-2 py-4 border-b-2 transition-colors ${
       isActive
-        ? 'border-indigo-500 text-indigo-600'
+        ? 'border-gray-800 text-gray-800'
         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
     }`}
   >
@@ -326,7 +331,7 @@ const TabButton: React.FC<TabButtonProps> = ({
     {count !== undefined && (
       <span className={`px-2 py-1 text-xs rounded-full ${
         isActive 
-          ? 'bg-indigo-100 text-indigo-600' 
+          ? 'bg-gray-100 text-gray-800' 
           : 'bg-gray-100 text-gray-600'
       }`}>
         {count}

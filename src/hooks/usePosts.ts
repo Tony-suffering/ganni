@@ -443,6 +443,74 @@ export const usePosts = (): UsePostsReturn => {
         }
       }
 
+      // インスピレーション情報を取得（もしあれば）
+      console.log('🔍 usePosts.addPost - インスピレーション情報デバッグ:');
+      console.log('  - newPostInput.inspirationSourceId:', newPostInput.inspirationSourceId);
+      console.log('  - newPostInput.inspirationType:', newPostInput.inspirationType);
+      console.log('  - newPostInput.inspirationNote:', newPostInput.inspirationNote);
+      
+      let inspirationData = null;
+      if (newPostInput.inspirationSourceId) {
+        console.log('  - インスピレーション情報の取得を開始...');
+        try {
+          // インスピレーション元の投稿を取得
+          const { data: sourcePost } = await supabase
+            .from('posts')
+            .select('id, title, image_url, author_id')
+            .eq('id', newPostInput.inspirationSourceId)
+            .single();
+
+          if (sourcePost) {
+            // 作成者情報を取得
+            let authorData = null;
+            if (sourcePost.author_id) {
+              const { data: userData } = await supabase
+                .from('users')
+                .select('id, name, avatar_url')
+                .eq('id', sourcePost.author_id)
+                .single();
+
+              if (!userData) {
+                const { data: profileData } = await supabase
+                  .from('profiles')
+                  .select('id, name, avatar_url')
+                  .eq('id', sourcePost.author_id)
+                  .single();
+                authorData = profileData;
+              } else {
+                authorData = userData;
+              }
+            }
+
+            const authorName = authorData?.name || '匿名ユーザー';
+            const avatarUrl = authorData?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=random`;
+
+            inspirationData = {
+              source_post_id: newPostInput.inspirationSourceId,
+              source_post: {
+                id: sourcePost.id,
+                title: sourcePost.title,
+                imageUrl: sourcePost.image_url,
+                author: {
+                  id: sourcePost.author_id,
+                  name: authorName,
+                  avatar: avatarUrl
+                }
+              },
+              type: newPostInput.inspirationType || 'direct',
+              note: newPostInput.inspirationNote || '',
+              chain_level: 1 // 新規投稿なので1に設定
+            };
+            
+            console.log('  - インスピレーションデータを構築完了:', inspirationData);
+          }
+        } catch (error) {
+          console.error('インスピレーション情報の取得に失敗:', error);
+        }
+      } else {
+        console.log('  - インスピレーション元IDがないためスキップ');
+      }
+
       // 投稿データを返す
       const newPost: Post = {
         id: postData.id,
@@ -463,8 +531,19 @@ export const usePosts = (): UsePostsReturn => {
         likeCount: 0,
         likedByCurrentUser: false,
         bookmarkedByCurrentUser: false,
-        commentCount: 0
+        commentCount: 0,
+        inspiration: inspirationData
       };
+      
+      console.log('🎆 usePosts.addPost - 最終投稿データ:');
+      console.log('  - newPost.id:', newPost.id);
+      console.log('  - newPost.inspiration:', newPost.inspiration);
+      if (newPost.inspiration) {
+        console.log('    - source_post_id:', newPost.inspiration.source_post_id);
+        console.log('    - type:', newPost.inspiration.type);
+        console.log('    - note:', newPost.inspiration.note);
+        console.log('    - source_post:', newPost.inspiration.source_post);
+      }
 
       // 新規投稿通知を送信
       try {

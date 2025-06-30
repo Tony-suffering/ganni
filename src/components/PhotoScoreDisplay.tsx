@@ -89,7 +89,8 @@ export const PhotoScoreDisplay: React.FC<PhotoScoreDisplayProps> = ({
           total_score: newScore.total,
           score_level: levelInfo.level,
           level_description: levelInfo.description,
-          ai_comment: newScore.comment
+          ai_comment: newScore.comment,
+          image_analysis: newScore.imageAnalysis || null
         })
         .select()
         .single();
@@ -105,6 +106,7 @@ export const PhotoScoreDisplay: React.FC<PhotoScoreDisplayProps> = ({
       setLoading(false);
     }
   };
+
 
   // getLevelColor関数を削除（シンプルデザインのため不要）
 
@@ -192,12 +194,18 @@ export const PhotoScoreDisplay: React.FC<PhotoScoreDisplayProps> = ({
         </div>
 
         {/* AIコメント */}
-        <div className="bg-gray-50 rounded-lg p-4">
+        <div className="bg-gray-50 rounded-lg p-4 mb-4">
           <h4 className="text-sm font-medium text-gray-700 mb-2">
             AIフィードバック
           </h4>
           <p className="text-sm text-gray-600 leading-relaxed">{score.ai_comment}</p>
         </div>
+
+        {error && (
+          <div className="mt-3 text-sm text-red-600 text-center">
+            {error}
+          </div>
+        )}
 
       </motion.div>
     </AnimatePresence>

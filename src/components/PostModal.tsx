@@ -393,25 +393,10 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
                     </div>
                   </div>
                 )}
-                {/* AIコメンテーター */}
-                {post.aiComments && post.aiComments.length > 0 && (
-                  <div>
-                    <h3 className="flex items-center text-lg font-display font-semibold text-primary-900 mb-4">
-                      <Star className="w-5 h-5 mr-2 text-primary-500" />
-                      AIコメンテーター
-                    </h3>
-                    <div className="bg-gradient-to-r from-primary-50 to-accent-50 p-6 rounded-2xl">
-                      <p className="text-neutral-700 italic leading-relaxed text-base">
-                        "{post.aiComments[0].content}"
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* User Comment */}
+                {/* User Comment - 感想を先に表示 */}
                 <div>
                   <h3 className="flex items-center text-lg font-display font-semibold text-neutral-900 mb-4">
-                    <User className="w-5 h-5 mr-2 text-accent-500" />
+                    <User className="w-5 h-5 mr-2 text-gray-500" />
                     感想・コメント
                   </h3>
                   <div className="bg-neutral-50 p-6 rounded-2xl">
@@ -421,54 +406,21 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
                   </div>
                 </div>
 
-                {/* AI Generated Comments */}
+                {/* AIコメント */}
                 {post.aiComments && post.aiComments.length > 0 && (
                   <div>
-                    <h3 className="flex items-center text-lg font-display font-semibold text-neutral-900 mb-6">
-                      <MessageCircle className="w-5 h-5 mr-2 text-indigo-500" />
-                      AI応答・対話
-                      <span className="ml-2 px-2 py-1 text-xs bg-indigo-100 text-indigo-700 rounded-full">
-                        {post.aiComments.length}件
-                      </span>
+                    <h3 className="flex items-center text-lg font-display font-semibold text-gray-900 mb-4">
+                      <MessageCircle className="w-5 h-5 mr-2 text-gray-500" />
+                      AIコメント
                     </h3>
-                    <div className="space-y-6">
-                      {post.aiComments.map((comment, index) => {
-                        const typeInfo = commentTypeLabels[comment.type as keyof typeof commentTypeLabels] || 
-                                       { icon: MessageCircle, label: 'AIコメント', color: 'text-gray-600', bgColor: 'bg-gray-50' };
-                        const CommentIcon = typeInfo.icon;
-                        
-                        return (
-                          <motion.div
-                            key={comment.id}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.1 }}
-                            className={`border border-neutral-200 rounded-xl p-6 ${typeInfo.bgColor} shadow-sm hover:shadow-md transition-shadow duration-200`}
-                          >
-                            <div className="flex items-start space-x-4">
-                              <div className={`p-2.5 rounded-lg bg-white ${typeInfo.color}`}>
-                                <CommentIcon className="w-5 h-5" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between mb-3">
-                                  <span className={`text-sm font-medium ${typeInfo.color}`}>
-                                    {typeInfo.label}
-                                  </span>
-                                  <span className="text-xs text-neutral-500">
-                                    {formatTime(comment.createdAt)}
-                                  </span>
-                                </div>
-                                <p className="text-neutral-700 leading-relaxed text-base break-words">
-                                  {comment.content}
-                                </p>
-                              </div>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
+                    <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-2xl">
+                      <p className="text-neutral-700 italic leading-relaxed text-base">
+                        "{post.aiComments[0].content}"
+                      </p>
                     </div>
                   </div>
                 )}
+
 
                 {/* コメント一覧 */}
                 <div className="mt-10">
@@ -557,26 +509,7 @@ export const PostModal: React.FC<PostModalProps> = ({ post, isOpen, onClose, lik
                   />
                 </div>
 
-                {/* 開発者専用: 詳細採点システムV2 (1000点満点) */}
-                <div className="mt-6">
-                  <DetailedPhotoScoreDisplayV2
-                    postId={post.id}
-                    imageUrl={post.imageUrl}
-                    title={post.title}
-                    description={post.userComment}
-                    userEmail={user?.email}
-                  />
-                </div>
 
-                {/* AIパーソナルキュレーター */}
-                <div className="mt-8">
-                  <PersonalCuratorDisplay
-                    postId={post.id}
-                    userId={post.author.id}
-                    userPosts={[]} // 実際の実装では投稿者の他の投稿を取得
-                    userLocation={undefined} // 位置情報があれば設定
-                  />
-                </div>
 
                 {/* Footer info */}
                 <div className="flex items-center justify-between pt-6 border-t border-neutral-200">

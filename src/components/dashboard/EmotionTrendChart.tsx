@@ -117,8 +117,8 @@ export const EmotionTrendChart: React.FC<EmotionTrendChartProps> = ({ posts }) =
       {
         label: 'おだやか',
         data: emotionData.calm,
-        borderColor: '#8B5CF6',
-        backgroundColor: '#8B5CF620',
+        borderColor: '#6B7280',
+        backgroundColor: '#6B728020',
         tension: 0.4,
         pointRadius: 4,
         pointHoverRadius: 6,

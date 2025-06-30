@@ -132,41 +132,32 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
             </div>
           </div>
           
-          {/* Inspiration Info */}
-          {(() => {
-            console.log(`🔍 PostCard ${post.id} - inspiration:`, inspiration);
-            if (inspiration && inspiration.source_post) {
-              console.log(`✅ PostCard ${post.id} - インスピレーション情報を表示`);
-              return (
-                <div className="px-3 pb-2">
-                  <Link 
-                    to={`/inspiration/${inspiration.source_post_id}`}
-                    className="flex items-center space-x-2 text-sm bg-gray-100 dark:bg-gray-800 rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Lightbulb className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                    <span className="text-gray-700 dark:text-gray-300">
-                      <span className="font-medium">{inspiration.source_post.author.name}</span>
-                      さんの「{inspiration.source_post.title}」からインスパイア
-                    </span>
-                    <span className="ml-auto px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded">
-                      {getInspirationTypeLabel(inspiration.type)}
-                    </span>
-                  </Link>
-                  {inspiration.note && (
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 px-2 italic">
-                      「{inspiration.note}」
-                    </p>
-                  )}
+          {/* Inspiration Info - moved to top */}
+          {inspiration && inspiration.source_post && (
+            <div className="px-3 pb-2">
+              <Link 
+                to={`/inspiration/${inspiration.source_post_id}`}
+                className="flex items-center space-x-2 text-sm bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                  <span className="text-white text-xs">🔗</span>
                 </div>
-              );
-            } else {
-              if (inspiration) {
-                console.log(`⚠️ PostCard ${post.id} - inspirationはあるがsource_postがない:`, inspiration);
-              }
-              return null;
-            }
-          })()}
+                <span className="text-blue-800 dark:text-blue-200">
+                  <span className="font-medium">{inspiration.source_post.author.name}</span>
+                  さんの『{inspiration.source_post.title}』からインスパイア
+                </span>
+                <span className="ml-auto px-2 py-0.5 bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-xs rounded">
+                  {getInspirationTypeLabel(inspiration.type)}
+                </span>
+              </Link>
+              {inspiration.note && (
+                <p className="text-xs text-blue-600 dark:text-blue-400 mt-1 px-2 italic">
+                  「{inspiration.note}」
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Post Image with Padding */}
           <div className="p-4">
@@ -240,7 +231,7 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
               </div>
               <button 
                 onClick={handleInspirationClick} 
-                className="relative transition-all duration-300 text-purple-600 hover:text-purple-500 hover:scale-105 group"
+                className="relative transition-all duration-300 text-gray-600 hover:text-gray-500 hover:scale-105 group"
                 title="インスピレーション・ラボを開く"
               >
                 <Lightbulb className="w-7 h-7 group-hover:drop-shadow-lg" />

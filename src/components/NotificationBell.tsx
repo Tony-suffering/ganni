@@ -48,6 +48,11 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
   const fetchNotifications = useCallback(async () => {
     if (!user || !user.id) return;
     
+    // 一時的に通知機能を無効化（デバッグ用）
+    console.log('⚠️ 通知機能は一時的に無効化されています（デバッグ用）');
+    setLoading(false);
+    return;
+    
     setLoading(true);
     try {
       const { data, error } = await supabase

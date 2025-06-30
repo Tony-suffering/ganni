@@ -52,6 +52,22 @@ export interface DetailedPhotoScore {
     creativeSuggestions: string[]; // 創造的提案
   };
   
+  // 詳細画像分析データ（深層心理分析用）
+  imageAnalysis: {
+    mainColors: string[]; // 主要色彩
+    colorTemperature: string; // 色温度の印象
+    compositionType: string; // 構図タイプ
+    mainSubject: string; // 主被写体
+    backgroundElements: string[]; // 背景要素
+    lightingQuality: string; // 光の質
+    moodAtmosphere: string; // 写真の雰囲気
+    shootingAngle: string; // 撮影角度
+    depthPerception: string; // 奥行き感
+    visualImpactDescription: string; // 視覚的インパクト
+    emotionalTrigger: string; // 感情的トリガー
+    technicalSignature: string; // 技術的特徴
+  };
+  
   // メタデータ
   analysisVersion: string;
   processingTime: number;
