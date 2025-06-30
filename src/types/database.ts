@@ -257,6 +257,35 @@ export interface Database {
           updated_at?: string;
         };
       };
+      inspiration_stats: {
+        Row: {
+          id: string;
+          post_id: string;
+          views: number;
+          likes: number;
+          shares: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          post_id: string;
+          views?: number;
+          likes?: number;
+          shares?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          post_id?: string;
+          views?: number;
+          likes?: number;
+          shares?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
   };
 }
