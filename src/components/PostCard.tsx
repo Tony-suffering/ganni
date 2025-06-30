@@ -9,6 +9,7 @@ import ConfirmationModal from './ConfirmationModal';
 import { LazyImage } from './LazyImage';
 import { ShareModal } from './ShareModal';
 import { PhotoScoreBadge } from './PhotoScoreBadge';
+import { UserBadgesDisplay } from './gamification/UserBadgesDisplay';
 
 interface PostCardProps {
   post: Post;
@@ -98,9 +99,19 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
                 />
               </div>
               <div className="text-sm">
-                <span className="font-semibold text-gray-800 dark:text-gray-200 group-hover:underline">{getDisplayName()}</span>
-                <span className="text-gray-500 dark:text-gray-400 font-mono mx-1">·</span>
-                <span className="text-gray-500 dark:text-gray-400">{timeAgo}</span>
+                <div className="flex items-center space-x-2">
+                  <span className="font-semibold text-gray-800 dark:text-gray-200 group-hover:underline">{getDisplayName()}</span>
+                  {/* 作者のバッジ表示（将来的にバッジ情報が投稿に含まれる場合） */}
+                  {post.author.badges && (
+                    <UserBadgesDisplay 
+                      userBadges={post.author.badges} 
+                      variant="inline"
+                    />
+                  )}
+                </div>
+                <div>
+                  <span className="text-gray-500 dark:text-gray-400">{timeAgo}</span>
+                </div>
               </div>
             </Link>
             <div className="relative">
@@ -122,29 +133,40 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
           </div>
           
           {/* Inspiration Info */}
-          {inspiration && inspiration.source_post && (
-            <div className="px-3 pb-2">
-              <Link 
-                to={`/inspiration/${inspiration.source_post_id}`}
-                className="flex items-center space-x-2 text-sm bg-gray-100 dark:bg-gray-800 rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <Lightbulb className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                <span className="text-gray-700 dark:text-gray-300">
-                  <span className="font-medium">{inspiration.source_post.author.name}</span>
-                  さんの「{inspiration.source_post.title}」からインスパイア
-                </span>
-                <span className="ml-auto px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded">
-                  {getInspirationTypeLabel(inspiration.type)}
-                </span>
-              </Link>
-              {inspiration.note && (
-                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 px-2 italic">
-                  「{inspiration.note}」
-                </p>
-              )}
-            </div>
-          )}
+          {(() => {
+            console.log(`🔍 PostCard ${post.id} - inspiration:`, inspiration);
+            if (inspiration && inspiration.source_post) {
+              console.log(`✅ PostCard ${post.id} - インスピレーション情報を表示`);
+              return (
+                <div className="px-3 pb-2">
+                  <Link 
+                    to={`/inspiration/${inspiration.source_post_id}`}
+                    className="flex items-center space-x-2 text-sm bg-gray-100 dark:bg-gray-800 rounded-lg p-2 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <Lightbulb className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                    <span className="text-gray-700 dark:text-gray-300">
+                      <span className="font-medium">{inspiration.source_post.author.name}</span>
+                      さんの「{inspiration.source_post.title}」からインスパイア
+                    </span>
+                    <span className="ml-auto px-2 py-0.5 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs rounded">
+                      {getInspirationTypeLabel(inspiration.type)}
+                    </span>
+                  </Link>
+                  {inspiration.note && (
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1 px-2 italic">
+                      「{inspiration.note}」
+                    </p>
+                  )}
+                </div>
+              );
+            } else {
+              if (inspiration) {
+                console.log(`⚠️ PostCard ${post.id} - inspirationはあるがsource_postがない:`, inspiration);
+              }
+              return null;
+            }
+          })()}
 
           {/* Post Image with Padding */}
           <div className="p-4">

@@ -18,18 +18,16 @@ interface UsePostsReturn {
   loading: boolean;
   error: string | null;
   fetchPosts: () => Promise<void>;
-  addPost: (postData: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author' | 'likeCount' | 'likedByCurrentUser' | 'bookmarkedByCurrentUser' | 'commentCount'> & { inspirationSourceId?: string | null }) => Promise<Post | null>;
+  addPost: (postData: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author' | 'likeCount' | 'likedByCurrentUser' | 'bookmarkedByCurrentUser' | 'commentCount'> & { inspirationSourceId?: string | null; inspirationType?: string; inspirationNote?: string }) => Promise<Post | null>;
   updatePost: (postId: string, updates: Partial<Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author'>>) => Promise<void>;
   deletePost: (postId: string) => Promise<void>;
   likePost: (postId: string) => Promise<void>;
   unlikePost: (postId: string) => Promise<void>;
   bookmarkPost: (postId: string) => Promise<void>;
   unbookmarkPost: (postId: string) => Promise<void>;
-  filterPosts: (filters: FilterOptions, searchQuery: string) => void;
   hasNextPage: boolean;
   loadMore: () => void;
   isLoadingMore: boolean;
-  isFiltering: boolean;
 }
 
 // 新規投稿通知を送信する関数
@@ -74,19 +72,15 @@ const sendNewPostNotifications = async (postId: string, authorId: string) => {
 };
 
 export const usePosts = (): UsePostsReturn => {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
+  const [allPosts, setAllPosts] = useState<Post[]>([]);
+  const [displayedPosts, setDisplayedPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(true);
-  const [currentFilters, setCurrentFilters] = useState<FilterOptions>({ tags: [], sortBy: 'newest' });
-  const [currentSearchQuery, setCurrentSearchQuery] = useState<string>('');
-  const [randomSeed, setRandomSeed] = useState<number>(Date.now());
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [isFiltering, setIsFiltering] = useState(false);
 
-  const POSTS_PER_PAGE = 6;
+  const POSTS_PER_PAGE = 12; // 1ページあたり12枚表示（デスクトップ：4x3グリッド）
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
@@ -102,7 +96,7 @@ export const usePosts = (): UsePostsReturn => {
           photo_scores ( 
             id, technical_score, composition_score, creativity_score, 
             engagement_score, total_score, score_level, level_description, 
-            ai_comment, created_at, updated_at 
+            ai_comment, image_analysis, created_at, updated_at 
           )
         `)
         .order('created_at', { ascending: false });
@@ -123,14 +117,7 @@ export const usePosts = (): UsePostsReturn => {
           source_post_id,
           inspiration_type,
           inspiration_note,
-          chain_level,
-          source_post:source_post_id (
-            id,
-            title,
-            image_url,
-            author_id,
-            profiles:author_id (id, name, avatar_url)
-          )
+          chain_level
         `).in('inspired_post_id', postIds)
       ]);
 
@@ -143,6 +130,9 @@ export const usePosts = (): UsePostsReturn => {
       }
       if (inspirationsData.error) {
         console.warn('inspirations取得エラー:', inspirationsData.error);
+      } else {
+        console.log('🎨 inspirationsData:', inspirationsData.data);
+        console.log('🆔 postIds for inspiration lookup:', postIds);
       }
       
       const bookmarkedPostIds = new Set((bookmarksData.data ?? []).map(b => b.post_id));
@@ -158,6 +148,32 @@ export const usePosts = (): UsePostsReturn => {
       (inspirationsData.data ?? []).forEach(inspiration => {
         inspirationsMap.set(inspiration.inspired_post_id, inspiration);
       });
+      
+      // インスピレーションのソース投稿データを取得
+      const sourcePostIds = [...new Set((inspirationsData.data ?? []).map(i => i.source_post_id))];
+      let sourcePostsMap = new Map();
+      
+      if (sourcePostIds.length > 0) {
+        const { data: sourcePostsData, error: sourcePostsError } = await supabase
+          .from('posts')
+          .select(`
+            id,
+            title,
+            image_url,
+            author_id,
+            profiles:author_id (id, name, avatar_url)
+          `)
+          .in('id', sourcePostIds);
+          
+        if (sourcePostsError) {
+          console.warn('ソース投稿取得エラー:', sourcePostsError);
+        } else {
+          (sourcePostsData ?? []).forEach(post => {
+            sourcePostsMap.set(post.id, post);
+          });
+          console.log('📚 ソース投稿データ:', sourcePostsData);
+        }
+      }
 
       const formattedPosts = (data as PostWithRelations[]).map(post => {
         const postLikes = (likesData.data ?? []).filter(like => like.post_id === post.id);
@@ -174,23 +190,35 @@ export const usePosts = (): UsePostsReturn => {
         const inspirationData = inspirationsMap.get(post.id);
         let inspiration = undefined;
         
-        if (inspirationData && inspirationData.source_post) {
-          inspiration = {
-            source_post_id: inspirationData.source_post_id,
-            source_post: {
-              id: inspirationData.source_post.id,
-              title: inspirationData.source_post.title,
-              imageUrl: inspirationData.source_post.image_url,
-              author: {
-                id: inspirationData.source_post.profiles?.id ?? '',
-                name: inspirationData.source_post.profiles?.name ?? '',
-                avatar: inspirationData.source_post.profiles?.avatar_url ?? ''
-              }
-            },
-            type: inspirationData.inspiration_type,
-            note: inspirationData.inspiration_note,
-            chain_level: inspirationData.chain_level
-          };
+        console.log(`🔍 Post ${post.id} - inspirationData:`, inspirationData);
+        
+        if (inspirationData && inspirationData.source_post_id) {
+          const sourcePost = sourcePostsMap.get(inspirationData.source_post_id);
+          console.log(`📖 Post ${post.id} - sourcePost:`, sourcePost);
+          
+          if (sourcePost) {
+            inspiration = {
+              source_post_id: inspirationData.source_post_id,
+              source_post: {
+                id: sourcePost.id,
+                title: sourcePost.title,
+                imageUrl: sourcePost.image_url,
+                author: {
+                  id: sourcePost.profiles?.id ?? sourcePost.author_id,
+                  name: sourcePost.profiles?.name ?? '匿名ユーザー',
+                  avatar: sourcePost.profiles?.avatar_url ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(sourcePost.profiles?.name ?? '匿名ユーザー')}&background=random`
+                }
+              },
+              type: inspirationData.inspiration_type,
+              note: inspirationData.inspiration_note,
+              chain_level: inspirationData.chain_level
+            };
+            console.log(`✅ Post ${post.id} にinspiration情報を設定:`, inspiration);
+          } else {
+            console.log(`⚠️ Post ${post.id} - ソース投稿が見つからない:`, inspirationData.source_post_id);
+          }
+        } else if (inspirationData) {
+          console.log(`⚠️ Post ${post.id} にinspirationDataはあるがsource_post_idがない:`, inspirationData);
         }
         
         return {
@@ -224,18 +252,21 @@ export const usePosts = (): UsePostsReturn => {
       });
 
 
-      setPosts(formattedPosts);
-      // 初期表示は新しい順で表示（データベースから既にソート済み）
-      setFilteredPosts(formattedPosts.slice(0, POSTS_PER_PAGE));
+      setAllPosts(formattedPosts);
+      // 初期表示は最初の12枚のみ
+      const initialPosts = formattedPosts.slice(0, POSTS_PER_PAGE);
+      setDisplayedPosts(initialPosts);
+      setPage(1);
       setHasNextPage(formattedPosts.length > POSTS_PER_PAGE);
+      console.log(`📊 Posts loaded: ${formattedPosts.length} total, ${initialPosts.length} displayed initially, hasNextPage: ${formattedPosts.length > POSTS_PER_PAGE}`);
       setLoading(false);
     } catch (e: any) {
       setError(`投稿の読み込みに失敗しました: ${e.message}`);
       console.error(e);
-      setPosts([]); // エラー時は空にする
+      setAllPosts([]); // エラー時は空にする
       // Dynamic import for mockData
       import('../data/mockData').then(({ mockPosts }) => {
-        setFilteredPosts(mockPosts.slice(0, POSTS_PER_PAGE));
+        setDisplayedPosts(mockPosts.slice(0, POSTS_PER_PAGE));
       });
       setLoading(false);
     }
@@ -251,22 +282,10 @@ export const usePosts = (): UsePostsReturn => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, async (payload) => {
         console.log('Posts change received!', payload);
         await fetchPosts();
-        // データ更新後、現在のフィルター状態を維持
-        if (currentFilters || currentSearchQuery) {
-          setTimeout(() => {
-            filterPosts(currentFilters, currentSearchQuery);
-          }, 100);
-        }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'likes' }, async (payload) => {
         console.log('Likes change received!', payload);
         await fetchPosts();
-        // データ更新後、現在のフィルター状態を維持
-        if (currentFilters || currentSearchQuery) {
-          setTimeout(() => {
-            filterPosts(currentFilters, currentSearchQuery);
-          }, 100);
-        }
       })
       .subscribe();
 
@@ -281,70 +300,28 @@ export const usePosts = (): UsePostsReturn => {
     if (!hasNextPage || loading || isLoadingMore) return;
     
     setIsLoadingMore(true);
-    console.log('LoadMore実行:', { page, hasNextPage, filteredPostsLength: filteredPosts.length });
+    console.log('LoadMore実行:', { page, hasNextPage, displayedPostsLength: displayedPosts.length });
     
     try {
-      // 現在表示中の投稿数を確認
-      const currentDisplayed = filteredPosts.length;
+      const currentDisplayed = displayedPosts.length;
       const nextPageEnd = currentDisplayed + POSTS_PER_PAGE;
       
-      // 全投稿を再計算
-      let allFiltered = [...posts];
-      
-      // 検索クエリによるフィルタリング
-      if (currentSearchQuery.trim()) {
-        const query = currentSearchQuery.toLowerCase();
-        allFiltered = allFiltered.filter(post =>
-          post.title.toLowerCase().includes(query) ||
-          post.userComment.toLowerCase().includes(query) ||
-          post.aiDescription.toLowerCase().includes(query)
-        );
-      }
-      
-      // タグによるフィルタリング
-      if (currentFilters.tags.length > 0) {
-        allFiltered = allFiltered.filter(post =>
-          post.tags.some(tag => currentFilters.tags.includes(tag.id))
-        );
-      }
-      
-      // ソート処理
-      switch (currentFilters.sortBy) {
-        case 'oldest':
-          allFiltered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-          break;
-        case 'popular':
-          allFiltered.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
-          break;
-        case 'random':
-          allFiltered.sort((a, b) => {
-            const seedA = randomSeed + a.id.charCodeAt(0);
-            const seedB = randomSeed + b.id.charCodeAt(0);
-            return seededRandom(seedA) - seededRandom(seedB);
-          });
-          break;
-        case 'newest':
-        default:
-          allFiltered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-          break;
-      }
-      
-      if (allFiltered.length > nextPageEnd) {
-        setFilteredPosts(allFiltered.slice(0, nextPageEnd));
+      if (allPosts.length > nextPageEnd) {
+        setDisplayedPosts(allPosts.slice(0, nextPageEnd));
         setPage(prev => prev + 1);
-        setHasNextPage(nextPageEnd < allFiltered.length);
+        setHasNextPage(nextPageEnd < allPosts.length);
       } else {
-        setFilteredPosts(allFiltered);
+        setDisplayedPosts([...allPosts]);
         setHasNextPage(false);
       }
       
-      console.log('LoadMore完了:', { newLength: allFiltered.slice(0, nextPageEnd).length, hasNextPage: nextPageEnd < allFiltered.length });
+      console.log('LoadMore完了:', { newLength: Math.min(nextPageEnd, allPosts.length), hasNextPage: nextPageEnd < allPosts.length });
     } finally {
       setIsLoadingMore(false);
     }
-  }, [page, posts, hasNextPage, loading, isLoadingMore, currentFilters, currentSearchQuery, randomSeed, filteredPosts.length]);
+  }, [page, allPosts, hasNextPage, loading, isLoadingMore, displayedPosts.length]);
 
-  const addPost = useCallback(async (newPostInput: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author' | 'likeCount' | 'likedByCurrentUser' | 'bookmarkedByCurrentUser' | 'commentCount'> & { inspirationSourceId?: string | null }) => {
+  const addPost = useCallback(async (newPostInput: Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author' | 'likeCount' | 'likedByCurrentUser' | 'bookmarkedByCurrentUser' | 'commentCount'> & { inspirationSourceId?: string | null; inspirationType?: string; inspirationNote?: string }) => {
     try {
       // 1. ユーザーID取得
       const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -423,7 +400,8 @@ export const usePosts = (): UsePostsReturn => {
           total_score: newPostInput.photoScore.total_score,
           score_level: newPostInput.photoScore.score_level,
           level_description: newPostInput.photoScore.level_description,
-          ai_comment: newPostInput.photoScore.ai_comment
+          ai_comment: newPostInput.photoScore.ai_comment,
+          image_analysis: newPostInput.photoScore.image_analysis || null
         });
         
         if (scoreError) {
@@ -434,10 +412,11 @@ export const usePosts = (): UsePostsReturn => {
 
       // 7. インスピレーション情報を保存
       if (newPostInput.inspirationSourceId) {
-        // URLパラメータから追加情報を取得
-        const urlParams = new URLSearchParams(window.location.search);
-        const inspirationType = urlParams.get('type') || 'direct';
-        const inspirationNote = urlParams.get('note') || '';
+        console.log('🎨 インスピレーション情報を保存:', {
+          sourceId: newPostInput.inspirationSourceId,
+          type: newPostInput.inspirationType,
+          note: newPostInput.inspirationNote
+        });
         
         // チェーンレベルを計算
         const { data: chainLevelData } = await supabase
@@ -451,16 +430,16 @@ export const usePosts = (): UsePostsReturn => {
           source_post_id: newPostInput.inspirationSourceId,
           inspired_post_id: postData.id,
           creator_id: userId,
-          inspiration_type: inspirationType,
-          inspiration_note: inspirationNote ? decodeURIComponent(inspirationNote) : null,
+          inspiration_type: newPostInput.inspirationType || 'direct',
+          inspiration_note: newPostInput.inspirationNote ? decodeURIComponent(newPostInput.inspirationNote) : null,
           chain_level: chainLevel
         });
         
         if (inspirationError) {
-          console.error('Error saving inspiration:', inspirationError);
+          console.error('❌ インスピレーション保存エラー:', inspirationError);
           // インスピレーション情報の保存に失敗してもエラーは投げない（投稿自体は成功させる）
         } else {
-          console.log('Inspiration saved successfully');
+          console.log('✅ インスピレーション保存成功！');
         }
       }
 
@@ -503,81 +482,7 @@ export const usePosts = (): UsePostsReturn => {
     }
   }, [fetchPosts]);
 
-  // シードベースのランダム関数（通常の関数として定義）
-  const seededRandom = (seed: number) => {
-    const x = Math.sin(seed) * 10000;
-    return x - Math.floor(x);
-  };
-
-  const filterPosts = useCallback((filters: FilterOptions, searchQuery: string) => {
-    // フィルタリング開始
-    setIsFiltering(true);
-    
-    // 現在のフィルター・検索クエリを保存
-    setCurrentFilters(filters);
-    setCurrentSearchQuery(searchQuery);
-    
-    // ランダムソートの場合のみ、フィルターが変更された時に新しいシードを生成
-    if (filters.sortBy === 'random' && currentFilters.sortBy !== 'random') {
-      setRandomSeed(Date.now());
-    }
-    
-    // 少し遅延させてフィルタリング感を演出
-    setTimeout(() => {
-      let filtered = [...posts];
-    
-    // 検索クエリによるフィルタリング
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(post =>
-        post.title.toLowerCase().includes(query) ||
-        post.userComment.toLowerCase().includes(query) ||
-        post.aiDescription.toLowerCase().includes(query)
-      );
-    }
-    
-    // タグによるフィルタリング
-    if (filters.tags.length > 0) {
-      filtered = filtered.filter(post =>
-        post.tags.some(tag => filters.tags.includes(tag.id))
-      );
-    }
-    
-    // ソート処理
-    switch (filters.sortBy) {
-      case 'oldest':
-        filtered.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-        break;
-      case 'popular':
-        filtered.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0));
-        break;
-      case 'random':
-        // シードベースの安定したランダムソート
-        filtered.sort((a, b) => {
-          const seedA = randomSeed + a.id.charCodeAt(0);
-          const seedB = randomSeed + b.id.charCodeAt(0);
-          return seededRandom(seedA) - seededRandom(seedB);
-        });
-        break;
-      case 'newest':
-      default:
-        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        break;
-    }
-    
-    console.log(`フィルター適用: ${filters.sortBy}, 件数: ${filtered.length}, シード: ${randomSeed}`);
-    if (filtered.length > 0) {
-      console.log('最初の投稿:', filtered[0].title, filtered[0].createdAt);
-    }
-    
-      setFilteredPosts(filtered.slice(0, POSTS_PER_PAGE));
-      setPage(1);
-      setHasNextPage(filtered.length > POSTS_PER_PAGE);
-      
-      // フィルタリング完了
-      setIsFiltering(false);
-    }, 150); // 150ms の遅延でスムーズな感じを演出
-  }, [posts, randomSeed, currentFilters.sortBy]);
+  // フィルター機能は削除済み - シンプルな無限ローディングのみ
 
   // 投稿編集
   const updatePost = useCallback(async (postId: string, updates: Partial<Omit<Post, 'id' | 'createdAt' | 'updatedAt' | 'author'>>) => {
@@ -625,7 +530,8 @@ export const usePosts = (): UsePostsReturn => {
           total_score: updates.photoScore.total_score,
           score_level: updates.photoScore.score_level,
           level_description: updates.photoScore.level_description,
-          ai_comment: updates.photoScore.ai_comment
+          ai_comment: updates.photoScore.ai_comment,
+          image_analysis: updates.photoScore.image_analysis || null
         }).eq('post_id', postId);
       } else {
         // 新規スコア挿入
@@ -638,7 +544,8 @@ export const usePosts = (): UsePostsReturn => {
           total_score: updates.photoScore.total_score,
           score_level: updates.photoScore.score_level,
           level_description: updates.photoScore.level_description,
-          ai_comment: updates.photoScore.ai_comment
+          ai_comment: updates.photoScore.ai_comment,
+          image_analysis: updates.photoScore.image_analysis || null
         });
       }
     }
@@ -648,7 +555,8 @@ export const usePosts = (): UsePostsReturn => {
 
   // 投稿削除
   const deletePost = useCallback(async (postId: string) => {
-    setPosts(prev => prev.filter(p => p.id !== postId)); // Optimistic update
+    setAllPosts(prev => prev.filter(p => p.id !== postId)); // Optimistic update
+    setDisplayedPosts(prev => prev.filter(p => p.id !== postId));
     const { error } = await supabase.from('posts').delete().eq('id', postId);
     if (error) {
       console.error("Error deleting post:", error);
@@ -718,12 +626,14 @@ export const usePosts = (): UsePostsReturn => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    setPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: true } : p));
+    setAllPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: true } : p));
+    setDisplayedPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: true } : p));
     const { error } = await supabase.from('bookmarks').insert({ post_id: postId, user_id: user.id });
     
     if (error) {
       console.error("Error bookmarking post:", error);
-      setPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: false } : p));
+      setAllPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: false } : p));
+      setDisplayedPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: false } : p));
     }
   }, []);
 
@@ -731,13 +641,16 @@ export const usePosts = (): UsePostsReturn => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     
-    setPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: false } : p));
+    setAllPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: false } : p));
+    setDisplayedPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: false } : p));
     const { error } = await supabase.from('bookmarks').delete().match({ post_id: postId, user_id: user.id });
      if (error) {
       console.error("Error unbookmarking post:", error);
-      setPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: true } : p));
+      setAllPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: true } : p));
+      setDisplayedPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: true } : p));
     }
   }, []);
 
-  return { posts: filteredPosts, allPosts: posts, loading, error, fetchPosts, addPost, updatePost, deletePost, likePost, unlikePost, bookmarkPost, unbookmarkPost, filterPosts, hasNextPage, loadMore, isLoadingMore, isFiltering };
+  console.log(`🔍 usePosts return: displayedPosts=${displayedPosts.length}, allPosts=${allPosts.length}, hasNextPage=${hasNextPage}`);
+  return { posts: displayedPosts, allPosts, loading, error, fetchPosts, addPost, updatePost, deletePost, likePost, unlikePost, bookmarkPost, unbookmarkPost, hasNextPage, loadMore, isLoadingMore };
 };
