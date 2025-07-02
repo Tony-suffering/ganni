@@ -17,8 +17,11 @@ export const createNotification = async ({
   content
 }: CreateNotificationParams) => {
   try {
+    console.log('🔔 通知作成開始:', { recipientId, senderId, postId, type, content });
+    
     // 自分自身への通知は作成しない
     if (recipientId === senderId) {
+      console.log('🚫 自分自身への通知のためスキップ');
       return;
     }
 
@@ -29,12 +32,13 @@ export const createNotification = async ({
         .select('id')
         .eq('recipient_id', recipientId)
         .eq('sender_id', senderId)
-        .eq('related_post_id', postId)
-        .eq('notification_type', 'like')
+        .eq('post_id', postId)
+        .eq('type', 'like')
         .single();
 
       // 既に同じいいね通知が存在する場合は作成しない
       if (existing) {
+        console.log('🚫 既存のいいね通知があるためスキップ');
         return;
       }
     }
@@ -54,29 +58,55 @@ export const createNotification = async ({
       });
 
     if (error) {
-      console.error('通知作成エラー:', error);
+      console.error('🚨 create_notification関数でエラー:', error);
       
-      // フォールバック: 直接テーブルに挿入
-      const { error: insertError } = await supabase
+      // フォールバック: 直接テーブルに挿入（まず古いスキーマを試行）
+      console.log('🔄 古いスキーマでフォールバック試行...');
+      const { error: oldSchemaError } = await supabase
         .from('notifications')
         .insert({
           recipient_id: recipientId,
           sender_id: senderId,
-          related_post_id: postId,
-          notification_type: type,
-          title: type === 'like' ? 'いいね！' : 'コメント',
-          message: type === 'like' ? 'あなたの投稿にいいねしました' : 'あなたの投稿にコメントしました',
-          metadata: content ? { comment_content: content } : {},
+          post_id: postId,
+          type: type,
+          content: content || null,
           is_read: false
         });
 
-      if (insertError) {
-        console.error('フォールバック通知作成エラー:', insertError);
+      if (oldSchemaError) {
+        console.log('🔄 新しいスキーマでフォールバック試行...');
+        // 新しいスキーマで試行
+        const { error: newSchemaError } = await supabase
+          .from('notifications')
+          .insert({
+            recipient_id: recipientId,
+            sender_id: senderId,
+            related_post_id: postId,
+            notification_type: type,
+            title: type === 'like' ? 'いいね！' : 'コメント',
+            message: type === 'like' ? 'あなたの投稿にいいねしました' : 'あなたの投稿にコメントしました',
+            metadata: content ? { comment_content: content } : {},
+            is_read: false
+          });
+
+        if (newSchemaError) {
+          console.error('🚨 全ての通知作成方法が失敗:', newSchemaError);
+        } else {
+          console.log(`✅ 新しいスキーマで通知作成成功: ${type} notification from ${senderId} to ${recipientId}`);
+        }
       } else {
-        console.log(`フォールバック通知作成成功: ${type} notification from ${senderId} to ${recipientId}`);
+        console.log(`✅ 古いスキーマで通知作成成功: ${type} notification from ${senderId} to ${recipientId}`);
+        console.log('📝 作成された通知の詳細:', {
+          recipient_id: recipientId,
+          sender_id: senderId,
+          post_id: postId,
+          type: type,
+          content: content || null,
+          is_read: false
+        });
       }
     } else {
-      console.log(`通知作成成功: ${type} notification from ${senderId} to ${recipientId}`);
+      console.log(`✅ create_notification関数で通知作成成功: ${type} notification from ${senderId} to ${recipientId}`);
     }
   } catch (error) {
     console.error('通知作成の予期しないエラー:', error);
@@ -91,16 +121,20 @@ export const deleteNotification = async ({
   type
 }: Omit<CreateNotificationParams, 'content'>) => {
   try {
+    console.log('🗑️ 通知削除開始:', { recipientId, senderId, postId, type });
+    
     const { error } = await supabase
       .from('notifications')
       .delete()
       .eq('recipient_id', recipientId)
       .eq('sender_id', senderId)
-      .eq('related_post_id', postId)
-      .eq('notification_type', type);
+      .eq('post_id', postId)
+      .eq('type', type);
 
     if (error) {
-      console.error('通知削除エラー:', error);
+      console.error('🚨 通知削除エラー:', error);
+    } else {
+      console.log('✅ 通知削除成功');
     }
   } catch (error) {
     console.error('通知削除の予期しないエラー:', error);

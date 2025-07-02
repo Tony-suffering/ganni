@@ -9,18 +9,11 @@ interface Notification {
   id: string;
   recipient_id: string;
   sender_id?: string;
-  notification_type: string;
-  title: string;
-  message: string;
-  related_post_id?: string;
-  related_inspiration_id?: string;
-  related_user_id?: string;
-  metadata: Record<string, any>;
+  post_id?: string;
+  type: string;
+  content?: string;
   is_read: boolean;
-  is_archived: boolean;
-  priority: string;
   created_at: string;
-  updated_at: string;
   sender_name?: string;
   sender_avatar?: string;
   post_title?: string;
@@ -46,28 +39,38 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
 
   // 通知を取得
   const fetchNotifications = useCallback(async () => {
-    if (!user || !user.id) return;
+    if (!user || !user.id) {
+      console.log('🚫 fetchNotifications: ユーザーがいないためスキップ');
+      return;
+    }
     
-    
+    console.log('🔍 fetchNotifications開始 - ユーザーID:', user.id);
     setLoading(true);
     try {
+      // まず is_archived フィルターなしで取得
+      console.log('📡 Supabaseクエリ実行中...');
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
         .eq('recipient_id', user.id)
-        .eq('is_archived', false)
         .order('created_at', { ascending: false })
         .limit(20);
+      
+      console.log('📡 Supabaseクエリ結果:', { data, error, dataLength: data?.length });
 
       if (error) {
-        console.error('通知取得エラー:', error);
+        console.error('🚨 通知取得エラー:', error);
         return;
       }
+      
+      console.log('📬 取得した通知データ:', data);
+      console.log('📬 データの型と長さ:', typeof data, Array.isArray(data), data?.length);
 
-      if (data) {
+      if (data && Array.isArray(data) && data.length > 0) {
+        console.log('✅ 通知データが存在するため処理開始');
         // ユーザー情報と投稿情報を取得
         const senderIds = [...new Set(data.map(n => n.sender_id).filter(Boolean))];
-        const postIds = [...new Set(data.map(n => n.related_post_id).filter(Boolean))];
+        const postIds = [...new Set(data.map(n => n.post_id).filter(Boolean))];
 
         // ユーザー情報を取得（空の配列チェック付き）
         let usersData = null;
@@ -105,14 +108,25 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
           const senderUser = usersMap.get(notification.sender_id);
           return {
             ...notification,
-            sender_name: senderUser?.name || notification.metadata?.sender_name || 'システム',
+            sender_name: senderUser?.name || 'システム',
             sender_avatar: senderUser?.avatar_url,
-            post_title: postsMap.get(notification.related_post_id)?.title || '投稿'
+            post_title: postsMap.get(notification.post_id)?.title || '投稿'
           };
         });
 
+        const unreadCount = data.filter(n => !n.is_read).length;
+        console.log('✅ 通知設定完了:', enrichedNotifications.length, '件, 未読:', unreadCount, '件');
+        console.log('📋 通知データ詳細:', enrichedNotifications);
+        
+        console.log('📝 setNotifications実行前の状態:', notifications.length);
         setNotifications(enrichedNotifications);
-        setUnreadCount(data.filter(n => !n.is_read).length);
+        console.log('📝 setUnreadCount実行前の未読数:', unreadCount);
+        setUnreadCount(unreadCount);
+        console.log('📝 状態更新完了');
+      } else {
+        console.log('⚠️ 通知データが空または無効:', { data, isArray: Array.isArray(data), length: data?.length });
+        setNotifications([]);
+        setUnreadCount(0);
       }
     } catch (error) {
       console.error('通知取得エラー:', error);
@@ -203,8 +217,9 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
           filter: `recipient_id=eq.${currentUserId}`
         },
         (payload) => {
-          console.log('新しい通知受信:', payload);
+          console.log('🔔 新しい通知をリアルタイムで受信:', payload);
           if (payload.new && isMountedRef.current) {
+            console.log('📥 通知を画面に追加:', payload.new);
             setNotifications(prev => [payload.new as Notification, ...prev]);
             setUnreadCount(prev => prev + 1);
           }
@@ -213,16 +228,18 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
 
     // 購読を開始
     channel.subscribe((status) => {
-      console.log('購読状態変更:', status, 'for user:', currentUserId);
+      console.log('📡 購読状態変更:', status, 'for user:', currentUserId, 'channel:', channelName);
       if (status === 'SUBSCRIBED') {
         isSubscribedRef.current = true;
         userIdRef.current = currentUserId;
         channelRef.current = channel;
         isInitializedRef.current = true;
-        console.log('購読完了:', channelName);
+        console.log('✅ リアルタイム購読完了:', channelName);
       } else if (status === 'CHANNEL_ERROR') {
-        console.error('チャンネルエラー:', channelName);
+        console.error('🚨 チャンネルエラー:', channelName);
         cleanup();
+      } else if (status === 'CLOSED') {
+        console.log('📴 チャンネルクローズ:', channelName);
       }
     });
 
@@ -251,17 +268,10 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
   // 通知タイプに応じたアイコンを取得
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'inspiration_received':
-      case 'inspiration_given':
-        return <Lightbulb className="w-3 h-3 md:w-4 md:h-4 text-gray-600 flex-shrink-0" />;
       case 'like':
         return <Heart className="w-3 h-3 md:w-4 md:h-4 text-gray-600 flex-shrink-0" />;
       case 'comment':
         return <MessageCircle className="w-3 h-3 md:w-4 md:h-4 text-gray-600 flex-shrink-0" />;
-      case 'follow':
-        return <Users className="w-3 h-3 md:w-4 md:h-4 text-gray-600 flex-shrink-0" />;
-      case 'achievement_unlocked':
-        return <Trophy className="w-3 h-3 md:w-4 md:h-4 text-gray-600 flex-shrink-0" />;
       default:
         return <Bell className="w-3 h-3 md:w-4 md:h-4 text-gray-600 flex-shrink-0" />;
     }
@@ -273,13 +283,28 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
       markAsRead(notification.id);
     }
     
-    // インスピレーション関連の通知の場合はインスピレーション・ラボに移動
-    if (notification.notification_type === 'inspiration_received' && notification.related_post_id) {
-      window.location.href = `/inspiration/${notification.related_post_id}`;
-    } else if (notification.related_post_id && onPostClick) {
-      onPostClick(notification.related_post_id);
+    // 関連投稿がある場合は投稿に移動
+    if (notification.post_id && onPostClick) {
+      onPostClick(notification.post_id);
     }
     setIsOpen(false);
+  };
+
+  // デバッグ用：通知数を手動でチェックする関数
+  const debugCheckNotifications = async () => {
+    if (!user) return;
+    console.log('🔍 デバッグ: 通知数を手動チェック中...');
+    try {
+      const { data, error, count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact' })
+        .eq('recipient_id', user.id);
+      
+      console.log('🔍 デバッグ結果:', { data, error, count });
+      console.log('🔍 取得した全通知:', data);
+    } catch (err) {
+      console.error('🚨 デバッグチェックエラー:', err);
+    }
   };
 
   if (!user) return null;
@@ -316,6 +341,9 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
           }
           
           setIsOpen(!isOpen);
+          
+          // デバッグ用：通知ベルクリック時に手動チェック実行
+          debugCheckNotifications();
         }}
         ref={buttonRef}
         className="relative p-3 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors touch-manipulation active:bg-gray-100 dark:active:bg-gray-600 rounded-full"
@@ -375,6 +403,10 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
           </div>
 
           <div className="max-h-96 overflow-y-auto">
+            {(() => {
+              console.log('🎨 UIレンダリング状態:', { loading, notificationsLength: notifications.length, notifications });
+              return null;
+            })()}
             {loading ? (
               <div className="p-4 text-center text-gray-500">読み込み中...</div>
             ) : notifications.length === 0 ? (
@@ -399,19 +431,17 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2">
-                        {getNotificationIcon(notification.notification_type)}
+                        {getNotificationIcon(notification.type)}
                         <span className="text-xs md:text-sm font-medium text-gray-900 dark:text-white truncate">
-                          {notification.title}
+                          {notification.type === 'like' ? 'いいね！' : 'コメント'}
                         </span>
                       </div>
                       <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300 mt-1 leading-tight">
-                        {notification.message}
+                        {notification.type === 'like' 
+                          ? `${notification.sender_name}があなたの投稿にいいねしました`
+                          : `${notification.sender_name}がコメントしました: ${notification.content || ''}`
+                        }
                       </p>
-                      {notification.metadata?.inspiration_note && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 italic line-clamp-2">
-                          「{notification.metadata.inspiration_note}」
-                        </p>
-                      )}
                       <div className="flex items-center justify-between mt-1">
                         <p className="text-xs text-gray-400 dark:text-gray-500">
                           {formatDistanceToNow(new Date(notification.created_at), {
@@ -419,11 +449,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
                             locale: ja
                           })}
                         </p>
-                        {notification.priority === 'high' && (
-                          <span className="text-xs px-2 py-1 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded">
-                            重要
-                          </span>
-                        )}
                       </div>
                     </div>
                     {!notification.is_read && (

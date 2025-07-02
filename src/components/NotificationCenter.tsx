@@ -10,8 +10,8 @@ interface Notification {
   id: string;
   recipient_id: string;
   sender_id: string;
-  post_id: string;
-  type: 'like' | 'comment';
+  post_id?: string;
+  type: string;
   content?: string;
   is_read: boolean;
   created_at: string;
@@ -58,7 +58,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
       if (filter === 'unread') {
         query = query.eq('is_read', false);
       } else if (filter === 'inspiration') {
-        query = query.in('notification_type', ['inspiration_received', 'inspiration_given']);
+        query = query.in('type', ['inspiration_received', 'inspiration_given']);
       }
 
       const { data, error } = await query;
@@ -68,7 +68,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         return;
       }
 
-      // 通知データを表示用に変換
+      // 古いスキーマの通知データを表示用に整形
       const formattedNotifications = await Promise.all((data || []).map(async (n) => {
         // 送信者の情報を取得
         const { data: senderData } = await supabase
@@ -84,7 +84,6 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
             ? `${senderData?.name || '誰か'}があなたの投稿にいいねしました` 
             : `${senderData?.name || '誰か'}がコメントしました: ${n.content || ''}`,
           notification_type: n.type,
-          priority: 'normal',
           senderName: senderData?.name || '名無しさん',
           senderAvatar: senderData?.avatar_url
         };
@@ -127,6 +126,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
             .single()
             .then(({ data: senderData }) => {
           
+              // 古いスキーマの通知データを整形
               const formattedNotification = {
                 ...newNotification,
                 title: newNotification.type === 'like' ? 'いいね！' : 'コメント',
@@ -134,7 +134,6 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   ? `${senderData?.name || '誰か'}があなたの投稿にいいねしました` 
                   : `${senderData?.name || '誰か'}がコメントしました: ${newNotification.content || ''}`,
                 notification_type: newNotification.type,
-                priority: 'normal',
                 senderName: senderData?.name || '名無しさん',
                 senderAvatar: senderData?.avatar_url
               };
@@ -145,7 +144,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
               if (Notification.permission === 'granted') {
                 new Notification(formattedNotification.title, {
                   body: formattedNotification.message,
-                  icon: formattedNotification.senderAvatar || '/icon-192x192.png'
+                  icon: '/icon-192x192.png'
                 });
               }
             });
@@ -209,6 +208,13 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         return <Heart className="w-5 h-5 text-gray-600" />;
       case 'comment':
         return <MessageCircle className="w-5 h-5 text-gray-600" />;
+      case 'inspiration_received':
+      case 'inspiration_given':
+        return <Lightbulb className="w-5 h-5 text-gray-600" />;
+      case 'follow':
+        return <Users className="w-5 h-5 text-gray-600" />;
+      case 'achievement_unlocked':
+        return <Trophy className="w-5 h-5 text-gray-600" />;
       default:
         return <Bell className="w-5 h-5 text-gray-600" />;
     }
@@ -249,7 +255,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
       case 'unread':
         return !n.is_read;
       case 'inspiration':
-        return false; // インスピレーション通知は現在のスキーマに存在しない
+        return ['inspiration_received', 'inspiration_given'].includes(n.type)
       default:
         return true;
     }
@@ -356,25 +362,25 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
-                  className={`${getPriorityStyles(notification.priority, notification.is_read)} cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors`}
+                  className={`${getPriorityStyles('normal', notification.is_read)} cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors`}
                   onClick={() => handleNotificationClick(notification)}
                 >
                   <div className="p-4">
                     <div className="flex items-start space-x-3">
                       <div className="flex-shrink-0 mt-1">
-                        {getNotificationIcon(notification.notification_type)}
+                        {getNotificationIcon(notification.type)}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <h4 className={`text-sm font-medium ${notification.is_read ? 'text-gray-700 dark:text-gray-300' : 'text-gray-900 dark:text-white'}`}>
-                            {(notification as any).title}
+                            {(notification as any).title || (notification.type === 'like' ? 'いいね！' : 'コメント')}
                           </h4>
                           {!notification.is_read && (
                             <div className="w-2 h-2 bg-gray-600 rounded-full ml-2"></div>
                           )}
                         </div>
                         <p className={`text-sm mt-1 ${notification.is_read ? 'text-gray-600 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                          {(notification as any).message}
+                          {(notification as any).message || (notification.type === 'like' ? 'あなたの投稿にいいねしました' : `コメント: ${notification.content || ''}`)}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
                           {formatDistanceToNow(new Date(notification.created_at), { 
