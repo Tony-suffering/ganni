@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { UserPoints, UserBadge, Badge, UserInspirationStats, LevelInfo, RankingUser } from '../types';
+import { UserPostService } from '../services/userPostService';
 
 export const useGamification = () => {
   const { user } = useAuth();
@@ -9,8 +10,19 @@ export const useGamification = () => {
   const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
   const [availableBadges, setAvailableBadges] = useState<Badge[]>([]);
   const [userStats, setUserStats] = useState<UserInspirationStats | null>(null);
+  const [photoStats, setPhotoStats] = useState<{
+    averagePhotoScore: number;
+    highestPhotoScore: number;
+    totalPhotoScores: number;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [recentPointsGained, setRecentPointsGained] = useState<{
+    points: number;
+    type: 'learning' | 'influence';
+    source: string;
+    timestamp: Date;
+  } | null>(null);
 
   // レベル計算関数
   const calculateLevelInfo = useCallback((totalPoints: number): LevelInfo => {
@@ -61,7 +73,19 @@ export const useGamification = () => {
 
       console.log('🔍 useGamification: ポイント取得結果', { data, error });
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
+        console.warn('⚠️ ポイント取得エラー:', {
+          code: error.code,
+          message: error.message,
+          details: error.details
+        });
+        
+        // テーブルが存在しない場合やアクセス権限がない場合は無視
+        if (error.code === 'PGRST116' || error.code === '42P01' || error.code === '406') {
+          console.log('💡 user_pointsテーブルが利用できません。スキップします。');
+          return;
+        }
+        
         console.error('❌ ポイント取得エラー:', error);
         setError(`ポイント取得エラー: ${error.message}`);
         return;
@@ -116,7 +140,19 @@ export const useGamification = () => {
         .order('earned_at', { ascending: false });
 
       if (error) {
-        console.error('バッジ取得エラー:', error);
+        console.warn('⚠️ バッジ取得エラー:', {
+          code: error.code,
+          message: error.message,
+          details: error.details
+        });
+        
+        // テーブルが存在しない場合やアクセス権限がない場合は無視
+        if (error.code === 'PGRST116' || error.code === '42P01' || error.code === '406') {
+          console.log('💡 user_badgesテーブルが利用できません。スキップします。');
+          return;
+        }
+        
+        console.error('❌ バッジ取得エラー:', error);
         return;
       }
 
@@ -137,7 +173,19 @@ export const useGamification = () => {
         .order('requirement_value');
 
       if (error) {
-        console.error('バッジ一覧取得エラー:', error);
+        console.warn('⚠️ バッジ一覧取得エラー:', {
+          code: error.code,
+          message: error.message,
+          details: error.details
+        });
+        
+        // テーブルが存在しない場合やアクセス権限がない場合は無視
+        if (error.code === 'PGRST116' || error.code === '42P01' || error.code === '406') {
+          console.log('💡 badgesテーブルが利用できません。スキップします。');
+          return;
+        }
+        
+        console.error('❌ バッジ一覧取得エラー:', error);
         return;
       }
 
@@ -152,22 +200,40 @@ export const useGamification = () => {
     if (!user) return;
 
     try {
+      console.log('📊 ユーザー統計取得開始 - ユーザーID:', user.id);
+      
       const { data, error } = await supabase
         .from('user_inspiration_stats')
         .select('*')
         .eq('user_id', user.id)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('統計取得エラー:', error);
+      if (error) {
+        console.warn('⚠️ ユーザー統計取得エラー:', {
+          code: error.code,
+          message: error.message,
+          details: error.details
+        });
+        
+        // テーブルが存在しない場合やアクセス権限がない場合は無視
+        if (error.code === 'PGRST116' || error.code === '42P01' || error.code === '406') {
+          console.log('💡 user_inspiration_statsテーブルが利用できません。スキップします。');
+          return;
+        }
+        
+        setError('統計情報の取得に失敗しました');
         return;
       }
 
       if (data) {
+        console.log('✅ ユーザー統計取得完了:', data);
         setUserStats(data);
+      } else {
+        console.log('📝 ユーザー統計データがありません');
       }
     } catch (error) {
-      console.error('統計取得エラー:', error);
+      console.error('❌ 統計取得エラー:', error);
+      // エラーがあってもアプリケーションを停止させない
     }
   }, [user]);
 
@@ -246,6 +312,42 @@ export const useGamification = () => {
     }
   }, []);
 
+  // 写真スコア統計取得
+  const fetchPhotoStats = useCallback(async () => {
+    if (!user) {
+      console.log('🔍 useGamification: ユーザーが未ログイン（写真スコア統計）');
+      return;
+    }
+
+    try {
+      console.log('📸 写真スコア統計取得開始 - ユーザーID:', user.id);
+      
+      const userPostService = new UserPostService();
+      const stats = await userPostService.getUserStats(user.id);
+      
+      setPhotoStats({
+        averagePhotoScore: stats.averagePhotoScore,
+        highestPhotoScore: stats.highestPhotoScore,
+        totalPhotoScores: stats.totalPhotoScores
+      });
+
+      console.log('✅ 写真スコア統計取得完了:', {
+        average: stats.averagePhotoScore,
+        highest: stats.highestPhotoScore,
+        total: stats.totalPhotoScores
+      });
+    } catch (error) {
+      console.error('❌ 写真スコア統計取得エラー:', error);
+      // エラーがあってもアプリケーションを停止させない
+      // デフォルト値を設定
+      setPhotoStats({
+        averagePhotoScore: 0,
+        highestPhotoScore: 0,
+        totalPhotoScores: 0
+      });
+    }
+  }, [user]);
+
   // バッジ表示切り替え
   const toggleBadgeDisplay = useCallback(async (badgeId: string, isDisplayed: boolean) => {
     if (!user) return;
@@ -269,6 +371,35 @@ export const useGamification = () => {
     }
   }, [user, fetchUserBadges]);
 
+  // リアルタイムポイント更新の処理
+  const handlePointsUpdate = useCallback((payload: any) => {
+    console.log('🔥 リアルタイムポイント更新:', payload);
+    
+    if (payload.eventType === 'INSERT' && payload.new) {
+      const newEntry = payload.new;
+      
+      // いいね関連のポイント更新を検出
+      if (newEntry.source_type === 'like_given' || newEntry.source_type === 'like_received') {
+        setRecentPointsGained({
+          points: newEntry.points,
+          type: newEntry.points_type === 'influence' ? 'influence' : 'learning',
+          source: newEntry.source_type === 'like_given' ? 'いいねを送信' : 'いいねを受信',
+          timestamp: new Date()
+        });
+        
+        // 3秒後に通知を消す
+        setTimeout(() => {
+          setRecentPointsGained(null);
+        }, 3000);
+        
+        // ポイントデータを再取得（直接呼び出し）
+        if (user) {
+          fetchUserPoints();
+        }
+      }
+    }
+  }, [user?.id]); // fetchUserPointsの代わりにuser.idのみを依存関係にする
+
   // 初期データ読み込み
   useEffect(() => {
     const loadData = async () => {
@@ -283,7 +414,8 @@ export const useGamification = () => {
           fetchUserPoints(),
           fetchUserBadges(),
           fetchAvailableBadges(),
-          fetchUserStats()
+          fetchUserStats(),
+          fetchPhotoStats()
         ]);
       } catch (error) {
         console.error('データ読み込みエラー:', error);
@@ -294,7 +426,54 @@ export const useGamification = () => {
     };
 
     loadData();
-  }, [user, fetchUserPoints, fetchUserBadges, fetchAvailableBadges, fetchUserStats]);
+  }, [user, fetchUserPoints, fetchUserBadges, fetchAvailableBadges, fetchUserStats, fetchPhotoStats]);
+
+  // リアルタイムポイント更新のSubscription
+  useEffect(() => {
+    if (!user) return;
+
+    // point_historyテーブルが存在しない場合はリアルタイム更新をスキップ
+    const enableRealtime = false; // 一時的に無効化してエラーを回避
+    
+    if (!enableRealtime) {
+      console.log('⚠️ リアルタイムポイント更新は一時的に無効化されています');
+      return;
+    }
+
+    // ユニークなチャンネル名を生成
+    const channelName = `point-updates-${user.id}-${Date.now()}`;
+    console.log('🔄 ポイント履歴のリアルタイム更新を開始:', { userId: user.id, channelName });
+    
+    const subscription = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'point_history',
+          filter: `user_id=eq.${user.id}`
+        },
+        handlePointsUpdate
+      )
+      .subscribe((status) => {
+        console.log('📡 サブスクリプション状態:', status);
+        if (status === 'SUBSCRIPTION_ERROR') {
+          console.error('❌ サブスクリプションエラーが発生しました');
+        }
+      });
+
+    return () => {
+      console.log('🔄 ポイント履歴のリアルタイム更新を停止:', channelName);
+      try {
+        if (subscription) {
+          subscription.unsubscribe();
+        }
+      } catch (error) {
+        console.warn('⚠️ サブスクリプション停止エラー:', error);
+      }
+    };
+  }, [user?.id, handlePointsUpdate]);
 
   // レベル情報を計算
   const levelInfo = userPoints ? calculateLevelInfo(userPoints.total_points) : null;
@@ -307,13 +486,16 @@ export const useGamification = () => {
     userBadges,
     availableBadges,
     userStats,
+    photoStats,
     levelInfo,
     displayBadges,
     loading,
     error,
+    recentPointsGained,
     fetchUserPoints,
     fetchUserBadges,
     fetchUserStats,
+    fetchPhotoStats,
     fetchRanking,
     toggleBadgeDisplay,
     calculateLevelInfo

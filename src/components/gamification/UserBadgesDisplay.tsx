@@ -3,17 +3,20 @@ import { Award, Lock, Star } from 'lucide-react';
 import { UserBadge, Badge } from '../../types';
 
 interface UserBadgesDisplayProps {
-  userBadges: UserBadge[];
+  userBadges?: UserBadge[];
+  badges?: UserBadge[];
   variant?: 'full' | 'compact' | 'inline';
   limit?: number;
 }
 
 export const UserBadgesDisplay: React.FC<UserBadgesDisplayProps> = ({
   userBadges,
+  badges,
   variant = 'full',
   limit
 }) => {
-  const displayBadges = limit ? userBadges.slice(0, limit) : userBadges;
+  const badgesToUse = userBadges || badges || [];
+  const displayBadges = limit ? badgesToUse.slice(0, limit) : badgesToUse;
 
   const getRarityColor = (rarity: string) => {
     switch (rarity) {
@@ -55,9 +58,9 @@ export const UserBadgesDisplay: React.FC<UserBadgesDisplayProps> = ({
             <span className="text-xs">{userBadge.badge.icon}</span>
           </div>
         ))}
-        {userBadges.length > (limit || userBadges.length) && (
+        {badgesToUse.length > (limit || badgesToUse.length) && (
           <div className="inline-flex items-center justify-center w-6 h-6 rounded-full border border-gray-300 bg-gray-50 text-gray-500">
-            <span className="text-xs">+{userBadges.length - (limit || 0)}</span>
+            <span className="text-xs">+{badgesToUse.length - (limit || 0)}</span>
           </div>
         )}
       </div>
@@ -70,7 +73,7 @@ export const UserBadgesDisplay: React.FC<UserBadgesDisplayProps> = ({
         <div className="flex items-center justify-between mb-3">
           <h4 className="text-sm font-medium text-gray-800 dark:text-gray-200 flex items-center space-x-1">
             <Award className="w-4 h-4" />
-            <span>バッジ ({userBadges.length})</span>
+            <span>バッジ ({badgesToUse.length})</span>
           </h4>
         </div>
         <div className="grid grid-cols-4 gap-2">
@@ -98,11 +101,11 @@ export const UserBadgesDisplay: React.FC<UserBadgesDisplayProps> = ({
         </h3>
         <div className="flex items-center space-x-1">
           <Star className="w-4 h-4 text-yellow-500" />
-          <span className="text-sm text-gray-600 dark:text-gray-400">{userBadges.length} 個</span>
+          <span className="text-sm text-gray-600 dark:text-gray-400">{badgesToUse.length} 個</span>
         </div>
       </div>
 
-      {userBadges.length === 0 ? (
+      {badgesToUse.length === 0 ? (
         <div className="text-center py-8">
           <Lock className="w-12 h-12 text-gray-400 mx-auto mb-2" />
           <p className="text-gray-500 dark:text-gray-400">まだバッジを獲得していません</p>
@@ -112,7 +115,7 @@ export const UserBadgesDisplay: React.FC<UserBadgesDisplayProps> = ({
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {userBadges.map((userBadge) => (
+          {badgesToUse.map((userBadge) => (
             <div
               key={userBadge.id}
               className={`flex flex-col items-center p-4 rounded-lg border-2 transition-all duration-200 hover:scale-105 ${getRarityColor(userBadge.badge.rarity)} ${getRarityGlow(userBadge.badge.rarity)}`}
@@ -138,11 +141,11 @@ export const UserBadgesDisplay: React.FC<UserBadgesDisplayProps> = ({
       )}
 
       {/* Badge Categories */}
-      {userBadges.length > 0 && (
+      {badgesToUse.length > 0 && (
         <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
             {['learner', 'mentor', 'special', 'achievement'].map((category) => {
-              const categoryBadges = userBadges.filter(b => b.badge.category === category);
+              const categoryBadges = badgesToUse.filter(b => b.badge.category === category);
               const categoryNames = {
                 learner: '学習者',
                 mentor: 'メンター',

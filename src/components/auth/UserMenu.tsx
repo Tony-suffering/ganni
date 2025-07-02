@@ -102,23 +102,7 @@ export function UserMenu({ direction = 'down' }: { direction?: 'up' | 'down' }) 
                 <span>エクスペリエンス</span>
               </Link>
               
-              <Link
-                to="/profile-edit"
-                className="flex items-center space-x-3 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                <User className="w-4 h-4 text-neutral-500" />
-                <span>プロフィール</span>
-              </Link>
               
-              <Link
-                to="/bookmarks"
-                className="flex items-center space-x-3 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-yellow-50 transition-colors group"
-                onClick={() => setIsOpen(false)}
-              >
-                <Sparkles className="w-4 h-4 text-yellow-600 group-hover:text-yellow-700" />
-                <span>コレクション</span>
-              </Link>
               
               <Link
                 to="/settings"

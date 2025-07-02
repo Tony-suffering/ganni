@@ -13,7 +13,10 @@ import {
   Sparkles,
   User,
   Award,
-  Trophy
+  Trophy,
+  BookmarkedIcon,
+  FolderOpen,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Post } from '../types';
@@ -22,13 +25,15 @@ import { UserStatsDisplay } from '../components/dashboard/UserStatsDisplay';
 import { PostGallery } from '../components/dashboard/PostGallery';
 import { PersonalCuratorDisplay } from '../components/curator/PersonalCuratorDisplay';
 import { GamificationTab } from '../components/dashboard/GamificationTab';
+import { CollectionTab } from '../components/dashboard/CollectionTab';
+import { ProfileEditTab } from '../components/dashboard/ProfileEditTab';
 
 export const PersonalDashboard: React.FC = () => {
   const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'gallery' | 'stats' | 'gamification' | 'suggestions'>('gallery');
+  const [activeTab, setActiveTab] = useState<'gallery' | 'stats' | 'gamification' | 'suggestions' | 'collection' | 'profile'>('gallery');
   const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid');
 
   useEffect(() => {
@@ -148,6 +153,18 @@ export const PersonalDashboard: React.FC = () => {
                 isActive={activeTab === 'suggestions'}
                 onClick={() => setActiveTab('suggestions')}
               />
+              <TabButton
+                icon={FolderOpen}
+                label="コレクション"
+                isActive={activeTab === 'collection'}
+                onClick={() => setActiveTab('collection')}
+              />
+              <TabButton
+                icon={Settings}
+                label="プロフィール設定"
+                isActive={activeTab === 'profile'}
+                onClick={() => setActiveTab('profile')}
+              />
             </nav>
           </div>
 
@@ -231,6 +248,30 @@ export const PersonalDashboard: React.FC = () => {
                     userPosts={posts}
                     userLocation={undefined}
                   />
+                </motion.div>
+              )}
+
+              {activeTab === 'collection' && (
+                <motion.div
+                  key="collection"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <CollectionTab userId={user.id} />
+                </motion.div>
+              )}
+
+              {activeTab === 'profile' && (
+                <motion.div
+                  key="profile"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ProfileEditTab userId={user.id} user={user} />
                 </motion.div>
               )}
             </AnimatePresence>

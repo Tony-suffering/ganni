@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Heart, MessageCircle, Send, Lightbulb, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Heart, MessageCircle, Send, Lightbulb, MoreHorizontal, Trash2, FolderPlus } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { Post } from '../types';
@@ -10,6 +10,8 @@ import { LazyImage } from './LazyImage';
 import { ShareModal } from './ShareModal';
 import { PhotoScoreBadge } from './PhotoScoreBadge';
 import { UserBadgesDisplay } from './gamification/UserBadgesDisplay';
+import { PointsNotification } from './gamification/PointsNotification';
+import { useGamification } from '../hooks/useGamification';
 
 interface PostCardProps {
   post: Post;
@@ -26,6 +28,7 @@ interface PostCardProps {
 const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost, unbookmarkPost, deletePost, priority = false, index = 0 }: PostCardProps) => {
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
+  const { recentPointsGained } = useGamification();
   const { author, title, userComment, imageUrl, likeCount, likedByCurrentUser, bookmarkedByCurrentUser, createdAt, commentCount, inspiration } = post;
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
@@ -35,22 +38,58 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
 
   const timeAgo = formatDistanceToNow(new Date(createdAt), { addSuffix: true, locale: ja });
 
-  const handleLikeClick = (e: React.MouseEvent) => {
+  const handleLikeClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (likedByCurrentUser) {
-      unlikePost(post.id);
-    } else {
-      likePost(post.id);
+    console.log('🖱️ いいねボタンクリック:', {
+      postId: post.id,
+      currentlyLiked: likedByCurrentUser,
+      action: likedByCurrentUser ? 'unlike' : 'like'
+    });
+    
+    try {
+      if (likedByCurrentUser) {
+        console.log('👎 いいね解除実行中...');
+        await unlikePost(post.id);
+        console.log('✅ いいね解除完了');
+      } else {
+        console.log('👍 いいね追加実行中...');
+        await likePost(post.id);
+        console.log('✅ いいね追加完了');
+      }
+    } catch (error) {
+      console.error('❌ いいね操作エラー:', error);
     }
   };
   
   const handleInspirationClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    console.log('💡 インスピレーションボタンクリック:', {
+      postId: post.id,
+      postTitle: post.title,
+      currentUser: !!currentUser,
+      userId: currentUser?.id
+    });
+    
     if (!currentUser) {
-      // ログインが必要な場合の処理は後で追加
+      console.warn('⚠️ ユーザーが未ログイン - インスピレーション機能を利用できません');
+      // TODO: ログインが必要な旨のメッセージを表示
       return;
     }
+    
+    console.log('🔄 インスピレーションページに遷移:', `/inspiration/${post.id}`);
     navigate(`/inspiration/${post.id}`);
+  };
+  
+  const handleCollectionClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentUser) {
+      return;
+    }
+    if (bookmarkedByCurrentUser) {
+      unbookmarkPost(post.id);
+    } else {
+      bookmarkPost(post.id);
+    }
   };
   
   const handleDeleteClick = (e: React.MouseEvent) => {
@@ -69,11 +108,11 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
   };
   
   const getDisplayName = (): string => {
-    return author?.name || '匿名ユーザー';
+    return author?.name || post.author_name || '匿名ユーザー';
   };
 
   const getAvatarUrl = (): string => {
-    return author?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(getDisplayName())}&background=random`;
+    return author?.avatar || post.author_avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(getDisplayName())}&background=random`;
   };
 
   const caption = (
@@ -229,16 +268,34 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
                   <Send className="w-6 h-6" />
                 </button>
               </div>
-              <button 
-                onClick={handleInspirationClick} 
-                className="relative transition-all duration-300 text-gray-600 hover:text-gray-500 hover:scale-105 group"
-                title="インスピレーション・ラボを開く"
-              >
-                <Lightbulb className="w-7 h-7 group-hover:drop-shadow-lg" />
-                <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                  インスピレーション
-                </span>
-              </button>
+              <div className="flex items-center space-x-2">
+                <button 
+                  onClick={handleCollectionClick} 
+                  className={`relative transition-all duration-300 hover:scale-105 group ${
+                    bookmarkedByCurrentUser 
+                      ? 'text-yellow-500 hover:text-yellow-600' 
+                      : 'text-gray-600 hover:text-yellow-500'
+                  }`}
+                  title="コレクションに追加/削除"
+                >
+                  <FolderPlus className={`w-6 h-6 group-hover:drop-shadow-lg ${
+                    bookmarkedByCurrentUser ? 'fill-current' : ''
+                  }`} />
+                  <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    {bookmarkedByCurrentUser ? 'コレクションから削除' : 'コレクションに追加'}
+                  </span>
+                </button>
+                <button 
+                  onClick={handleInspirationClick} 
+                  className="relative transition-all duration-300 text-gray-600 hover:text-gray-500 hover:scale-105 group"
+                  title="インスピレーション・ラボを開く"
+                >
+                  <Lightbulb className="w-7 h-7 group-hover:drop-shadow-lg" />
+                  <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                    インスピレーション
+                  </span>
+                </button>
+              </div>
             </div>
 
 
@@ -264,6 +321,16 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
         onClose={() => setIsShareModalOpen(false)}
         post={post}
       />
+
+      {/* ポイント獲得通知 */}
+      {recentPointsGained && (
+        <PointsNotification
+          points={recentPointsGained.points}
+          type={recentPointsGained.type}
+          source={recentPointsGained.source}
+          isVisible={true}
+        />
+      )}
     </>
   );
 });

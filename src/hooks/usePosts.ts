@@ -238,9 +238,9 @@ export const usePosts = (): UsePostsReturn => {
           createdAt: post.created_at,
           updatedAt: post.updated_at,
           author: {
-            id: post.profiles?.id ?? '',
-            name: post.profiles?.name ?? '',
-            avatar: post.profiles?.avatar_url ?? ''
+            id: post.profiles?.id ?? post.author_id ?? '',
+            name: post.profiles?.name ?? post.author_name ?? '匿名ユーザー',
+            avatar: post.profiles?.avatar_url ?? post.author_avatar ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(post.profiles?.name || post.author_name || '匿名ユーザー')}&background=random`
           },
           aiComments: (post.ai_comments ?? []).map(comment => ({
             id: comment.id,
@@ -358,7 +358,16 @@ export const usePosts = (): UsePostsReturn => {
       const { data: publicUrlData } = supabase.storage.from('post-images').getPublicUrl(imageName);
       const publicUrl = publicUrlData.publicUrl;
 
-      // 4. postsテーブルにinsert
+      // 4. ユーザープロフィール情報を取得（投稿表示時に使用）
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('name, avatar_url')
+        .eq('id', userId)
+        .single();
+
+      // プロフィール情報は投稿オブジェクト作成時に使用
+
+      // 5. postsテーブルにinsert
       const { data: postData, error: postError } = await supabase
         .from('posts')
         .insert({
@@ -367,17 +376,30 @@ export const usePosts = (): UsePostsReturn => {
           user_comment: newPostInput.userComment ?? '',
           ai_description: newPostInput.aiDescription,
           author_id: userId // ログインユーザーのIDを正しく設定
+          // author_nameとauthor_avatarはDBスキーマに存在しないため削除
           // imageAIDescriptionはDBに保存しない
         })
         .select()
         .single();
 
       if (postError) {
-        console.error('投稿保存エラー:', postError);
+        console.error('❌ 投稿保存エラー:', {
+          code: postError.code,
+          message: postError.message,
+          details: postError.details,
+          hint: postError.hint,
+          postData: {
+            title: newPostInput.title,
+            description: newPostInput.userComment,
+            image_url: newPostInput.imageUrl,
+            ai_description: newPostInput.aiDescription,
+            author_id: newPostInput.author.id
+          }
+        });
         throw postError; // エラーをそのまま投げて呼び出し元で処理
       }
 
-      // 5. 関連テーブルにinsert
+      // 6. 関連テーブルにinsert
       if (newPostInput.tags.length > 0) {
         const { error: tagError } = await supabase.from('post_tags').insert(
           newPostInput.tags.map(tag => ({ post_id: postData.id, tag_id: tag.id }))
@@ -395,7 +417,7 @@ export const usePosts = (): UsePostsReturn => {
         );
       }
 
-      // 6. 写真スコアを保存
+      // 7. 写真スコアを保存
       if (newPostInput.photoScore) {
         const { error: scoreError } = await supabase.from('photo_scores').insert({
           post_id: postData.id,
@@ -448,18 +470,35 @@ export const usePosts = (): UsePostsReturn => {
             });
           
           if (inspirationError) {
-            console.error('❌ インスピレーション保存エラー:', inspirationError);
+            console.error('❌ インスピレーション保存エラー:', {
+              code: inspirationError.code,
+              message: inspirationError.message,
+              details: inspirationError.details,
+              hint: inspirationError.hint,
+              params: {
+                source_post_id: newPostInput.inspirationSourceId,
+                inspired_post_id: postData.id,
+                creator_id: userId,
+                inspiration_type: newPostInput.inspirationType || 'direct',
+                inspiration_note: newPostInput.inspirationNote
+              }
+            });
             // ポイント関連のエラーでも投稿自体は成功させる
           } else {
             console.log('✅ インスピレーション保存成功！ID:', inspirationId);
             
             // ポイント付与の確認
             try {
-              const { data: pointsCheck } = await supabase
+              const { data: pointsCheck, error: pointsError } = await supabase
                 .rpc('check_inspiration_points', { p_user_id: userId });
-              console.log('💎 ポイント確認:', pointsCheck);
+              
+              if (pointsError) {
+                console.warn('⚠️ ポイント確認エラー:', pointsError);
+              } else {
+                console.log('💎 ポイント確認完了:', pointsCheck);
+              }
             } catch (pointsError) {
-              console.log('ポイント確認エラー:', pointsError);
+              console.error('❌ ポイント確認で予期しないエラー:', pointsError);
             }
           }
         } catch (error) {
@@ -549,8 +588,8 @@ export const usePosts = (): UsePostsReturn => {
         updatedAt: postData.updated_at,
         author: {
           id: userId,
-          name: user.user_metadata?.name || user.email?.split('@')[0] || 'ユーザー',
-          avatar: user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.user_metadata?.name || user.email?.split('@')[0] || 'ユーザー')}&background=0072f5&color=fff`
+          name: profileData?.name || user.user_metadata?.name || user.email?.split('@')[0] || 'ユーザー',
+          avatar: profileData?.avatar_url || user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(profileData?.name || user.user_metadata?.name || user.email?.split('@')[0] || 'ユーザー')}&background=0072f5&color=fff`
         },
         aiComments: newPostInput.aiComments || [],
         likeCount: 0,
@@ -584,7 +623,19 @@ export const usePosts = (): UsePostsReturn => {
       
       return newPost;
     } catch (error) {
-      console.error("Failed to add post:", error);
+      console.error("❌ Failed to add post:", {
+        error,
+        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        newPostInput: {
+          title: newPostInput.title,
+          userComment: newPostInput.userComment,
+          imageUrl: newPostInput.imageUrl?.substring(0, 100) + '...',
+          aiDescription: newPostInput.aiDescription?.substring(0, 100) + '...',
+          author: newPostInput.author,
+          tags: newPostInput.tags.map(t => ({ id: t.id, name: t.name })),
+          aiComments: newPostInput.aiComments?.length || 0
+        }
+      });
       return null;
     }
   }, [fetchPosts]);

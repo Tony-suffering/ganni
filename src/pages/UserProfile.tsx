@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { usePosts } from '../hooks/usePosts';
 import { MasonryGrid } from '../components/MasonryGrid';
 import { PostModal } from '../components/PostModal';
@@ -14,6 +14,7 @@ import { UserBadgesDisplay } from '../components/gamification/UserBadgesDisplay'
 const UserProfile = () => {
   const { userId } = useParams<{ userId: string }>();
   const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
   const { posts, loading: postsLoading, likePost, unlikePost, bookmarkPost, unbookmarkPost } = usePosts();
   const [profileUser, setProfileUser] = useState<Partial<User> | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -21,6 +22,13 @@ const UserProfile = () => {
   const [postCount, setPostCount] = useState(0);
   
   const isMyProfile = currentUser?.id === userId;
+  
+  // 自分のプロフィールの場合はエクスペリエンスページにリダイレクト
+  useEffect(() => {
+    if (isMyProfile) {
+      navigate('/dashboard');
+    }
+  }, [isMyProfile, navigate]);
   
   // ゲーミフィケーション情報を取得（自分のプロフィールの場合のみ）
   const { userPoints, userBadges, levelInfo, toggleBadgeDisplay, loading: gamificationLoading, error: gamificationError } = useGamification();

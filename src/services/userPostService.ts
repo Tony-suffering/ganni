@@ -150,6 +150,9 @@ export class UserPostService {
     totalPosts: number;
     totalLikes: number;
     averageLikes: number;
+    averagePhotoScore: number;
+    highestPhotoScore: number;
+    totalPhotoScores: number;
     firstPostDate: string | null;
     lastPostDate: string | null;
     mostUsedTags: string[];
@@ -178,6 +181,9 @@ export class UserPostService {
           totalPosts: 0,
           totalLikes: 0,
           averageLikes: 0,
+          averagePhotoScore: 0,
+          highestPhotoScore: 0,
+          totalPhotoScores: 0,
           firstPostDate: null,
           lastPostDate: null,
           mostUsedTags: [],
@@ -200,6 +206,46 @@ export class UserPostService {
       const totalLikes = likesData?.length || 0;
       const averageLikes = totalPosts > 0 ? Math.round(totalLikes / totalPosts) : 0;
 
+      // 写真スコア統計を取得
+      let totalPhotoScores = 0;
+      let averagePhotoScore = 0;
+      let highestPhotoScore = 0;
+
+      try {
+        const { data: photoScoresData, error: photoScoresError } = await supabase
+          .from('photo_scores')
+          .select('total_score')
+          .in('post_id', statsData.map(post => post.id));
+
+        if (photoScoresError) {
+          console.warn('⚠️ 写真スコアの取得に失敗:', {
+            code: photoScoresError.code,
+            message: photoScoresError.message,
+            details: photoScoresError.details
+          });
+          
+          // テーブルが存在しない場合やアクセス権限がない場合は無視
+          if (photoScoresError.code === 'PGRST116' || photoScoresError.code === '42P01' || photoScoresError.code === '406') {
+            console.log('💡 photo_scoresテーブルが利用できません。スキップします。');
+          }
+        } else if (photoScoresData && photoScoresData.length > 0) {
+          totalPhotoScores = photoScoresData.length;
+          averagePhotoScore = Math.round(photoScoresData.reduce((sum, score) => sum + score.total_score, 0) / totalPhotoScores);
+          highestPhotoScore = Math.max(...photoScoresData.map(score => score.total_score));
+          
+          console.log('✅ 写真スコア統計取得完了:', {
+            total: totalPhotoScores,
+            average: averagePhotoScore,
+            highest: highestPhotoScore
+          });
+        } else {
+          console.log('📝 写真スコアデータがありません');
+        }
+      } catch (error) {
+        console.error('❌ 写真スコア統計取得エラー:', error);
+        // エラーがあってもアプリケーションを停止させない
+      }
+
       const firstPostDate = statsData[0]?.created_at || null;
       const lastPostDate = statsData[statsData.length - 1]?.created_at || null;
 
@@ -213,6 +259,9 @@ export class UserPostService {
         totalPosts,
         totalLikes,
         averageLikes,
+        averagePhotoScore,
+        highestPhotoScore,
+        totalPhotoScores,
         firstPostDate,
         lastPostDate,
         mostUsedTags,

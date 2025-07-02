@@ -13,6 +13,8 @@ export interface Post {
     name: string;
     avatar: string;
   };
+  author_name?: string; // フォールバック用
+  author_avatar?: string; // フォールバック用
   aiComments: AIComment[];
   likeCount: number;
   likedByCurrentUser: boolean;

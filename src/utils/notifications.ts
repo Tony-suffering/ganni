@@ -8,7 +8,7 @@ export interface CreateNotificationParams {
   content?: string;
 }
 
-// 通知を作成
+// 通知を作成（新しいスキーマに対応）
 export const createNotification = async ({
   recipientId,
   senderId,
@@ -22,8 +22,6 @@ export const createNotification = async ({
       return;
     }
 
-    // 通知設定チェックは削除されました - 全ての通知が作成されます
-
     // 既存の同じ通知があるかチェック（いいねの場合）
     if (type === 'like') {
       const { data: existing } = await supabase
@@ -31,8 +29,8 @@ export const createNotification = async ({
         .select('id')
         .eq('recipient_id', recipientId)
         .eq('sender_id', senderId)
-        .eq('post_id', postId)
-        .eq('type', 'like')
+        .eq('related_post_id', postId)
+        .eq('notification_type', 'like')
         .single();
 
       // 既に同じいいね通知が存在する場合は作成しない
@@ -41,19 +39,42 @@ export const createNotification = async ({
       }
     }
 
-    const { error } = await supabase
-      .from('notifications')
-      .insert({
-        recipient_id: recipientId,
-        sender_id: senderId,
-        post_id: postId,
-        type,
-        content: content || null,
-        is_read: false
+    // 新しいスキーマでの通知作成
+    const templateKey = type === 'like' ? 'like_received' : 'comment_received';
+    
+    // create_notification関数を使用
+    const { data, error } = await supabase
+      .rpc('create_notification', {
+        p_recipient_id: recipientId,
+        p_sender_id: senderId,
+        p_notification_type: type,
+        p_template_key: templateKey,
+        p_related_post_id: postId,
+        p_metadata: content ? { comment_content: content } : {}
       });
 
     if (error) {
       console.error('通知作成エラー:', error);
+      
+      // フォールバック: 直接テーブルに挿入
+      const { error: insertError } = await supabase
+        .from('notifications')
+        .insert({
+          recipient_id: recipientId,
+          sender_id: senderId,
+          related_post_id: postId,
+          notification_type: type,
+          title: type === 'like' ? 'いいね！' : 'コメント',
+          message: type === 'like' ? 'あなたの投稿にいいねしました' : 'あなたの投稿にコメントしました',
+          metadata: content ? { comment_content: content } : {},
+          is_read: false
+        });
+
+      if (insertError) {
+        console.error('フォールバック通知作成エラー:', insertError);
+      } else {
+        console.log(`フォールバック通知作成成功: ${type} notification from ${senderId} to ${recipientId}`);
+      }
     } else {
       console.log(`通知作成成功: ${type} notification from ${senderId} to ${recipientId}`);
     }
@@ -75,8 +96,8 @@ export const deleteNotification = async ({
       .delete()
       .eq('recipient_id', recipientId)
       .eq('sender_id', senderId)
-      .eq('post_id', postId)
-      .eq('type', type);
+      .eq('related_post_id', postId)
+      .eq('notification_type', type);
 
     if (error) {
       console.error('通知削除エラー:', error);
