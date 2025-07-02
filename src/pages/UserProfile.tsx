@@ -7,7 +7,7 @@ import { Post, User } from '../types';
 import { supabase } from '../supabase';
 import { ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import useGamification from '../hooks/useGamification';
+import { useGamification } from '../hooks/useGamification';
 import { UserPointsDisplay } from '../components/gamification/UserPointsDisplay';
 import { UserBadgesDisplay } from '../components/gamification/UserBadgesDisplay';
 

@@ -12,6 +12,7 @@ import './utils/updateExistingPhotoScores'; // グローバル関数を有効化
 
 // Services
 import { analyticsService } from './services/analyticsService';
+import { PostBonusService } from './services/postBonusService';
 
 // Components
 import { Header } from './components/Header';
@@ -140,46 +141,57 @@ function AppContent() {
       setAnalyzingPostId(newPost.id);
       setIsAnalysisModalOpen(true);
       
-      // モーダルが確実に開いたことを確認してからAI分析を開始
-      requestAnimationFrame(() => {
-        setTimeout(async () => {
+      // AI分析を即座に開始（モーダルの開閉と並行して実行）
+      setTimeout(async () => {
+        try {
+          console.log('🤖 Starting AI analysis for post:', newPost.id);
+          console.log('🖼️ Image URL for analysis:', newPost.imageUrl);
+          console.log('📝 Post data for analysis:', {
+            title: newPost.title,
+            userComment: newPost.userComment,
+            imageAIDescription: newPost.imageAIDescription
+          });
+          
+          const analysisResult = await analyzePost(
+            newPost.imageUrl,
+            newPost.title,
+            newPost.userComment,
+            newPost.imageAIDescription
+          );
+          
+          console.log('🎉 AI analysis completed for post:', newPost.id);
+          console.log('📊 Analysis result:', analysisResult);
+          
+          // 分析結果でPostをデータベースに保存
           try {
-            console.log('🤖 Starting AI analysis for post:', newPost.id);
-            console.log('🔍 Modal open state:', isAnalysisModalOpen); // この時点でのモーダル状態を確認
-            console.log('🖼️ Image URL for analysis:', newPost.imageUrl);
-            console.log('📝 Post data for analysis:', {
-              title: newPost.title,
-              userComment: newPost.userComment,
-              imageAIDescription: newPost.imageAIDescription
+            await updatePost(newPost.id, {
+              photoScore: analysisResult.photoScore,
+              aiComments: analysisResult.aiComments
             });
+            console.log('✅ AI analysis results saved to database for post:', newPost.id);
             
-            const analysisResult = await analyzePost(
-              newPost.imageUrl,
-              newPost.title,
-              newPost.userComment,
-              newPost.imageAIDescription
-            );
-            
-            console.log('🎉 AI analysis completed for post:', newPost.id);
-            console.log('📊 Analysis result:', analysisResult);
-            
-            // 分析結果でPostをデータベースに保存
+            // 投稿ボーナスを計算・付与
             try {
-              await updatePost(newPost.id, {
-                photoScore: analysisResult.photoScore,
-                aiComments: analysisResult.aiComments
-              });
-              console.log('✅ AI analysis results saved to database for post:', newPost.id);
-            } catch (updateError) {
-              console.error('❌ Failed to save AI analysis results to database:', updateError);
+              console.log('🎁 Calculating post bonus for post:', newPost.id);
+              const bonusPoints = await PostBonusService.calculateAndAwardPostBonus(
+                newPost.id,
+                newPost.user_id,
+                analysisResult.photoScore
+              );
+              console.log('✅ Post bonus calculated and awarded:', bonusPoints, 'points');
+            } catch (bonusError) {
+              console.error('❌ Failed to calculate post bonus:', bonusError);
+              // ボーナス計算エラーは投稿処理を止めない
             }
-            
-          } catch (error) {
-            console.error('❌ AI analysis failed for post:', newPost.id, error);
-            // エラーが発生してもモーダルは開いたままにする
+          } catch (updateError) {
+            console.error('❌ Failed to save AI analysis results to database:', updateError);
           }
-        }, 100); // requestAnimationFrameの後に少し待つ
-      });
+          
+        } catch (error) {
+          console.error('❌ AI analysis failed for post:', newPost.id, error);
+          // エラーが発生してもモーダルは開いたままにする
+        }
+      }, 50); // より短いディレイで開始
     }
   };
 

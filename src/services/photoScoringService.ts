@@ -93,6 +93,14 @@ export class PhotoScoringService {
       console.log('📸 Starting photo scoring for:', imageUrl?.substring(0, 100));
       console.log('🔑 API Key available:', !!import.meta.env.VITE_GEMINI_API_KEY);
       
+      // APIキーがない場合は即座にデフォルトスコアを返す
+      if (!import.meta.env.VITE_GEMINI_API_KEY) {
+        console.warn('⚠️ Gemini API key not available, returning default score');
+        const defaultScore = this.getDefaultScore();
+        defaultScore.comment = 'API設定が必要です。基本スコアを表示しています。';
+        return defaultScore;
+      }
+      
       const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
       console.log('🤖 Gemini model created');
       

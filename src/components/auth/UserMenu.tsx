@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Settings, LogOut, ChevronDown, Sparkles } from 'lucide-react';
+import { User, Settings, LogOut, ChevronDown, Sparkles, Trophy } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 
@@ -93,6 +93,15 @@ export function UserMenu({ direction = 'down' }: { direction?: 'up' | 'down' }) 
             </div>
             
             <div className="py-1">
+              <Link
+                to="/dashboard"
+                className="flex items-center space-x-3 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-blue-50 transition-colors group"
+                onClick={() => setIsOpen(false)}
+              >
+                <Trophy className="w-4 h-4 text-blue-600 group-hover:text-blue-700" />
+                <span>エクスペリエンス</span>
+              </Link>
+              
               <Link
                 to="/profile-edit"
                 className="flex items-center space-x-3 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 transition-colors"

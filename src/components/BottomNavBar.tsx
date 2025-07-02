@@ -1,14 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { UserMenu } from './auth/UserMenu';
 import { NotificationBell } from './NotificationBell';
 import { PersonalJourneyCTA } from './cta/PersonalJourneyCTA';
+import { LoginModal } from './auth/LoginModal';
+import { RegisterModal } from './auth/RegisterModal';
 
 interface BottomNavBarProps {
   onNewPostClick: () => void;
   onLoginClick: () => void;
-  onToggleFilter: () => void;
+  onToggleFilter?: () => void;
   onPostClick?: (postId: string) => void;
   hasActiveFilters?: boolean;
 }
@@ -16,6 +18,8 @@ interface BottomNavBarProps {
 const BottomNavBar = ({ onNewPostClick, onLoginClick, onToggleFilter, onPostClick, hasActiveFilters = false }: BottomNavBarProps) => {
   const { user } = useAuth();
   const location = useLocation();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showRegisterModal, setShowRegisterModal] = useState(false);
 
   const iconStyle = "w-7 h-7 transition-transform duration-200 ease-in-out group-hover:scale-110";
   const activeIconStyle = "text-blue-500 dark:text-blue-400";
@@ -55,20 +59,18 @@ const BottomNavBar = ({ onNewPostClick, onLoginClick, onToggleFilter, onPostClic
           </svg>
           <span className="sr-only">Home</span>
         </button>
-        {/* Enhanced Dashboard CTA / Filter */}
+        {/* Enhanced Dashboard CTA / Experience Button */}
         {user ? (
           <div className="inline-flex flex-col items-center justify-center px-1">
             <PersonalJourneyCTA variant="mobile" />
           </div>
         ) : (
-          <button onClick={onToggleFilter} type="button" className={`inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-700 group relative ${hasActiveFilters ? 'bg-blue-50' : ''}`}>
-            <svg className={`${iconStyle} ${hasActiveFilters ? activeIconStyle : inactiveIconStyle}`} aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2 4.5A2.5 2.5 0 014.5 2h11A2.5 2.5 0 0118 4.5v2a2.5 2.5 0 01-.73 1.77L14 11.54V17a1 1 0 01-.6.9l-2 .67A1 1 0 0110 17.67V11.54L6.73 8.27A2.5 2.5 0 016 6.5v-2z"/>
-            </svg>
-            {hasActiveFilters && (
-              <div className="absolute top-2 right-3 w-2 h-2 bg-blue-500 rounded-full"></div>
-            )}
-            <span className="sr-only">Filter</span>
+          <button 
+            onClick={() => setShowRegisterModal(true)} 
+            type="button" 
+            className="inline-flex flex-col items-center justify-center px-1 hover:bg-gray-50 dark:hover:bg-gray-700 group"
+          >
+            <PersonalJourneyCTA variant="mobile" />
           </button>
         )}
         {/* New Post */}
@@ -107,6 +109,25 @@ const BottomNavBar = ({ onNewPostClick, onLoginClick, onToggleFilter, onPostClic
             )}
         </div>
       </div>
+      
+      {/* Auth Modals */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        onSwitchToRegister={() => {
+          setShowLoginModal(false);
+          setShowRegisterModal(true);
+        }}
+      />
+
+      <RegisterModal
+        isOpen={showRegisterModal}
+        onClose={() => setShowRegisterModal(false)}
+        onSwitchToLogin={() => {
+          setShowRegisterModal(false);
+          setShowLoginModal(true);
+        }}
+      />
     </div>
   );
 };

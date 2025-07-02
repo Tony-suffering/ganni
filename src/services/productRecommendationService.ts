@@ -224,28 +224,47 @@ export class ProductRecommendationService {
       const searchKeywords = await this.generateSearchKeywords(context);
       console.log('🔍 Generated search keywords:', searchKeywords);
 
-      // 2. Amazon APIで実際の商品を検索
+      // 2. Amazon APIで実際の商品を検索（タイムアウト付き）
       const recommendations: RecommendationGroup[] = [];
       
-      for (const keywordGroup of searchKeywords) {
+      // Promise.allSettledを使って並列処理＋エラー耐性を持たせる
+      const searchPromises = searchKeywords.map(async (keywordGroup) => {
         try {
-          const products = await amazonService.searchItems(
+          // 5秒でタイムアウトする検索
+          const timeoutPromise = new Promise<Product[]>((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout')), 5000)
+          );
+          
+          const searchPromise = amazonService.searchItems(
             keywordGroup.keywords.join(' '),
             'All',
             5
           );
           
+          const products = await Promise.race([searchPromise, timeoutPromise]);
+          
           if (products.length > 0) {
-            recommendations.push({
+            return {
               title: keywordGroup.category,
               reason: keywordGroup.reason,
               products: products.slice(0, 3) // 最大3商品
-            });
+            };
           }
+          return null;
         } catch (searchError) {
           console.error(`Failed to search for ${keywordGroup.category}:`, searchError);
+          return null;
         }
-      }
+      });
+
+      const results = await Promise.allSettled(searchPromises);
+      
+      // 成功した結果のみを追加
+      results.forEach((result) => {
+        if (result.status === 'fulfilled' && result.value) {
+          recommendations.push(result.value);
+        }
+      });
 
       // 3. 商品が見つからない場合はフォールバック
       if (recommendations.length === 0) {

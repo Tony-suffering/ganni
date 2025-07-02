@@ -12,7 +12,8 @@ import {
   BarChart3,
   Sparkles,
   User,
-  Award
+  Award,
+  Trophy
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Post } from '../types';
@@ -20,13 +21,14 @@ import { UserPostService } from '../services/userPostService';
 import { UserStatsDisplay } from '../components/dashboard/UserStatsDisplay';
 import { PostGallery } from '../components/dashboard/PostGallery';
 import { PersonalCuratorDisplay } from '../components/curator/PersonalCuratorDisplay';
+import { GamificationTab } from '../components/dashboard/GamificationTab';
 
 export const PersonalDashboard: React.FC = () => {
   const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'gallery' | 'stats' | 'suggestions'>('gallery');
+  const [activeTab, setActiveTab] = useState<'gallery' | 'stats' | 'gamification' | 'suggestions'>('gallery');
   const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid');
 
   useEffect(() => {
@@ -134,6 +136,13 @@ export const PersonalDashboard: React.FC = () => {
                 onClick={() => setActiveTab('stats')}
               />
               <TabButton
+                icon={Trophy}
+                label="ゲーミフィケーション"
+                count={undefined}
+                isActive={activeTab === 'gamification'}
+                onClick={() => setActiveTab('gamification')}
+              />
+              <TabButton
                 icon={Sparkles}
                 label="AI提案"
                 isActive={activeTab === 'suggestions'}
@@ -193,6 +202,18 @@ export const PersonalDashboard: React.FC = () => {
                   transition={{ duration: 0.3 }}
                 >
                   <UserStatsDisplay posts={posts} user={user} />
+                </motion.div>
+              )}
+
+              {activeTab === 'gamification' && (
+                <motion.div
+                  key="gamification"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <GamificationTab userId={user.id} />
                 </motion.div>
               )}
 

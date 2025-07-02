@@ -257,6 +257,41 @@ export interface Database {
           updated_at?: string;
         };
       };
+      inspirations: {
+        Row: {
+          id: string;
+          source_post_id: string;
+          inspired_post_id: string;
+          creator_id: string;
+          inspiration_type: 'direct' | 'style' | 'concept' | 'technique' | 'composition' | 'mood';
+          inspiration_note: string | null;
+          chain_level: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          source_post_id: string;
+          inspired_post_id: string;
+          creator_id: string;
+          inspiration_type?: 'direct' | 'style' | 'concept' | 'technique' | 'composition' | 'mood';
+          inspiration_note?: string | null;
+          chain_level?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          source_post_id?: string;
+          inspired_post_id?: string;
+          creator_id?: string;
+          inspiration_type?: 'direct' | 'style' | 'concept' | 'technique' | 'composition' | 'mood';
+          inspiration_note?: string | null;
+          chain_level?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       inspiration_stats: {
         Row: {
           id: string;
@@ -517,6 +552,170 @@ export interface Database {
           target_risk_ratio?: number;
           last_evaluation_at?: string | null;
           next_evaluation_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      user_points: {
+        Row: {
+          id: string;
+          user_id: string;
+          learning_points: number;
+          influence_points: number;
+          total_points: number;
+          level: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          learning_points?: number;
+          influence_points?: number;
+          level?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          learning_points?: number;
+          influence_points?: number;
+          level?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      point_history: {
+        Row: {
+          id: string;
+          user_id: string;
+          point_type: 'learning' | 'influence';
+          points: number;
+          source_type: 'inspiration_given' | 'inspiration_received' | 'chain_bonus' | 'weekly_bonus';
+          source_id: string | null;
+          description: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          point_type: 'learning' | 'influence';
+          points: number;
+          source_type: 'inspiration_given' | 'inspiration_received' | 'chain_bonus' | 'weekly_bonus';
+          source_id?: string | null;
+          description?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          point_type?: 'learning' | 'influence';
+          points?: number;
+          source_type?: 'inspiration_given' | 'inspiration_received' | 'chain_bonus' | 'weekly_bonus';
+          source_id?: string | null;
+          description?: string | null;
+          created_at?: string;
+        };
+      };
+      badges: {
+        Row: {
+          id: string;
+          name: string;
+          display_name: string;
+          description: string;
+          icon: string;
+          category: 'learner' | 'mentor' | 'special' | 'achievement';
+          requirement_type: 'inspiration_count' | 'chain_level' | 'diversity' | 'weekly_activity' | 'total_points';
+          requirement_value: number;
+          rarity: 'common' | 'rare' | 'epic' | 'legendary';
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          display_name: string;
+          description: string;
+          icon?: string;
+          category: 'learner' | 'mentor' | 'special' | 'achievement';
+          requirement_type: 'inspiration_count' | 'chain_level' | 'diversity' | 'weekly_activity' | 'total_points';
+          requirement_value: number;
+          rarity?: 'common' | 'rare' | 'epic' | 'legendary';
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          display_name?: string;
+          description?: string;
+          icon?: string;
+          category?: 'learner' | 'mentor' | 'special' | 'achievement';
+          requirement_type?: 'inspiration_count' | 'chain_level' | 'diversity' | 'weekly_activity' | 'total_points';
+          requirement_value?: number;
+          rarity?: 'common' | 'rare' | 'epic' | 'legendary';
+          created_at?: string;
+        };
+      };
+      user_badges: {
+        Row: {
+          id: string;
+          user_id: string;
+          badge_id: string;
+          earned_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          badge_id: string;
+          earned_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          badge_id?: string;
+          earned_at?: string;
+        };
+      };
+      user_inspiration_stats: {
+        Row: {
+          id: string;
+          user_id: string;
+          inspiration_given_count: number;
+          inspiration_received_count: number;
+          max_chain_level: number;
+          different_types_used: number;
+          weekly_inspiration_count: number;
+          monthly_inspiration_count: number;
+          streak_days: number;
+          last_inspiration_date: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          inspiration_given_count?: number;
+          inspiration_received_count?: number;
+          max_chain_level?: number;
+          different_types_used?: number;
+          weekly_inspiration_count?: number;
+          monthly_inspiration_count?: number;
+          streak_days?: number;
+          last_inspiration_date?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          inspiration_given_count?: number;
+          inspiration_received_count?: number;
+          max_chain_level?: number;
+          different_types_used?: number;
+          weekly_inspiration_count?: number;
+          monthly_inspiration_count?: number;
+          streak_days?: number;
+          last_inspiration_date?: string | null;
           created_at?: string;
           updated_at?: string;
         };

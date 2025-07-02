@@ -62,6 +62,10 @@ export const usePostAIAnalysis = () => {
     console.log('📸 Image URL:', imageUrl?.substring(0, 100) + '...');
     console.log('📝 Title:', title);
     console.log('💬 User Comment:', userComment);
+    console.log('🌐 Environment check:', {
+      geminiApiKey: !!import.meta.env.VITE_GEMINI_API_KEY,
+      apiKeyLength: import.meta.env.VITE_GEMINI_API_KEY?.length || 0
+    });
     
     setAnalysisState(prev => ({
       ...prev,
@@ -122,6 +126,11 @@ export const usePostAIAnalysis = () => {
         console.log('✅ Photo scoring completed:', score.total, 'points');
       } catch (error) {
         console.error('❌ Photo scoring failed:', error);
+        // エラーが発生してもStep 1を完了としてマーク
+        setAnalysisState(prev => ({
+          ...prev,
+          progress: { ...prev.progress, photoScore: true }
+        }));
       }
 
       // 2. AI説明文とコメントを生成
@@ -152,6 +161,11 @@ export const usePostAIAnalysis = () => {
         console.log('✅ AI comments generated:', aiComments.length, 'comments');
       } catch (error) {
         console.error('❌ AI comments generation failed:', error);
+        // エラーが発生してもStep 2を完了としてマーク
+        setAnalysisState(prev => ({
+          ...prev,
+          progress: { ...prev.progress, aiComments: true }
+        }));
       }
 
       // 3. 商品推薦を生成
@@ -174,6 +188,11 @@ export const usePostAIAnalysis = () => {
         console.log('✅ Product recommendations generated:', recommendations.recommendations.length, 'categories');
       } catch (error) {
         console.error('❌ Product recommendations failed:', error);
+        // エラーが発生してもStep 3を完了としてマーク
+        setAnalysisState(prev => ({
+          ...prev,
+          progress: { ...prev.progress, productRecommendations: true }
+        }));
       }
 
       // 分析完了

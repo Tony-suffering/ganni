@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Award, Star, MessageCircle, ShoppingBag, Eye } from 'lucide-react';
+import { X, Award, Star, MessageCircle, ShoppingBag, Eye, Lightbulb, ArrowRight } from 'lucide-react';
 import { PhotoScore, AIComment, ProductRecommendation } from '../types';
 import { PhotoScoringService } from '../services/photoScoringService';
 import { RelatedProducts } from './RelatedProducts';
@@ -325,6 +325,29 @@ export const AIAnalysisResultModal: React.FC<AIAnalysisResultModalProps> = ({
                 </AnimatePresence>
               )}
             </div>
+
+            {/* インスピレーション促進セクション */}
+            {isAnalysisComplete && photoScore && photoScore.total_score >= 70 && (
+              <div className="flex-shrink-0 p-4 bg-gradient-to-r from-purple-50 to-pink-50 border-t border-purple-100">
+                <div className="flex items-center space-x-3 text-sm">
+                  <Lightbulb className="w-5 h-5 text-purple-600" />
+                  <div className="flex-1">
+                    <p className="text-purple-800 font-medium">素晴らしい写真ですね！</p>
+                    <p className="text-purple-600">他の投稿者にインスピレーションを与えてみませんか？</p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      // インスピレーション機能への導線
+                      window.location.href = '/inspiration-lab';
+                    }}
+                    className="flex items-center space-x-1 px-3 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg transition-colors"
+                  >
+                    <span className="text-xs font-medium">探索</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Footer */}
             <div className="flex-shrink-0 p-6 border-t border-gray-200 bg-gray-50">
