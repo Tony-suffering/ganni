@@ -14,6 +14,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useGamification } from '../../hooks/useGamification';
 import { analyticsService } from '../../services/analyticsService';
 
 interface PersonalJourneyCTAProps {
@@ -26,6 +27,7 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
   className = '' 
 }) => {
   const { user } = useAuth();
+  const { userPoints, levelInfo } = useGamification();
   const location = useLocation();
   const [isHovered, setIsHovered] = useState(false);
   const [pulseCount, setPulseCount] = useState(0);
@@ -183,12 +185,25 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
           whileHover={{ scale: 1.05 }}
           className="relative inline-flex flex-col items-center justify-center"
         >
-          {/* グレー背景 */}
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-600 to-gray-700 rounded-lg" />
+          {/* シンプルな白い背景 */}
+          <div className="absolute inset-0 bg-white border border-gray-200 rounded-lg shadow-sm" />
 
-          <div className="relative flex flex-col items-center justify-center px-2 py-1.5 text-white min-w-12 min-h-12">
-            <BarChart3 className="w-5 h-5" />
-            <span className="text-xs font-medium mt-0.5">分析</span>
+          <div className="relative flex flex-col items-center justify-center px-2 py-1 text-gray-700 min-w-12 min-h-12">
+            {/* 点数とレベルを表示 */}
+            {userPoints && levelInfo ? (
+              <>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs">⭐</span>
+                  <span className="text-xs font-bold">{userPoints.total_points}</span>
+                </div>
+                <span className="text-xs">Lv.{levelInfo.level}</span>
+              </>
+            ) : (
+              <>
+                <BarChart3 className="w-4 h-4" />
+                <span className="text-xs font-medium">分析</span>
+              </>
+            )}
           </div>
         </motion.div>
       </Link>

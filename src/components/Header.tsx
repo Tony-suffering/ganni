@@ -9,6 +9,7 @@ import { NotificationBell } from './NotificationBell';
 import { HighlightSection } from './HighlightSection';
 import { PersonalJourneyCTA } from './cta/PersonalJourneyCTA';
 import { useAuth } from '../contexts/AuthContext';
+import { useGamification } from '../hooks/useGamification';
 import { Link, useLocation } from 'react-router-dom';
 
 interface HeaderProps {
@@ -35,6 +36,7 @@ export const Header: React.FC<HeaderProps> = ({
   onHighlightPostClick,
 }) => {
   const { user, loading } = useAuth();
+  const { photoStats } = useGamification();
   const location = useLocation();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -99,12 +101,21 @@ export const Header: React.FC<HeaderProps> = ({
               
               {/* Compact AI Highlight Section - Right of Title */}
               {!hasActiveFilters && allPosts.length > 0 && (
-                <div className="block">
+                <div className="flex items-center gap-3">
                   <HighlightSection
                     allPosts={allPosts}
                     onPostClick={onHighlightPostClick || (() => {})}
                     compact={true}
                   />
+                  {/* 写真スコア表示をAI厳選の右に追加 */}
+                  {photoStats && photoStats.totalPhotoScores > 0 && (
+                    <div className="flex items-center gap-2 text-xs text-gray-600">
+                      <span>📸</span>
+                      <span>平均{photoStats.averagePhotoScore}点</span>
+                      <span className="text-gray-400">|</span>
+                      <span>最高{photoStats.highestPhotoScore}点</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -135,13 +146,15 @@ export const Header: React.FC<HeaderProps> = ({
                 />
               </div>
               
-              {/* Enhanced Dashboard CTA / Experience Button */}
+              {/* Enhanced Dashboard CTA / Experience Button - スマホでは非表示 */}
               {(user || isDemo) && !loading ? (
-                <PersonalJourneyCTA variant="header" />
+                <div className="hidden md:block">
+                  <PersonalJourneyCTA variant="header" />
+                </div>
               ) : (
                 <button
                   onClick={() => setShowRegisterModal(true)}
-                  className="relative group"
+                  className="relative group hidden md:block"
                 >
                   <motion.div
                     whileHover={{ scale: 1.02 }}

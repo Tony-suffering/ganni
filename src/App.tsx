@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { BrowserRouter, Routes, Route, useSearchParams } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -8,6 +8,7 @@ import { usePosts } from './hooks/usePosts';
 import { useTags } from './hooks/useTags';
 import { useHighlightUpdater } from './hooks/useHighlightUpdater';
 import { usePostAIAnalysis } from './hooks/usePostAIAnalysis';
+import { useGamification } from './hooks/useGamification';
 import './utils/updateExistingPhotoScores'; // グローバル関数を有効化
 
 // Services
@@ -29,6 +30,8 @@ import BottomNavBar from './components/BottomNavBar';
 import UserProfile from './pages/UserProfile';
 import { ImageDebugTest } from './components/ImageDebugTest';
 import { LazyImageDirectTest } from './components/LazyImageDirectTest';
+import { UserPointsDisplay } from './components/gamification/UserPointsDisplay';
+import { UserBadgesDisplay } from './components/gamification/UserBadgesDisplay';
 
 // Pages
 import { ProfileEdit } from './pages/ProfileEdit';
@@ -36,6 +39,7 @@ import { Settings } from './pages/Settings';
 import { Bookmarks } from './pages/Bookmarks';
 import { PersonalDashboard } from './pages/PersonalDashboard';
 import { InspirationLab } from './pages/InspirationLab';
+import { InspirationExplore } from './pages/InspirationExplore';
 
 // Data and Types
 import { Post } from './types';
@@ -53,9 +57,35 @@ function AppContent() {
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
   const [analyzingPostId, setAnalyzingPostId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   // useAuthフックで認証状態とローディング状態を取得
   const { loading: authLoading, user } = useAuth();
+  
+  // ゲーミフィケーションデータを取得
+  const { userPoints, levelInfo, displayBadges, photoStats, loading: gamificationLoading } = useGamification();
+  
+  // 画面サイズ監視
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // デバッグ用ログ
+  useEffect(() => {
+    console.log('🎮 App.tsx ゲーミフィケーションデバッグ:', {
+      user: !!user,
+      userPoints,
+      levelInfo,
+      displayBadges: displayBadges?.length || 0,
+      gamificationLoading
+    });
+  }, [user, userPoints, levelInfo, displayBadges, gamificationLoading]);
 
   // ユーザー情報をアナリティクスサービスに設定
   useEffect(() => {
@@ -72,7 +102,7 @@ function AppContent() {
       setIsNewPostOpen(true);
     }
   }, [searchParams, user, isNewPostOpen]);
-  
+
   // 投稿データを管理するカスタムフック
   const {
     posts,
@@ -89,6 +119,20 @@ function AppContent() {
     deletePost,
     isLoadingMore
   } = usePosts();
+
+
+  // 検索フィルタリング
+  const filteredPosts = useMemo(() => {
+    if (!searchQuery.trim()) return posts;
+    
+    const query = searchQuery.toLowerCase();
+    return posts.filter(post => 
+      (post.content && post.content.toLowerCase().includes(query)) ||
+      (post.title && post.title.toLowerCase().includes(query)) ||
+      (post.author_name && post.author_name.toLowerCase().includes(query)) ||
+      (post.tags && post.tags.some(tag => tag.name && tag.name.toLowerCase().includes(query)))
+    );
+  }, [posts, searchQuery]);
   
   // タグデータを管理するカスタムフック
   const { tags } = useTags();
@@ -255,9 +299,60 @@ function AppContent() {
         onPostClick={handlePostClick}
         allPosts={allPosts}
         onHighlightPostClick={setSelectedPost}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
       />
 
-      <main className="pb-20 md:pb-0 mt-20 md:mt-24">
+      {/* ゲーミフィケーションステータスバー - スマホでは非表示 */}
+      {user && (userPoints || !gamificationLoading) && (
+        <div className="hidden md:block fixed top-16 left-0 right-0 z-40 bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {/* シンプルな総合点数とレベル表示 */}
+              {userPoints && levelInfo ? (
+                <div className="flex items-center gap-3 px-3 py-2 bg-white border border-gray-200 rounded-lg shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-500">⭐</span>
+                    <span className="text-lg font-bold text-gray-900">{userPoints.total_points}</span>
+                    <span className="text-xs text-gray-500">点</span>
+                  </div>
+                  <div className="w-px h-4 bg-gray-300"></div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs text-gray-500 font-medium">Lv.{levelInfo.level}</span>
+                    <span className="text-xs text-gray-400">{levelInfo.levelName}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2 text-sm">
+                  <span className="text-gray-600">レベル情報を読み込み中...</span>
+                </div>
+              )}
+              
+              {/* バッジ表示 */}
+              {displayBadges && displayBadges.length > 0 && (
+                <UserBadgesDisplay 
+                  badges={displayBadges}
+                  variant="inline"
+                  limit={3}
+                />
+              )}
+            </div>
+            <button
+              onClick={() => window.location.href = '/dashboard'}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+            >
+              詳細を見る →
+            </button>
+          </div>
+        </div>
+      )}
+
+      <main 
+        className="pb-20 md:pb-0"
+        style={{ 
+          marginTop: isMobile ? '64px' : (userPoints && levelInfo ? '120px' : '80px')
+        }}
+      >
         <Routes>
           <Route
             path="/"
@@ -272,7 +367,7 @@ function AppContent() {
                 />
                 
                 <MasonryGrid
-                  posts={posts}
+                  posts={filteredPosts}
                   onPostClick={setSelectedPost}
                   hasNextPage={hasNextPage}
                   onLoadMore={loadMore}
@@ -298,6 +393,7 @@ function AppContent() {
           <Route path="/bookmarks" element={<ProtectedRoute><Bookmarks /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><PersonalDashboard /></ProtectedRoute>} />
           <Route path="/inspiration/:postId" element={<ProtectedRoute><InspirationLab /></ProtectedRoute>} />
+          <Route path="/inspiration/explore" element={<ProtectedRoute><InspirationExplore /></ProtectedRoute>} />
         </Routes>
       </main>
 
