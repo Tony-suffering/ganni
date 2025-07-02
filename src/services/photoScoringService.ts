@@ -90,8 +90,11 @@ export class PhotoScoringService {
    */
   async scorePhoto(imageUrl: string, title?: string, description?: string): Promise<PhotoScore> {
     try {
-      console.log('📸 Starting photo scoring for:', imageUrl);
+      console.log('📸 Starting photo scoring for:', imageUrl?.substring(0, 100));
+      console.log('🔑 API Key available:', !!import.meta.env.VITE_GEMINI_API_KEY);
+      
       const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      console.log('🤖 Gemini model created');
       
       // Base64データURLの場合はそのまま使用
       if (imageUrl.startsWith('data:')) {
@@ -163,19 +166,25 @@ export class PhotoScoringService {
       }
       
       // URLの場合は従来通りfetch
-      console.log('🔄 Fetching image from URL...');
+      console.log('🔄 Fetching image from URL:', imageUrl);
+      
+      // Supabase StorageのURLかチェック
+      const isSupabaseUrl = imageUrl.includes('supabase.co/storage/');
+      console.log('🗄️ Is Supabase URL:', isSupabaseUrl);
       
       let response: Response;
       try {
-        // 最初は直接fetch
+        // 最初は直接fetch（Supabase URLの場合はCORSが有効）
         response = await fetch(imageUrl, {
           mode: 'cors',
           headers: {
             'Accept': 'image/*'
           }
         });
+        console.log('✅ Direct fetch successful:', response.status);
       } catch (corsError) {
-        console.log('🚫 CORS error, trying alternative proxy...');
+        console.log('🚫 CORS error:', corsError);
+        console.log('🔄 Trying alternative proxy...');
         // 複数のプロキシを試行
         const proxies = [
           `https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`,
@@ -254,6 +263,7 @@ export class PhotoScoringService {
       
     } catch (error) {
       console.error('❌ Photo scoring error:', error);
+      console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       
       let errorMessage = '採点に失敗しました。';
       

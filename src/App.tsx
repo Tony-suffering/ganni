@@ -134,34 +134,52 @@ function AppContent() {
       console.log('✅ Post created:', newPost.id);
       
       // 投稿後のAI分析を開始
+      console.log('🚀 Setting up AI analysis modal for post:', newPost.id);
+      
+      // まずモーダルを開く
       setAnalyzingPostId(newPost.id);
       setIsAnalysisModalOpen(true);
       
-      // AI分析を非同期で開始
-      try {
-        const analysisResult = await analyzePost(
-          newPost.imageUrl,
-          newPost.title,
-          newPost.userComment,
-          newPost.imageAIDescription
-        );
-        
-        console.log('🎉 AI analysis completed for post:', newPost.id);
-        
-        // 分析結果でPostをデータベースに保存
-        try {
-          await updatePost(newPost.id, {
-            photoScore: analysisResult.photoScore,
-            aiComments: analysisResult.aiComments
-          });
-          console.log('✅ AI analysis results saved to database for post:', newPost.id);
-        } catch (updateError) {
-          console.error('❌ Failed to save AI analysis results to database:', updateError);
-        }
-        
-      } catch (error) {
-        console.error('❌ AI analysis failed for post:', newPost.id, error);
-      }
+      // モーダルが確実に開いたことを確認してからAI分析を開始
+      requestAnimationFrame(() => {
+        setTimeout(async () => {
+          try {
+            console.log('🤖 Starting AI analysis for post:', newPost.id);
+            console.log('🔍 Modal open state:', isAnalysisModalOpen); // この時点でのモーダル状態を確認
+            console.log('🖼️ Image URL for analysis:', newPost.imageUrl);
+            console.log('📝 Post data for analysis:', {
+              title: newPost.title,
+              userComment: newPost.userComment,
+              imageAIDescription: newPost.imageAIDescription
+            });
+            
+            const analysisResult = await analyzePost(
+              newPost.imageUrl,
+              newPost.title,
+              newPost.userComment,
+              newPost.imageAIDescription
+            );
+            
+            console.log('🎉 AI analysis completed for post:', newPost.id);
+            console.log('📊 Analysis result:', analysisResult);
+            
+            // 分析結果でPostをデータベースに保存
+            try {
+              await updatePost(newPost.id, {
+                photoScore: analysisResult.photoScore,
+                aiComments: analysisResult.aiComments
+              });
+              console.log('✅ AI analysis results saved to database for post:', newPost.id);
+            } catch (updateError) {
+              console.error('❌ Failed to save AI analysis results to database:', updateError);
+            }
+            
+          } catch (error) {
+            console.error('❌ AI analysis failed for post:', newPost.id, error);
+            // エラーが発生してもモーダルは開いたままにする
+          }
+        }, 100); // requestAnimationFrameの後に少し待つ
+      });
     }
   };
 
@@ -204,6 +222,17 @@ function AppContent() {
     }
   };
 
+
+  // デバッグ用: モーダルの状態を確認
+  useEffect(() => {
+    console.log('🔍 Modal states:', {
+      isAnalysisModalOpen,
+      analyzingPostId,
+      isAnalyzing,
+      photoScore: !!photoScore,
+      aiComments: aiComments?.length || 0
+    });
+  }, [isAnalysisModalOpen, analyzingPostId, isAnalyzing, photoScore, aiComments]);
 
   // ユーザーがログインしている場合の表示
   return (

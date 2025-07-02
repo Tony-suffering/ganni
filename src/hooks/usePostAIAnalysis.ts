@@ -59,6 +59,9 @@ export const usePostAIAnalysis = () => {
     imageAIDescription?: string
   ): Promise<AIAnalysisResult> => {
     console.log('🤖 Starting post-submission AI analysis...');
+    console.log('📸 Image URL:', imageUrl?.substring(0, 100) + '...');
+    console.log('📝 Title:', title);
+    console.log('💬 User Comment:', userComment);
     
     setAnalysisState(prev => ({
       ...prev,
@@ -78,6 +81,7 @@ export const usePostAIAnalysis = () => {
       console.log('📊 Step 1: Photo scoring...');
       try {
         const scoringService = new PhotoScoringService();
+        console.log('🔧 PhotoScoringService created');
         const score = await scoringService.scorePhoto(imageUrl, title, userComment);
         const levelInfo = PhotoScoringService.getScoreLevel(score.total);
         

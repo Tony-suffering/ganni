@@ -9,19 +9,12 @@ import { ja } from 'date-fns/locale';
 interface Notification {
   id: string;
   recipient_id: string;
-  sender_id?: string;
-  notification_type: string;
-  title: string;
-  message: string;
-  related_post_id?: string;
-  related_inspiration_id?: string;
-  related_user_id?: string;
-  metadata: Record<string, any>;
+  sender_id: string;
+  post_id: string;
+  type: 'like' | 'comment';
+  content?: string;
   is_read: boolean;
-  is_archived: boolean;
-  priority: string;
   created_at: string;
-  updated_at: string;
 }
 
 interface NotificationCenterProps {
@@ -75,7 +68,30 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         return;
       }
 
-      setNotifications(data || []);
+      // 通知データを表示用に変換
+      const formattedNotifications = await Promise.all((data || []).map(async (n) => {
+        // 送信者の情報を取得
+        const { data: senderData } = await supabase
+          .from('profiles')
+          .select('name, avatar_url')
+          .eq('id', n.sender_id)
+          .single();
+
+        return {
+          ...n,
+          title: n.type === 'like' ? 'いいね！' : 'コメント',
+          message: n.type === 'like' 
+            ? `${senderData?.name || '誰か'}があなたの投稿にいいねしました` 
+            : `${senderData?.name || '誰か'}がコメントしました: ${n.content || ''}`,
+          notification_type: n.type,
+          priority: 'normal',
+          senderName: senderData?.name || '名無しさん',
+          senderAvatar: senderData?.avatar_url
+        };
+      }));
+
+      setNotifications(formattedNotifications);
+
       
       // 未読数を計算
       const unread = (data || []).filter(n => !n.is_read).length;
@@ -101,17 +117,38 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
           filter: `recipient_id=eq.${user.id}`
         },
         (payload) => {
-          const newNotification = payload.new as Notification;
-          setNotifications(prev => [newNotification, ...prev]);
-          setUnreadCount(prev => prev + 1);
+          const newNotification = payload.new as any;
           
-          // ブラウザ通知を表示
-          if (Notification.permission === 'granted') {
-            new Notification(newNotification.title, {
-              body: newNotification.message,
-              icon: '/icon-192x192.png'
+          // 送信者情報を非同期で取得
+          supabase
+            .from('profiles')
+            .select('name, avatar_url')
+            .eq('id', newNotification.sender_id)
+            .single()
+            .then(({ data: senderData }) => {
+          
+              const formattedNotification = {
+                ...newNotification,
+                title: newNotification.type === 'like' ? 'いいね！' : 'コメント',
+                message: newNotification.type === 'like' 
+                  ? `${senderData?.name || '誰か'}があなたの投稿にいいねしました` 
+                  : `${senderData?.name || '誰か'}がコメントしました: ${newNotification.content || ''}`,
+                notification_type: newNotification.type,
+                priority: 'normal',
+                senderName: senderData?.name || '名無しさん',
+                senderAvatar: senderData?.avatar_url
+              };
+              setNotifications(prev => [formattedNotification, ...prev]);
+              setUnreadCount(prev => prev + 1);
+              
+              // ブラウザ通知を表示
+              if (Notification.permission === 'granted') {
+                new Notification(formattedNotification.title, {
+                  body: formattedNotification.message,
+                  icon: formattedNotification.senderAvatar || '/icon-192x192.png'
+                });
+              }
             });
-          }
         }
       )
       .subscribe();
@@ -168,17 +205,10 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'inspiration_received':
-      case 'inspiration_given':
-        return <Lightbulb className="w-5 h-5 text-gray-600" />;
       case 'like':
         return <Heart className="w-5 h-5 text-gray-600" />;
       case 'comment':
         return <MessageCircle className="w-5 h-5 text-gray-600" />;
-      case 'follow':
-        return <Users className="w-5 h-5 text-gray-600" />;
-      case 'achievement_unlocked':
-        return <Trophy className="w-5 h-5 text-gray-600" />;
       default:
         return <Bell className="w-5 h-5 text-gray-600" />;
     }
@@ -208,8 +238,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
       onNotificationClick(notification);
     } else {
       // デフォルトの動作: 関連投稿に移動
-      if (notification.related_post_id) {
-        window.location.href = `/post/${notification.related_post_id}`;
+      if (notification.post_id) {
+        window.location.href = `/post/${notification.post_id}`;
       }
     }
   };
@@ -219,7 +249,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
       case 'unread':
         return !n.is_read;
       case 'inspiration':
-        return n.notification_type.includes('inspiration');
+        return false; // インスピレーション通知は現在のスキーマに存在しない
       default:
         return true;
     }
@@ -277,8 +307,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         <div className="flex items-center border-b border-gray-200 dark:border-gray-700">
           {[
             { key: 'all', label: 'すべて' },
-            { key: 'unread', label: '未読' },
-            { key: 'inspiration', label: 'インスピレーション' }
+            { key: 'unread', label: '未読' }
           ].map((tab) => (
             <button
               key={tab.key}
@@ -338,14 +367,14 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <h4 className={`text-sm font-medium ${notification.is_read ? 'text-gray-700 dark:text-gray-300' : 'text-gray-900 dark:text-white'}`}>
-                            {notification.title}
+                            {(notification as any).title}
                           </h4>
                           {!notification.is_read && (
                             <div className="w-2 h-2 bg-gray-600 rounded-full ml-2"></div>
                           )}
                         </div>
                         <p className={`text-sm mt-1 ${notification.is_read ? 'text-gray-600 dark:text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
-                          {notification.message}
+                          {(notification as any).message}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-500 mt-2">
                           {formatDistanceToNow(new Date(notification.created_at), { 

@@ -33,6 +33,9 @@ interface UsePostsReturn {
 // 新規投稿通知を送信する関数
 const sendNewPostNotifications = async (postId: string, authorId: string) => {
   try {
+    // user_notification_settingsテーブルが存在しない可能性があるため、エラーハンドリングを改善
+    console.log('📨 新規投稿通知の送信を試行中...');
+    
     // 新規投稿通知を有効にしているユーザーを取得
     const { data: notificationUsers, error } = await supabase
       .from('user_notification_settings')
@@ -41,7 +44,8 @@ const sendNewPostNotifications = async (postId: string, authorId: string) => {
       .neq('user_id', authorId); // 投稿者自身を除外
 
     if (error) {
-      console.error('通知設定の取得に失敗:', error);
+      // テーブルが存在しない場合は警告のみで処理を継続
+      console.warn('通知設定の取得に失敗 (テーブルが存在しない可能性があります):', error);
       return;
     }
 
@@ -65,9 +69,11 @@ const sendNewPostNotifications = async (postId: string, authorId: string) => {
 
     if (insertError) {
       console.error('通知の作成に失敗:', insertError);
+    } else {
+      console.log('✅ 通知を送信しました:', notifications.length, '件');
     }
   } catch (error) {
-    console.error('新規投稿通知の送信でエラー:', error);
+    console.warn('新規投稿通知の送信でエラー (処理は継続):', error);
   }
 };
 
@@ -562,7 +568,7 @@ export const usePosts = (): UsePostsReturn => {
       }
 
       // 新規投稿をpostsの先頭に追加（fetchPostsを呼ばずに直接追加）
-      setPosts(prevPosts => [newPost, ...prevPosts]);
+      setDisplayedPosts(prevPosts => [newPost, ...prevPosts]);
       setAllPosts(prevAllPosts => [newPost, ...prevAllPosts]);
       console.log('✅ 新規投稿をPosts配列に直接追加しました');
       
