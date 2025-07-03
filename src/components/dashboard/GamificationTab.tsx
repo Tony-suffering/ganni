@@ -47,34 +47,39 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId }) => {
   return (
     <div className="space-y-6">
       {/* セクションナビゲーション */}
-      <div className="flex space-x-4 border-b border-gray-200">
+      <div className="flex space-x-1 md:space-x-4 border-b border-gray-200 overflow-x-auto">
         <SectionButton
           icon={Trophy}
           label="概要"
+          mobileLabel="概要"
           isActive={activeSection === 'overview'}
           onClick={() => setActiveSection('overview')}
         />
         <SectionButton
           icon={Gift}
           label="投稿ボーナス"
+          mobileLabel="ボーナス"
           isActive={activeSection === 'bonuses'}
           onClick={() => setActiveSection('bonuses')}
         />
         <SectionButton
           icon={History}
           label="履歴"
+          mobileLabel="履歴"
           isActive={activeSection === 'history'}
           onClick={() => setActiveSection('history')}
         />
         <SectionButton
           icon={Award}
           label="達成"
+          mobileLabel="達成"
           isActive={activeSection === 'achievements'}
           onClick={() => setActiveSection('achievements')}
         />
         <SectionButton
           icon={TrendingUp}
           label="ランキング"
+          mobileLabel="順位"
           isActive={activeSection === 'ranking'}
           onClick={() => setActiveSection('ranking')}
         />
@@ -119,6 +124,7 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId }) => {
 interface SectionButtonProps {
   icon: React.ElementType;
   label: string;
+  mobileLabel?: string;
   isActive: boolean;
   onClick: () => void;
 }
@@ -126,19 +132,23 @@ interface SectionButtonProps {
 const SectionButton: React.FC<SectionButtonProps> = ({ 
   icon: Icon, 
   label, 
+  mobileLabel,
   isActive, 
   onClick 
 }) => (
   <button
     onClick={onClick}
-    className={`flex items-center space-x-2 py-3 px-4 border-b-2 transition-colors ${
+    className={`flex items-center space-x-2 py-3 px-2 md:px-4 border-b-2 transition-colors ${
       isActive
         ? 'border-gray-800 text-gray-800'
         : 'border-transparent text-gray-500 hover:text-gray-700'
     }`}
   >
     <Icon className="w-4 h-4" />
-    <span className="font-medium">{label}</span>
+    <span className="font-medium text-xs md:text-sm">
+      <span className="hidden md:inline">{label}</span>
+      <span className="md:hidden">{mobileLabel || label}</span>
+    </span>
   </button>
 );
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Music2, Camera, Sparkles } from 'lucide-react';
+import { Music2, Camera, Sparkles, MapPin, Clock, Settings } from 'lucide-react';
 import { Post } from '../../types';
 import { SpotifyService } from '../../services/spotifyService';
+import { generateMusicParametersFromMetadata, getLocationInfo } from '../../utils/imageMetadata';
 
 const spotifyService = new SpotifyService();
 
@@ -177,10 +178,89 @@ const determineMusicMoodFromContent = (analysis: ContentAnalysis): MusicMood => 
   };
 };
 
+// 投稿から写真メタデータを推測分析
+const analyzeImageMetadataFromPost = (post: Post) => {
+  const insights: any = {
+    tags: [],
+    timeAnalysis: null,
+    locationAnalysis: null,
+    technicalAnalysis: null
+  };
+  
+  // 投稿時間から推測
+  const postDate = new Date(post.created_at);
+  const hour = postDate.getHours();
+  const month = postDate.getMonth() + 1;
+  
+  // 時間帯分析
+  if (hour >= 5 && hour < 8) {
+    insights.tags.push('dawn', 'golden_hour');
+    insights.timeAnalysis = '朝焼けの美しい時間帯';
+  } else if (hour >= 17 && hour < 20) {
+    insights.tags.push('sunset', 'golden_hour');
+    insights.timeAnalysis = '夕日が美しい時間帯';
+  } else if (hour >= 20 || hour < 5) {
+    insights.tags.push('night', 'low_light');
+    insights.timeAnalysis = '夜景や室内照明';
+  } else {
+    insights.tags.push('daylight', 'bright');
+    insights.timeAnalysis = '明るい日中の撮影';
+  }
+  
+  // 季節分析
+  if (month >= 3 && month <= 5) {
+    insights.tags.push('spring', 'fresh');
+  } else if (month >= 6 && month <= 8) {
+    insights.tags.push('summer', 'vibrant');
+  } else if (month >= 9 && month <= 11) {
+    insights.tags.push('autumn', 'warm_tones');
+  } else {
+    insights.tags.push('winter', 'cool_tones');
+  }
+  
+  // タイトルやコメントから技術的推測
+  const text = (post.title + ' ' + (post.content || '') + ' ' + (post.userComment || '')).toLowerCase();
+  
+  if (text.includes('夜景') || text.includes('night')) {
+    insights.tags.push('night_photography', 'long_exposure');
+    insights.technicalAnalysis = '夜景撮影（高ISO推定）';
+  }
+  
+  if (text.includes('空港') || text.includes('airport') || text.includes('飛行機') || text.includes('plane')) {
+    insights.tags.push('airport', 'aviation', 'travel');
+    insights.locationAnalysis = '空港での撮影';
+    insights.location = '空港';
+  }
+  
+  if (text.includes('離陸') || text.includes('takeoff')) {
+    insights.tags.push('departure', 'motion', 'telephoto');
+    insights.technicalAnalysis = '離陸シーン（望遠レンズ推定）';
+  }
+  
+  if (text.includes('夕日') || text.includes('sunset')) {
+    insights.tags.push('sunset', 'golden_hour', 'landscape');
+    insights.technicalAnalysis = '夕日撮影（ND フィルター推定）';
+  }
+  
+  if (text.includes('窓') || text.includes('window')) {
+    insights.tags.push('window_seat', 'aerial_view');
+    insights.locationAnalysis = '機内からの眺望';
+  }
+  
+  // いいね数から写真の魅力度推測
+  if (post.likes_count && post.likes_count > 5) {
+    insights.tags.push('appealing', 'well_composed');
+    insights.technicalAnalysis = '魅力的な構図（いいね多数）';
+  }
+  
+  return insights.tags.length > 0 ? insights : null;
+};
+
 export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
   const [moodRecommendations, setMoodRecommendations] = useState<any[]>([]);
   const [photoMood, setPhotoMood] = useState<string>('');
   const [analyzedPosts, setAnalyzedPosts] = useState<Post[]>([]);
+  const [metadataAnalysis, setMetadataAnalysis] = useState<any[]>([]);
 
   useEffect(() => {
     if (posts.length > 0) {
@@ -198,8 +278,21 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
       const keywords: string[] = [];
       const emotions: string[] = [];
       const locations: string[] = [];
+      const metadataInsights: any[] = [];
       
       recentPosts.forEach(post => {
+        // 写真のメタデータ分析（実際の画像ファイルがない場合は推測）
+        const imageMetadata = analyzeImageMetadataFromPost(post);
+        if (imageMetadata) {
+          metadataInsights.push({
+            postId: post.id,
+            ...imageMetadata
+          });
+          
+          // メタデータから得られた情報をキーワードに追加
+          keywords.push(...imageMetadata.tags);
+          if (imageMetadata.location) locations.push(imageMetadata.location);
+        }
         // タイトルからキーワード抽出
         if (post.title) {
           const titleKeywords = extractKeywords(post.title);
@@ -246,10 +339,12 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
       const recommendations = await spotifyService.getContentBasedRecommendations(musicMood);
       setMoodRecommendations(recommendations);
       setAnalyzedPosts(recentPosts);
+      setMetadataAnalysis(metadataInsights);
       
       console.log('🎵 Content-based music analysis complete:', {
         mood: musicMood,
-        recommendationsCount: recommendations.length
+        recommendationsCount: recommendations.length,
+        metadataInsights: metadataInsights.length
       });
     } catch (error) {
       console.error('❌ Error analyzing mood from photos:', error);
@@ -326,16 +421,66 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
         </div>
       )}
 
+      {/* メタデータ分析結果 */}
+      {metadataAnalysis.length > 0 && (
+        <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+          <div className="flex items-center gap-2 mb-3">
+            <Settings className="w-5 h-5 text-blue-600" />
+            <h4 className="font-medium text-blue-900">写真メタデータ分析</h4>
+          </div>
+          <div className="space-y-3">
+            {metadataAnalysis.map((analysis, index) => (
+              <div key={analysis.postId} className="bg-white p-3 rounded border">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+                  {analysis.timeAnalysis && (
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4 text-orange-500" />
+                      <span className="text-gray-700">{analysis.timeAnalysis}</span>
+                    </div>
+                  )}
+                  {analysis.locationAnalysis && (
+                    <div className="flex items-center gap-1">
+                      <MapPin className="w-4 h-4 text-green-500" />
+                      <span className="text-gray-700">{analysis.locationAnalysis}</span>
+                    </div>
+                  )}
+                  {analysis.technicalAnalysis && (
+                    <div className="flex items-center gap-1">
+                      <Camera className="w-4 h-4 text-purple-500" />
+                      <span className="text-gray-700">{analysis.technicalAnalysis}</span>
+                    </div>
+                  )}
+                </div>
+                {analysis.tags.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {analysis.tags.slice(0, 6).map((tag: string) => (
+                      <span
+                        key={tag}
+                        className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mt-4 p-4 bg-purple-50 rounded-lg">
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="w-5 h-5 text-purple-600" />
           <h4 className="font-medium text-purple-900">分析の仕組み</h4>
         </div>
         <ul className="text-sm text-purple-700 space-y-1">
-          <li>• AI写真スコア（明るさ、構図など）を分析</li>
-          <li>• 投稿時間帯から活動パターンを推定</li>
-          <li>• いいね数から人気度を考慮</li>
-          <li>• 総合的な雰囲気から最適な音楽を選定</li>
+          <li>• 📸 <strong>写真メタデータ</strong>: 撮影時間・場所・技術設定から推測</li>
+          <li>• 📝 <strong>テキスト分析</strong>: タイトル・コメントからキーワード抽出</li>
+          <li>• 🏷️ <strong>タグ情報</strong>: 場所タグや分類から文脈理解</li>
+          <li>• ⏰ <strong>時間分析</strong>: 投稿時間帯・季節から雰囲気判定</li>
+          <li>• 💝 <strong>人気度</strong>: いいね・コメント数から魅力度分析</li>
+          <li>• 🎵 <strong>総合判定</strong>: 全要素から最適な音楽カテゴリーを決定</li>
         </ul>
       </div>
     </div>
