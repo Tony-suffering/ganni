@@ -178,6 +178,133 @@ const determineMusicMoodFromContent = (analysis: ContentAnalysis): MusicMood => 
   };
 };
 
+// 🎯 AI分析結果から具体的な内容を抽出
+const extractFromAIAnalysis = (post: Post) => {
+  const analysis = {
+    detectedElements: [],
+    locations: [],
+    emotions: [],
+    specificContent: [],
+    musicalContext: '',
+    reasoning: ''
+  };
+  
+  // AI画像分析結果を解析
+  if (post.imageAIDescription) {
+    const aiDesc = post.imageAIDescription.toLowerCase();
+    
+    // 🛩️ 航空関連の具体的検出
+    if (aiDesc.includes('boeing') || aiDesc.includes('ボーイング')) {
+      analysis.detectedElements.push('boeing', 'commercial_aviation');
+      analysis.specificContent.push('Boeing aircraft');
+      analysis.musicalContext = 'powerful_engines';
+    }
+    if (aiDesc.includes('airbus') || aiDesc.includes('エアバス')) {
+      analysis.detectedElements.push('airbus', 'modern_aviation');
+      analysis.specificContent.push('Airbus aircraft');
+      analysis.musicalContext = 'sophisticated_flight';
+    }
+    if (aiDesc.includes('ana') || aiDesc.includes('全日空')) {
+      analysis.detectedElements.push('ana', 'japanese_airline');
+      analysis.locations.push('Japan');
+      analysis.musicalContext = 'japanese_hospitality';
+    }
+    if (aiDesc.includes('jal') || aiDesc.includes('日本航空')) {
+      analysis.detectedElements.push('jal', 'japanese_airline');
+      analysis.locations.push('Japan');
+      analysis.musicalContext = 'traditional_japan';
+    }
+    
+    // 🌅 時間・光の具体的分析
+    if (aiDesc.includes('sunset') || aiDesc.includes('夕日') || aiDesc.includes('golden hour')) {
+      analysis.detectedElements.push('golden_hour', 'warm_light');
+      analysis.emotions.push('romantic', 'peaceful');
+      analysis.musicalContext = 'golden_moment';
+    }
+    if (aiDesc.includes('sunrise') || aiDesc.includes('朝日') || aiDesc.includes('dawn')) {
+      analysis.detectedElements.push('sunrise', 'new_beginning');
+      analysis.emotions.push('hopeful', 'fresh');
+      analysis.musicalContext = 'new_day';
+    }
+    if (aiDesc.includes('night') || aiDesc.includes('nighttime') || aiDesc.includes('夜景')) {
+      analysis.detectedElements.push('night_scene', 'city_lights');
+      analysis.emotions.push('mysterious', 'urban');
+      analysis.musicalContext = 'night_atmosphere';
+    }
+    
+    // 🏙️ 具体的な都市・空港
+    if (aiDesc.includes('narita') || aiDesc.includes('成田')) {
+      analysis.locations.push('Narita Airport');
+      analysis.musicalContext = 'international_gateway';
+    }
+    if (aiDesc.includes('haneda') || aiDesc.includes('羽田')) {
+      analysis.locations.push('Haneda Airport');
+      analysis.musicalContext = 'tokyo_skyline';
+    }
+    if (aiDesc.includes('lax') || aiDesc.includes('los angeles')) {
+      analysis.locations.push('Los Angeles');
+      analysis.musicalContext = 'california_dreams';
+    }
+    
+    // 🎨 視覚的要素の検出
+    if (aiDesc.includes('clouds') || aiDesc.includes('雲')) {
+      analysis.detectedElements.push('clouds', 'sky_view');
+      analysis.emotions.push('dreamy', 'elevated');
+    }
+    if (aiDesc.includes('runway') || aiDesc.includes('滑走路')) {
+      analysis.detectedElements.push('runway', 'departure_arrival');
+      analysis.emotions.push('anticipation', 'journey');
+    }
+    if (aiDesc.includes('terminal') || aiDesc.includes('ターミナル')) {
+      analysis.detectedElements.push('terminal', 'modern_architecture');
+      analysis.emotions.push('busy', 'purposeful');
+    }
+  }
+  
+  // AI コメントからも抽出
+  if (post.aiComments && post.aiComments.length > 0) {
+    post.aiComments.forEach(comment => {
+      const commentText = comment.content.toLowerCase();
+      
+      // 感情的な表現を検出
+      if (commentText.includes('beautiful') || commentText.includes('stunning') || commentText.includes('美しい')) {
+        analysis.emotions.push('beauty', 'appreciation');
+      }
+      if (commentText.includes('powerful') || commentText.includes('majestic') || commentText.includes('力強い')) {
+        analysis.emotions.push('powerful', 'impressive');
+      }
+      if (commentText.includes('peaceful') || commentText.includes('calm') || commentText.includes('穏やか')) {
+        analysis.emotions.push('peaceful', 'serene');
+      }
+    });
+  }
+  
+  // PhotoScore の具体的分析
+  if (post.photoScore?.image_analysis) {
+    const imgAnalysis = post.photoScore.image_analysis;
+    
+    if (imgAnalysis.specificContent) {
+      analysis.specificContent.push(imgAnalysis.specificContent);
+    }
+    if (imgAnalysis.mainSubject) {
+      analysis.detectedElements.push(imgAnalysis.mainSubject);
+    }
+    if (imgAnalysis.moodAtmosphere) {
+      analysis.emotions.push(imgAnalysis.moodAtmosphere);
+    }
+  }
+  
+  // 分析理由を生成
+  if (analysis.specificContent.length > 0) {
+    analysis.reasoning = `写真から「${analysis.specificContent.join('、')}」を検出し、`;
+  }
+  if (analysis.emotions.length > 0) {
+    analysis.reasoning += `「${analysis.emotions.slice(0, 2).join('・')}」な雰囲気を感じ取りました。`;
+  }
+  
+  return analysis.detectedElements.length > 0 ? analysis : null;
+};
+
 // 投稿から写真メタデータを推測分析
 const analyzeImageMetadataFromPost = (post: Post) => {
   const insights: any = {
@@ -281,25 +408,28 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
       const metadataInsights: any[] = [];
       
       recentPosts.forEach(post => {
-        // 写真のメタデータ分析（実際の画像ファイルがない場合は推測）
-        const imageMetadata = analyzeImageMetadataFromPost(post);
-        if (imageMetadata) {
+        // 🎯 AIが実際に分析した内容を優先使用
+        const aiAnalysis = extractFromAIAnalysis(post);
+        if (aiAnalysis) {
           metadataInsights.push({
             postId: post.id,
-            ...imageMetadata
+            title: post.title,
+            aiDescription: post.imageAIDescription,
+            ...aiAnalysis
           });
           
-          // メタデータから得られた情報をキーワードに追加
-          keywords.push(...imageMetadata.tags);
-          if (imageMetadata.location) locations.push(imageMetadata.location);
+          // AI分析から得られた具体的情報を活用
+          keywords.push(...aiAnalysis.detectedElements);
+          locations.push(...aiAnalysis.locations);
+          emotions.push(...aiAnalysis.emotions);
         }
-        // タイトルからキーワード抽出
+        
+        // タイトル・コメントからキーワード抽出（補完）
         if (post.title) {
           const titleKeywords = extractKeywords(post.title);
           keywords.push(...titleKeywords);
         }
         
-        // ユーザーコメントから感情抽出
         if (post.content || post.userComment) {
           const text = post.content || post.userComment || '';
           const textEmotions = extractEmotions(text);
@@ -317,12 +447,6 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
             }
           });
         }
-        
-        // 投稿時間の分析
-        const postDate = new Date(post.created_at);
-        const season = getSeason(postDate);
-        const timeOfDay = getTimeOfDay(postDate);
-        keywords.push(season, timeOfDay);
       });
       
       console.log('🎵 Extracted analysis:', { keywords, emotions, locations });
@@ -421,46 +545,73 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
         </div>
       )}
 
-      {/* メタデータ分析結果 */}
+      {/* AI分析結果の詳細表示 */}
       {metadataAnalysis.length > 0 && (
-        <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+        <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border">
           <div className="flex items-center gap-2 mb-3">
-            <Settings className="w-5 h-5 text-blue-600" />
-            <h4 className="font-medium text-blue-900">写真メタデータ分析</h4>
+            <Sparkles className="w-5 h-5 text-purple-600" />
+            <h4 className="font-medium text-purple-900">🎯 AI写真分析による具体的検出</h4>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-4">
             {metadataAnalysis.map((analysis, index) => (
-              <div key={analysis.postId} className="bg-white p-3 rounded border">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                  {analysis.timeAnalysis && (
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-4 h-4 text-orange-500" />
-                      <span className="text-gray-700">{analysis.timeAnalysis}</span>
-                    </div>
-                  )}
-                  {analysis.locationAnalysis && (
-                    <div className="flex items-center gap-1">
-                      <MapPin className="w-4 h-4 text-green-500" />
-                      <span className="text-gray-700">{analysis.locationAnalysis}</span>
-                    </div>
-                  )}
-                  {analysis.technicalAnalysis && (
-                    <div className="flex items-center gap-1">
-                      <Camera className="w-4 h-4 text-purple-500" />
-                      <span className="text-gray-700">{analysis.technicalAnalysis}</span>
-                    </div>
-                  )}
+              <div key={analysis.postId} className="bg-white p-4 rounded-lg border border-purple-200">
+                <div className="flex items-start gap-3 mb-3">
+                  <img
+                    src={analyzedPosts.find(p => p.id === analysis.postId)?.imageUrl}
+                    alt={analysis.title}
+                    className="w-16 h-16 object-cover rounded-lg"
+                  />
+                  <div className="flex-1">
+                    <h5 className="font-medium text-gray-900 mb-1">{analysis.title}</h5>
+                    {analysis.aiDescription && (
+                      <p className="text-sm text-gray-600 italic">
+                        「{analysis.aiDescription.substring(0, 80)}...」
+                      </p>
+                    )}
+                  </div>
                 </div>
-                {analysis.tags.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {analysis.tags.slice(0, 6).map((tag: string) => (
-                      <span
-                        key={tag}
-                        className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                
+                {analysis.specificContent && analysis.specificContent.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-sm font-medium text-green-700 mb-1">
+                      🔍 検出された具体的内容:
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {analysis.specificContent.map((item: string, idx: number) => (
+                        <span
+                          key={idx}
+                          className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded font-medium"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {analysis.reasoning && (
+                  <div className="mb-3 p-2 bg-yellow-50 rounded border-l-4 border-yellow-400">
+                    <p className="text-sm text-yellow-800">
+                      <strong>推薦理由:</strong> {analysis.reasoning}
+                    </p>
+                  </div>
+                )}
+                
+                {analysis.detectedElements && analysis.detectedElements.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium text-blue-700 mb-1">
+                      📊 抽出された音楽的要素:
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {analysis.detectedElements.slice(0, 8).map((element: string, idx: number) => (
+                        <span
+                          key={idx}
+                          className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded"
+                        >
+                          {element}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

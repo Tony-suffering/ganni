@@ -97,7 +97,7 @@ export const PostGallery: React.FC<PostGalleryProps> = ({ posts, viewMode }) => 
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              placeholder="投稿を検索..."
+              placeholder="検索..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
@@ -147,7 +147,8 @@ export const PostGallery: React.FC<PostGalleryProps> = ({ posts, viewMode }) => 
 
       {/* 結果表示 */}
       <div className="mb-4 text-sm text-gray-600">
-        {filteredAndSortedPosts.length} / {posts.length} 件の投稿
+        <span className="hidden md:inline">{filteredAndSortedPosts.length} / {posts.length} 件の投稿</span>
+        <span className="md:hidden">{filteredAndSortedPosts.length}/{posts.length}</span>
       </div>
 
       {/* 投稿表示 */}

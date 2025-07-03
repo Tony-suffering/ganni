@@ -342,6 +342,175 @@ export class SpotifyService {
     
     console.log('🎵 Generating content-based recommendations for:', musicMood.category);
     
+    // 🎯 具体的な検出内容に基づく推薦
+    if (musicMood.tags.includes('boeing') || musicMood.tags.includes('commercial_aviation')) {
+      recommendations.push({
+        mood: 'aviation_power',
+        reasoning: `Boeing機体を検出。力強いエンジン音をイメージした、パワフルで壮大な楽曲です`,
+        tracks: [
+          {
+            id: 'boeing1',
+            name: 'Learning to Fly',
+            artists: ['Tom Petty and the Heartbreakers'],
+            album: 'Into the Great Wide Open',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/6lPb7s3BBYlP5fLOL3HdUl' },
+            energy: 0.7,
+            valence: 0.8,
+            tempo: 122
+          },
+          {
+            id: 'boeing2',
+            name: 'Fly Like an Eagle',
+            artists: ['Steve Miller Band'],
+            album: 'Fly Like an Eagle',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/3TO7bbrUKrOSPGRTB5MeCz' },
+            energy: 0.6,
+            valence: 0.7,
+            tempo: 104
+          },
+          {
+            id: 'boeing3',
+            name: 'Come Fly With Me',
+            artists: ['Frank Sinatra'],
+            album: 'Come Fly With Me',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/7BU5rlP5RjsLw4P4lXE5vA' },
+            energy: 0.8,
+            valence: 0.9,
+            tempo: 145
+          }
+        ]
+      });
+    }
+    
+    if (musicMood.tags.includes('ana') || musicMood.tags.includes('japanese_airline')) {
+      recommendations.push({
+        mood: 'japanese_hospitality',
+        reasoning: `ANA機体を検出。日本のおもてなしの心を表現した、優雅で上品な楽曲です`,
+        tracks: [
+          {
+            id: 'ana1',
+            name: 'Sukiyaki (上を向いて歩こう)',
+            artists: ['Kyu Sakamoto'],
+            album: 'Sukiyaki and Other Japanese Hits',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/0dEt1XnlLXzf8rrQpE1pCv' },
+            energy: 0.4,
+            valence: 0.7,
+            tempo: 120
+          },
+          {
+            id: 'ana2',
+            name: 'Fly Me to the Moon',
+            artists: ['Frank Sinatra'],
+            album: 'It Might as Well Be Swing',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/5b7_rVA0mGNWD3Vna6jYZy' },
+            energy: 0.5,
+            valence: 0.8,
+            tempo: 142
+          },
+          {
+            id: 'ana3',
+            name: '津軽海峡冬景色',
+            artists: ['石川さゆり'],
+            album: 'ベスト・コレクション',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/example_tsugaru' },
+            energy: 0.3,
+            valence: 0.6,
+            tempo: 88
+          }
+        ]
+      });
+    }
+    
+    if (musicMood.tags.includes('golden_hour') || musicMood.tags.includes('sunset')) {
+      recommendations.push({
+        mood: 'golden_moment',
+        reasoning: `夕日・ゴールデンアワーを検出。黄金に輝く空の美しさを音楽で表現しました`,
+        tracks: [
+          {
+            id: 'golden1',
+            name: 'Golden',
+            artists: ['Harry Styles'],
+            album: 'Fine Line',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/6Gg1gjgKi2AK4e0qzsJi9W' },
+            energy: 0.6,
+            valence: 0.8,
+            tempo: 139
+          },
+          {
+            id: 'golden2',
+            name: 'California Gurls',
+            artists: ['Katy Perry', 'Snoop Dogg'],
+            album: 'Teenage Dream',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/6jG2YzhxptolDzLHTGLt7S' },
+            energy: 0.9,
+            valence: 0.9,
+            tempo: 126
+          },
+          {
+            id: 'golden3',
+            name: 'Here Comes the Sun',
+            artists: ['The Beatles'],
+            album: 'Abbey Road',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/6dGnYIeXmHdcikdzNNDMm2' },
+            energy: 0.6,
+            valence: 0.9,
+            tempo: 129
+          }
+        ]
+      });
+    }
+    
+    if (musicMood.tags.includes('narita') || musicMood.tags.includes('international_gateway')) {
+      recommendations.push({
+        mood: 'international_journey',
+        reasoning: `成田空港を検出。国際的な旅の始まりを表現した、冒険心あふれる楽曲です`,
+        tracks: [
+          {
+            id: 'narita1',
+            name: 'Jet Airliner',
+            artists: ['Steve Miller Band'],
+            album: 'Book of Dreams',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/4L4jVs5P9wX1TJPrGQnqYf' },
+            energy: 0.8,
+            valence: 0.7,
+            tempo: 110
+          },
+          {
+            id: 'narita2',
+            name: 'Around the World',
+            artists: ['Daft Punk'],
+            album: 'Homework',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/1pKYYY0dkg23sQQXi0Q5zN' },
+            energy: 0.8,
+            valence: 0.6,
+            tempo: 121
+          },
+          {
+            id: 'narita3',
+            name: 'Wanderlust',
+            artists: ['Björk'],
+            album: 'Volta',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/5ZmpPhrGfLB4Hq6nOy9Mjf' },
+            energy: 0.7,
+            valence: 0.7,
+            tempo: 140
+          }
+        ]
+      });
+    }
+
     switch (musicMood.category) {
       case 'departure':
         recommendations.push({

@@ -129,10 +129,11 @@ export const PersonalDashboard: React.FC = () => {
         {/* タブナビゲーション */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
           <div className="border-b border-gray-200">
-            <nav className="flex space-x-8 px-6">
+            <nav className="flex space-x-2 md:space-x-8 px-2 md:px-6 overflow-x-auto">
               <TabButton
                 icon={Grid3X3}
                 label="投稿ギャラリー"
+                mobileLabel="ギャラリー"
                 count={posts.length}
                 isActive={activeTab === 'gallery'}
                 onClick={() => setActiveTab('gallery')}
@@ -140,12 +141,14 @@ export const PersonalDashboard: React.FC = () => {
               <TabButton
                 icon={BarChart3}
                 label="統計情報"
+                mobileLabel="統計"
                 isActive={activeTab === 'stats'}
                 onClick={() => setActiveTab('stats')}
               />
               <TabButton
                 icon={Trophy}
                 label="ゲーミフィケーション"
+                mobileLabel="ゲーム"
                 count={undefined}
                 isActive={activeTab === 'gamification'}
                 onClick={() => setActiveTab('gamification')}
@@ -153,18 +156,21 @@ export const PersonalDashboard: React.FC = () => {
               <TabButton
                 icon={Sparkles}
                 label="AI提案"
+                mobileLabel="AI"
                 isActive={activeTab === 'suggestions'}
                 onClick={() => setActiveTab('suggestions')}
               />
               <TabButton
                 icon={FolderOpen}
                 label="コレクション"
+                mobileLabel="コレクション"
                 isActive={activeTab === 'collection'}
                 onClick={() => setActiveTab('collection')}
               />
               <TabButton
                 icon={Settings}
                 label="プロフィール設定"
+                mobileLabel="設定"
                 isActive={activeTab === 'profile'}
                 onClick={() => setActiveTab('profile')}
               />
@@ -189,8 +195,14 @@ export const PersonalDashboard: React.FC = () => {
                   transition={{ duration: 0.3 }}
                 >
                   <div className="flex justify-between items-center mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900">
+                    <h3 className="text-lg font-semibold text-gray-900 hidden md:block">
                       あなたの投稿ギャラリー
+                    </h3>
+                    <h3 className="text-base font-semibold text-gray-900 md:hidden flex items-center">
+                      <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd"/>
+                      </svg>
+                      ギャラリー
                     </h3>
                     <div className="flex items-center space-x-2">
                       <button
@@ -360,15 +372,18 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 <div className="flex items-center space-x-6 mt-2 text-gray-200">
                   <div className="flex items-center space-x-2">
                     <Camera className="w-4 h-4" />
-                    <span>総投稿数: {postsCount}</span>
+                    <span className="hidden md:inline">総投稿数: {postsCount}</span>
+                    <span className="md:hidden">{postsCount}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Calendar className="w-4 h-4" />
-                    <span>活動期間: {getActivityPeriod()}</span>
+                    <span className="hidden md:inline">活動期間: {getActivityPeriod()}</span>
+                    <span className="md:hidden">{getActivityPeriod()}</span>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Award className="w-4 h-4" />
-                    <span>レベル: {getUserLevel()}</span>
+                    <span className="hidden md:inline">レベル: {getUserLevel()}</span>
+                    <span className="md:hidden text-xs">{getUserLevel().split('写真')[1] || getUserLevel()}</span>
                   </div>
                 </div>
               )}
@@ -392,6 +407,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 interface TabButtonProps {
   icon: React.ElementType;
   label: string;
+  mobileLabel?: string;
   count?: number;
   isActive: boolean;
   onClick: () => void;
@@ -400,22 +416,26 @@ interface TabButtonProps {
 const TabButton: React.FC<TabButtonProps> = ({ 
   icon: Icon, 
   label, 
+  mobileLabel,
   count, 
   isActive, 
   onClick 
 }) => (
   <button
     onClick={onClick}
-    className={`flex items-center space-x-2 py-4 border-b-2 transition-colors ${
+    className={`flex items-center space-x-1 md:space-x-2 py-4 px-2 md:px-0 border-b-2 transition-colors ${
       isActive
         ? 'border-gray-800 text-gray-800'
         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
     }`}
   >
-    <Icon className="w-5 h-5" />
-    <span className="font-medium">{label}</span>
+    <Icon className="w-4 h-4 md:w-5 md:h-5" />
+    <span className="font-medium text-xs md:text-sm">
+      <span className="hidden md:inline">{label}</span>
+      <span className="md:hidden">{mobileLabel || label}</span>
+    </span>
     {count !== undefined && (
-      <span className={`px-2 py-1 text-xs rounded-full ${
+      <span className={`px-1 md:px-2 py-1 text-xs rounded-full ${
         isActive 
           ? 'bg-gray-100 text-gray-800' 
           : 'bg-gray-100 text-gray-600'
