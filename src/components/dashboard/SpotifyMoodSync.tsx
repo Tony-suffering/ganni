@@ -22,19 +22,21 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
   }, [posts]);
 
   const analyzeMoodFromPhotos = async () => {
-    // 最近の投稿から感情を分析
-    const recentPosts = posts.slice(0, 5);
-    
-    // 写真の雰囲気から感情を推定
-    let totalEnergy = 0;
-    let totalPositivity = 0;
-    let analyzedCount = 0;
-    
-    recentPosts.forEach(post => {
+    try {
+      // 最近の投稿から感情を分析
+      const recentPosts = posts.slice(0, 5);
+      console.log('🎵 Analyzing posts for music sync:', recentPosts.length);
+      
+      // 写真の雰囲気から感情を推定
+      let totalEnergy = 0;
+      let totalPositivity = 0;
+      let analyzedCount = 0;
+      
+      recentPosts.forEach(post => {
       // photoScoreがある場合は使用
-      if (post.photoScore) {
-        totalEnergy += post.photoScore.lighting.quality * 0.1;
-        totalPositivity += post.photoScore.overall * 0.1;
+      if (post.photoScore && post.photoScore.lighting && post.photoScore.overall !== undefined) {
+        totalEnergy += (post.photoScore.lighting.quality || 0.5) * 0.1;
+        totalPositivity += (post.photoScore.overall || 0.5) * 0.1;
         analyzedCount++;
       } else {
         // photoScoreがない場合は、他の要素から推定
@@ -79,6 +81,21 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
     const recommendations = await spotifyService.getMoodBasedRecommendations(emotions);
     setMoodRecommendations(recommendations);
     setAnalyzedPosts(recentPosts);
+    
+    console.log('🎵 Music mood analysis complete:', {
+      photoMood,
+      avgEnergy,
+      avgPositivity,
+      recommendationsCount: recommendations.length
+    });
+    } catch (error) {
+      console.error('❌ Error analyzing mood from photos:', error);
+      // エラー時はデフォルトの推薦を表示
+      setPhotoMood('バランス型');
+      const defaultEmotions = { joy: 0.5, peace: 0.5, excitement: 0.5, energy: 0.5 };
+      const recommendations = await spotifyService.getMoodBasedRecommendations(defaultEmotions);
+      setMoodRecommendations(recommendations);
+    }
   };
 
   return (
