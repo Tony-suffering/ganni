@@ -40,6 +40,7 @@ import { Bookmarks } from './pages/Bookmarks';
 import { PersonalDashboard } from './pages/PersonalDashboard';
 import { InspirationLab } from './pages/InspirationLab';
 import { InspirationExplore } from './pages/InspirationExplore';
+import { SpotifyCallback } from './pages/SpotifyCallback';
 
 // Data and Types
 import { Post } from './types';
@@ -394,6 +395,7 @@ function AppContent() {
           <Route path="/dashboard" element={<ProtectedRoute><PersonalDashboard /></ProtectedRoute>} />
           <Route path="/inspiration/:postId" element={<ProtectedRoute><InspirationLab /></ProtectedRoute>} />
           <Route path="/inspiration/explore" element={<ProtectedRoute><InspirationExplore /></ProtectedRoute>} />
+          <Route path="/auth/spotify" element={<ProtectedRoute><SpotifyCallback /></ProtectedRoute>} />
         </Routes>
       </main>
 

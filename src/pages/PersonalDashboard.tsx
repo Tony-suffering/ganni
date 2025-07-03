@@ -16,7 +16,8 @@ import {
   Trophy,
   BookmarkedIcon,
   FolderOpen,
-  Settings
+  Settings,
+  Music
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { Post } from '../types';
@@ -27,13 +28,14 @@ import { PersonalCuratorDisplay } from '../components/curator/PersonalCuratorDis
 import { GamificationTab } from '../components/dashboard/GamificationTab';
 import { CollectionTab } from '../components/dashboard/CollectionTab';
 import { ProfileEditTab } from '../components/dashboard/ProfileEditTab';
+import { SpotifyIntegration } from '../components/dashboard/SpotifyIntegration';
 
 export const PersonalDashboard: React.FC = () => {
   const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'gallery' | 'stats' | 'gamification' | 'suggestions' | 'collection' | 'profile'>('gallery');
+  const [activeTab, setActiveTab] = useState<'gallery' | 'stats' | 'gamification' | 'suggestions' | 'collection' | 'profile' | 'spotify'>('gallery');
   const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid');
 
   useEffect(() => {
@@ -165,6 +167,12 @@ export const PersonalDashboard: React.FC = () => {
                 isActive={activeTab === 'profile'}
                 onClick={() => setActiveTab('profile')}
               />
+              <TabButton
+                icon={Music}
+                label="Spotify"
+                isActive={activeTab === 'spotify'}
+                onClick={() => setActiveTab('spotify')}
+              />
             </nav>
           </div>
 
@@ -272,6 +280,18 @@ export const PersonalDashboard: React.FC = () => {
                   transition={{ duration: 0.3 }}
                 >
                   <ProfileEditTab userId={user.id} user={user} />
+                </motion.div>
+              )}
+
+              {activeTab === 'spotify' && (
+                <motion.div
+                  key="spotify"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <SpotifyIntegration />
                 </motion.div>
               )}
             </AnimatePresence>

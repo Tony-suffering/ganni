@@ -37,9 +37,9 @@ export class SpotifyService {
   constructor() {
     // 環境変数から設定を読み込み（本番では適切に設定）
     this.config = {
-      clientId: process.env.VITE_SPOTIFY_CLIENT_ID || '',
-      clientSecret: process.env.VITE_SPOTIFY_CLIENT_SECRET || '',
-      redirectUri: process.env.VITE_SPOTIFY_REDIRECT_URI || 'http://localhost:5174/auth/spotify'
+      clientId: import.meta.env.VITE_SPOTIFY_CLIENT_ID || '',
+      clientSecret: import.meta.env.VITE_SPOTIFY_CLIENT_SECRET || '',
+      redirectUri: import.meta.env.VITE_SPOTIFY_REDIRECT_URI || 'http://localhost:5174/auth/spotify'
     };
   }
 
@@ -224,6 +224,13 @@ export class SpotifyService {
       'user-top-read'
     ].join(' ');
 
+    // デバッグ用ログ
+    console.log('🎵 Spotify Auth URL Debug:', {
+      clientId: this.config.clientId,
+      redirectUri: this.config.redirectUri,
+      currentUrl: window.location.origin
+    });
+
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: this.config.clientId,
@@ -232,7 +239,10 @@ export class SpotifyService {
       state: this.generateState()
     });
 
-    return `https://accounts.spotify.com/authorize?${params.toString()}`;
+    const authUrl = `https://accounts.spotify.com/authorize?${params.toString()}`;
+    console.log('🎵 Full Auth URL:', authUrl);
+
+    return authUrl;
   }
 
   /**
