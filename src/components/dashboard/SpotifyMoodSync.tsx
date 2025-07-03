@@ -10,6 +10,173 @@ interface SpotifyMoodSyncProps {
   userToken?: string;
 }
 
+interface ContentAnalysis {
+  keywords: string[];
+  emotions: string[];
+  locations: string[];
+}
+
+interface MusicMood {
+  category: string;
+  description: string;
+  energy: number;
+  valence: number;
+  tags: string[];
+}
+
+// キーワード抽出関数
+const extractKeywords = (text: string): string[] => {
+  const keywords: string[] = [];
+  const lowerText = text.toLowerCase();
+  
+  // 空港関連
+  if (lowerText.includes('空港') || lowerText.includes('airport')) keywords.push('airport');
+  if (lowerText.includes('離陸') || lowerText.includes('takeoff')) keywords.push('takeoff', 'departure');
+  if (lowerText.includes('着陸') || lowerText.includes('landing')) keywords.push('landing', 'arrival');
+  if (lowerText.includes('飛行機') || lowerText.includes('plane')) keywords.push('plane');
+  
+  // 時間・雰囲気
+  if (lowerText.includes('朝') || lowerText.includes('morning')) keywords.push('morning');
+  if (lowerText.includes('夜') || lowerText.includes('night')) keywords.push('night');
+  if (lowerText.includes('夕日') || lowerText.includes('sunset')) keywords.push('sunset');
+  if (lowerText.includes('綺麗') || lowerText.includes('美しい') || lowerText.includes('beautiful')) keywords.push('beautiful');
+  
+  // 感情
+  if (lowerText.includes('楽しい') || lowerText.includes('fun')) keywords.push('fun');
+  if (lowerText.includes('感動') || lowerText.includes('amazing')) keywords.push('emotional');
+  if (lowerText.includes('旅行') || lowerText.includes('travel')) keywords.push('travel');
+  if (lowerText.includes('思い出') || lowerText.includes('memory')) keywords.push('nostalgic');
+  
+  return keywords;
+};
+
+// 感情抽出関数
+const extractEmotions = (text: string): string[] => {
+  const emotions: string[] = [];
+  const lowerText = text.toLowerCase();
+  
+  // ポジティブ感情
+  if (lowerText.includes('嬉しい') || lowerText.includes('happy') || lowerText.includes('楽しい')) emotions.push('happy');
+  if (lowerText.includes('感動') || lowerText.includes('感激') || lowerText.includes('amazing')) emotions.push('amazed');
+  if (lowerText.includes('リラックス') || lowerText.includes('落ち着く') || lowerText.includes('peaceful')) emotions.push('peaceful');
+  if (lowerText.includes('ワクワク') || lowerText.includes('興奮') || lowerText.includes('excited')) emotions.push('excited');
+  
+  // ネガティブ感情
+  if (lowerText.includes('疲れた') || lowerText.includes('tired')) emotions.push('tired');
+  if (lowerText.includes('寂しい') || lowerText.includes('lonely')) emotions.push('lonely');
+  
+  // ニュートラル
+  if (lowerText.includes('思い出') || lowerText.includes('懐かしい') || lowerText.includes('nostalgic')) emotions.push('nostalgic');
+  
+  return emotions;
+};
+
+// 季節判定
+const getSeason = (date: Date): string => {
+  const month = date.getMonth() + 1;
+  if (month >= 3 && month <= 5) return 'spring';
+  if (month >= 6 && month <= 8) return 'summer';
+  if (month >= 9 && month <= 11) return 'autumn';
+  return 'winter';
+};
+
+// 時間帯判定
+const getTimeOfDay = (date: Date): string => {
+  const hour = date.getHours();
+  if (hour >= 5 && hour < 11) return 'morning';
+  if (hour >= 11 && hour < 17) return 'afternoon';
+  if (hour >= 17 && hour < 21) return 'evening';
+  return 'night';
+};
+
+// コンテンツ分析から音楽ムード決定
+const determineMusicMoodFromContent = (analysis: ContentAnalysis): MusicMood => {
+  const { keywords, emotions, locations } = analysis;
+  
+  // 空港・旅行系
+  if (keywords.includes('airport') || keywords.includes('travel')) {
+    if (keywords.includes('departure') || keywords.includes('takeoff')) {
+      return {
+        category: 'departure',
+        description: '出発・旅立ちの高揚感',
+        energy: 0.8,
+        valence: 0.7,
+        tags: ['travel', 'departure', 'uplifting']
+      };
+    }
+    if (keywords.includes('arrival') || keywords.includes('landing')) {
+      return {
+        category: 'arrival',
+        description: '到着・帰郷の安堵感',
+        energy: 0.5,
+        valence: 0.8,
+        tags: ['arrival', 'peaceful', 'homecoming']
+      };
+    }
+  }
+  
+  // 感情ベース
+  if (emotions.includes('excited') || emotions.includes('happy')) {
+    return {
+      category: 'upbeat',
+      description: '明るく元気な気分',
+      energy: 0.9,
+      valence: 0.9,
+      tags: ['happy', 'energetic', 'positive']
+    };
+  }
+  
+  if (emotions.includes('peaceful') || keywords.includes('sunset')) {
+    return {
+      category: 'chill',
+      description: '穏やかでリラックスした雰囲気',
+      energy: 0.3,
+      valence: 0.7,
+      tags: ['chill', 'sunset', 'relaxing']
+    };
+  }
+  
+  if (emotions.includes('nostalgic') || keywords.includes('nostalgic')) {
+    return {
+      category: 'nostalgic',
+      description: '懐かしさと思い出に浸る',
+      energy: 0.4,
+      valence: 0.6,
+      tags: ['nostalgic', 'memories', 'reflective']
+    };
+  }
+  
+  // 時間帯ベース
+  if (keywords.includes('morning')) {
+    return {
+      category: 'morning',
+      description: '朝の清々しい気分',
+      energy: 0.7,
+      valence: 0.8,
+      tags: ['morning', 'fresh', 'optimistic']
+    };
+  }
+  
+  if (keywords.includes('night')) {
+    return {
+      category: 'night',
+      description: '夜の静けさと深み',
+      energy: 0.3,
+      valence: 0.5,
+      tags: ['night', 'mysterious', 'contemplative']
+    };
+  }
+  
+  // デフォルト
+  return {
+    category: 'balanced',
+    description: 'バランスの取れた心地よい雰囲気',
+    energy: 0.6,
+    valence: 0.7,
+    tags: ['balanced', 'pleasant']
+  };
+};
+
 export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
   const [moodRecommendations, setMoodRecommendations] = useState<any[]>([]);
   const [photoMood, setPhotoMood] = useState<string>('');
@@ -27,95 +194,56 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
       const recentPosts = posts.slice(0, 5);
       console.log('🎵 Analyzing posts for music sync:', recentPosts.length);
       
-      // 写真の雰囲気から感情を推定
-      let totalEnergy = 0;
-      let totalPositivity = 0;
-      let analyzedCount = 0;
+      // テキスト分析によるキーワード抽出
+      const keywords: string[] = [];
+      const emotions: string[] = [];
+      const locations: string[] = [];
       
       recentPosts.forEach(post => {
-      // photoScoreがある場合は使用
-      if (post.photoScore && post.photoScore.lighting && post.photoScore.overall !== undefined) {
-        // photoScoreは0-10の範囲なので、0-1に正規化
-        const normalizedEnergy = (post.photoScore.lighting.quality || 5) / 10;
-        const normalizedPositivity = (post.photoScore.overall || 5) / 10;
+        // タイトルからキーワード抽出
+        if (post.title) {
+          const titleKeywords = extractKeywords(post.title);
+          keywords.push(...titleKeywords);
+        }
         
-        totalEnergy += normalizedEnergy;
-        totalPositivity += normalizedPositivity;
-        analyzedCount++;
+        // ユーザーコメントから感情抽出
+        if (post.content || post.userComment) {
+          const text = post.content || post.userComment || '';
+          const textEmotions = extractEmotions(text);
+          emotions.push(...textEmotions);
+          
+          const textKeywords = extractKeywords(text);
+          keywords.push(...textKeywords);
+        }
         
-        console.log(`📸 Post ${post.id} with photoScore:`, {
-          energy: normalizedEnergy,
-          positivity: normalizedPositivity
-        });
-      } else {
-        // photoScoreがない場合は、他の要素から推定
-        // いいね数やコメントから人気度を推定（より大きな影響を与える）
-        const likesScore = Math.min(post.likes_count || 0, 10) / 10; // 最大10いいねで正規化
-        const commentsScore = Math.min((post.comments?.length || 0), 5) / 5; // 最大5コメントで正規化
-        const popularity = (likesScore + commentsScore) / 2;
+        // タグから場所情報抽出
+        if (post.tags) {
+          post.tags.forEach(tag => {
+            if (tag.name) {
+              locations.push(tag.name);
+            }
+          });
+        }
         
-        // 時間帯から活発さを推定（朝昼は活発、夜は落ち着いた）
-        const postHour = new Date(post.created_at).getHours();
-        const timeEnergy = 
-          (postHour >= 6 && postHour <= 11) ? 0.8 :    // 朝は活発
-          (postHour >= 12 && postHour <= 17) ? 0.7 :   // 昼も活発
-          (postHour >= 18 && postHour <= 22) ? 0.5 :   // 夕方は中間
-          0.3;                                          // 夜は落ち着いた
-        
-        // ランダム要素を少し追加（同じ結果を避けるため）
-        const randomFactor = Math.random() * 0.2 - 0.1; // -0.1 ~ 0.1
-        
-        totalEnergy += Math.max(0, Math.min(1, timeEnergy + randomFactor));
-        totalPositivity += Math.max(0, Math.min(1, popularity + 0.4 + randomFactor)); // ベースラインを上げる
-        analyzedCount++;
-        
-        console.log(`📸 Post ${post.id} without photoScore:`, {
-          energy: timeEnergy,
-          positivity: popularity + 0.4,
-          likes: post.likes_count,
-          hour: postHour
-        });
-      }
-    });
-
-    // 分析した投稿がない場合のデフォルト値
-    const avgEnergy = analyzedCount > 0 ? totalEnergy / analyzedCount : 0.5;
-    const avgPositivity = analyzedCount > 0 ? totalPositivity / analyzedCount : 0.5;
-
-    // より細かい感情パラメータを設定
-    const emotions = {
-      joy: avgPositivity,
-      peace: 1 - avgEnergy,  // エネルギーが低いほど平和
-      excitement: avgEnergy,
-      energy: avgEnergy
-    };
-
-    // 写真の雰囲気を判定（より詳細に）
-    const moodDescription = [];
-    
-    if (avgPositivity > 0.6) moodDescription.push('明るい');
-    if (avgPositivity < 0.4) moodDescription.push('落ち着いた');
-    
-    if (avgEnergy > 0.6) moodDescription.push('活発な');
-    if (avgEnergy < 0.4) moodDescription.push('静かな');
-    
-    if (moodDescription.length === 0) {
-      moodDescription.push('バランスの取れた');
-    }
-    
-    setPhotoMood(moodDescription.join('・') + '雰囲気');
-
-    // Spotifyから推薦を取得
-    const recommendations = await spotifyService.getMoodBasedRecommendations(emotions);
-    setMoodRecommendations(recommendations);
-    setAnalyzedPosts(recentPosts);
-    
-    console.log('🎵 Music mood analysis complete:', {
-      photoMood,
-      avgEnergy,
-      avgPositivity,
-      recommendationsCount: recommendations.length
-    });
+        // 投稿時間の分析
+        const postDate = new Date(post.created_at);
+        const season = getSeason(postDate);
+        const timeOfDay = getTimeOfDay(postDate);
+        keywords.push(season, timeOfDay);
+      });
+      
+      console.log('🎵 Extracted analysis:', { keywords, emotions, locations });
+      
+      // 分析結果に基づいて音楽を推薦
+      setPhotoMood(musicMood.description);
+      const recommendations = await spotifyService.getContentBasedRecommendations(musicMood);
+      setMoodRecommendations(recommendations);
+      setAnalyzedPosts(recentPosts);
+      
+      console.log('🎵 Content-based music analysis complete:', {
+        mood: musicMood,
+        recommendationsCount: recommendations.length
+      });
     } catch (error) {
       console.error('❌ Error analyzing mood from photos:', error);
       // エラー時はデフォルトの推薦を表示

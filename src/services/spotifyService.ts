@@ -92,6 +92,13 @@ export class SpotifyService {
   }
 
   /**
+   * コンテンツ分析に基づく音楽推薦
+   */
+  async getContentBasedRecommendations(musicMood: any): Promise<MoodBasedRecommendation[]> {
+    return this.getContentBasedMockRecommendations(musicMood);
+  }
+
+  /**
    * 場所に基づく音楽推薦
    */
   async getLocationBasedMusic(location: {
@@ -324,6 +331,354 @@ export class SpotifyService {
       });
     }
 
+    return recommendations;
+  }
+
+  /**
+   * コンテンツ分析に基づくモック推薦データ
+   */
+  private getContentBasedMockRecommendations(musicMood: any): MoodBasedRecommendation[] {
+    const recommendations: MoodBasedRecommendation[] = [];
+    
+    console.log('🎵 Generating content-based recommendations for:', musicMood.category);
+    
+    switch (musicMood.category) {
+      case 'departure':
+        recommendations.push({
+          mood: 'departure',
+          reasoning: '旅立ちの瞬間に合う、希望と冒険心を感じる楽曲です',
+          tracks: [
+            {
+              id: 'dep1',
+              name: 'Come on Eileen',
+              artists: ['Dexys Midnight Runners'],
+              album: 'Searching for the Young Soul Rebels',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/3w0BoJhLbXZEhL34IY5Ks6' },
+              energy: 0.8,
+              valence: 0.8,
+              tempo: 125
+            },
+            {
+              id: 'dep2',
+              name: 'Here I Go Again',
+              artists: ['Whitesnake'],
+              album: 'Saints & Sinners',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/5R0NTEqfEfWYi0WZAoQpjO' },
+              energy: 0.7,
+              valence: 0.7,
+              tempo: 132
+            },
+            {
+              id: 'dep3',
+              name: 'I\'m Gonna Be (500 Miles)',
+              artists: ['The Proclaimers'],
+              album: 'Sunshine on Leith',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/7tFiyTwD0nx5a1eklYtX2J' },
+              energy: 0.8,
+              valence: 0.9,
+              tempo: 130
+            }
+          ]
+        });
+        break;
+        
+      case 'arrival':
+        recommendations.push({
+          mood: 'arrival',
+          reasoning: '到着の安堵感と達成感を表現する、温かく迎え入れる楽曲です',
+          tracks: [
+            {
+              id: 'arr1',
+              name: 'Coming Home',
+              artists: ['Diddy – Dirty Money', 'Skylar Grey'],
+              album: 'Last Train to Paris',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/7KXjTSCq5nL1LoYtL7XAwS' },
+              energy: 0.6,
+              valence: 0.8,
+              tempo: 89
+            },
+            {
+              id: 'arr2',
+              name: 'Home',
+              artists: ['Edward Sharpe & The Magnetic Zeros'],
+              album: 'Up from Below',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/4ceKDVNSO3oI3a6Z2Aqz9j' },
+              energy: 0.7,
+              valence: 0.9,
+              tempo: 120
+            },
+            {
+              id: 'arr3',
+              name: 'Sweet Caroline',
+              artists: ['Neil Diamond'],
+              album: 'Brother Love\'s Travelling Salvation Show',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/1mXVgsBdtIVeCLJnSnmtdV' },
+              energy: 0.6,
+              valence: 0.8,
+              tempo: 125
+            }
+          ]
+        });
+        break;
+        
+      case 'upbeat':
+        recommendations.push({
+          mood: 'upbeat',
+          reasoning: '明るく元気な気分を盛り上げる、エネルギッシュな楽曲です',
+          tracks: [
+            {
+              id: 'up1',
+              name: 'Shut Up and Dance',
+              artists: ['WALK THE MOON'],
+              album: 'Talking Is Hard',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/0LoSg5Gru0mG06s8x2bNk7' },
+              energy: 0.9,
+              valence: 0.9,
+              tempo: 128
+            },
+            {
+              id: 'up2',
+              name: 'Good as Hell',
+              artists: ['Lizzo'],
+              album: 'Cuz I Love You',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/4kzMSzW7dUyKtbJqwQHKNX' },
+              energy: 0.8,
+              valence: 0.9,
+              tempo: 96
+            },
+            {
+              id: 'up3',
+              name: 'Uptown Funk',
+              artists: ['Mark Ronson', 'Bruno Mars'],
+              album: 'Uptown Special',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/32OlwWuMpZ6b0aN2RZOeMS' },
+              energy: 0.9,
+              valence: 0.9,
+              tempo: 115
+            }
+          ]
+        });
+        break;
+        
+      case 'chill':
+        recommendations.push({
+          mood: 'chill',
+          reasoning: '穏やかでリラックスした時間を演出する、心地よい楽曲です',
+          tracks: [
+            {
+              id: 'ch1',
+              name: 'Electric Feel',
+              artists: ['MGMT'],
+              album: 'Oracular Spectacular',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/3FtYBEfBWJFaWd2yQBRHKB' },
+              energy: 0.6,
+              valence: 0.7,
+              tempo: 108
+            },
+            {
+              id: 'ch2',
+              name: 'Breathe Me',
+              artists: ['Sia'],
+              album: 'Colour the Small One',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/7hUfABNQbPdBc0lYNZiEOm' },
+              energy: 0.3,
+              valence: 0.4,
+              tempo: 140
+            },
+            {
+              id: 'ch3',
+              name: 'Mad World',
+              artists: ['Gary Jules'],
+              album: 'Trading Snakeoil for Wolftickets',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/3JOVTQ5h4FNwYSCZOUhOAC' },
+              energy: 0.2,
+              valence: 0.2,
+              tempo: 89
+            }
+          ]
+        });
+        break;
+        
+      case 'nostalgic':
+        recommendations.push({
+          mood: 'nostalgic',
+          reasoning: '懐かしさと思い出に浸れる、感傷的で美しい楽曲です',
+          tracks: [
+            {
+              id: 'nos1',
+              name: 'Yesterday',
+              artists: ['The Beatles'],
+              album: 'Help!',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/3BQHpFgAp4l80e1XslIjNI' },
+              energy: 0.3,
+              valence: 0.4,
+              tempo: 97
+            },
+            {
+              id: 'nos2',
+              name: 'The Way You Look Tonight',
+              artists: ['Frank Sinatra'],
+              album: 'Songs for Swingin\' Lovers!',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/1GgI4u6cZr71zzQFE7V4TS' },
+              energy: 0.4,
+              valence: 0.7,
+              tempo: 120
+            },
+            {
+              id: 'nos3',
+              name: 'Fly Me to the Moon',
+              artists: ['Frank Sinatra'],
+              album: 'It Might as Well Be Swing',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/5b7_rVA0mGNWD3Vna6jYZy' },
+              energy: 0.5,
+              valence: 0.8,
+              tempo: 142
+            }
+          ]
+        });
+        break;
+        
+      case 'morning':
+        recommendations.push({
+          mood: 'morning',
+          reasoning: '朝の清々しさと新しい一日の始まりを感じる、爽やかな楽曲です',
+          tracks: [
+            {
+              id: 'mor1',
+              name: 'Good Morning Sunshine',
+              artists: ['Oliver'],
+              album: 'Good Morning Starshine',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/5sXHVyEj9K6tHFhrNbPy8P' },
+              energy: 0.7,
+              valence: 0.9,
+              tempo: 130
+            },
+            {
+              id: 'mor2',
+              name: 'Here Comes the Sun',
+              artists: ['The Beatles'],
+              album: 'Abbey Road',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/6dGnYIeXmHdcikdzNNDMm2' },
+              energy: 0.6,
+              valence: 0.9,
+              tempo: 129
+            },
+            {
+              id: 'mor3',
+              name: 'Beautiful Boy (Darling Boy)',
+              artists: ['John Lennon'],
+              album: 'Double Fantasy',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/2ZiucNOY1vbRo7zBrZhc7Z' },
+              energy: 0.4,
+              valence: 0.8,
+              tempo: 73
+            }
+          ]
+        });
+        break;
+        
+      case 'night':
+        recommendations.push({
+          mood: 'night',
+          reasoning: '夜の静けさと深みを感じる、神秘的で考えさせる楽曲です',
+          tracks: [
+            {
+              id: 'nig1',
+              name: 'Midnight City',
+              artists: ['M83'],
+              album: 'Hurry Up, We\'re Dreaming',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/0lEjsN8vVqSL0Xnj5vksee' },
+              energy: 0.6,
+              valence: 0.6,
+              tempo: 105
+            },
+            {
+              id: 'nig2',
+              name: 'Blue Monday',
+              artists: ['New Order'],
+              album: 'Power, Corruption & Lies',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/0mltLo4UjzY6MHXB3vXiGl' },
+              energy: 0.7,
+              valence: 0.3,
+              tempo: 124
+            },
+            {
+              id: 'nig3',
+              name: 'Nightcall',
+              artists: ['Kavinsky'],
+              album: 'OutRun',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/0lYBSQXN6rCTvUZvg9S0lU' },
+              energy: 0.5,
+              valence: 0.4,
+              tempo: 124
+            }
+          ]
+        });
+        break;
+        
+      default:
+        recommendations.push({
+          mood: 'balanced',
+          reasoning: 'バランスの取れた心地よい楽曲で、どんな場面にも合います',
+          tracks: [
+            {
+              id: 'bal1',
+              name: 'Count on Me',
+              artists: ['Bruno Mars'],
+              album: 'Doo-Wops & Hooligans',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/1PGa1GfcGGOPl8P8Cx44k5' },
+              energy: 0.6,
+              valence: 0.8,
+              tempo: 140
+            },
+            {
+              id: 'bal2',
+              name: 'Perfect',
+              artists: ['Ed Sheeran'],
+              album: '÷ (Divide)',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/0tgVpDi06FyKpA1z0VMD4v' },
+              energy: 0.4,
+              valence: 0.7,
+              tempo: 95
+            },
+            {
+              id: 'bal3',
+              name: 'Better Days',
+              artists: ['OneRepublic'],
+              album: 'Human',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/5FfCiHTkMJQPB7EqsqBqOB' },
+              energy: 0.6,
+              valence: 0.8,
+              tempo: 115
+            }
+          ]
+        });
+    }
+    
     return recommendations;
   }
 
