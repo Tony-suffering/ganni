@@ -150,8 +150,10 @@ export class SpotifyService {
   private getMockRecommendations(emotions: any): MoodBasedRecommendation[] {
     const recommendations: MoodBasedRecommendation[] = [];
 
+    console.log('🎵 Generating recommendations with emotions:', emotions);
+
     // 明るく活発な雰囲気
-    if (emotions.joy > 0.7 && emotions.energy > 0.6) {
+    if (emotions.joy > 0.6 && emotions.energy > 0.6) {
       recommendations.push({
         mood: 'energetic-happy',
         reasoning: '明るく活発な写真の雰囲気に合う、エネルギッシュで前向きな楽曲です',
@@ -194,7 +196,7 @@ export class SpotifyService {
     }
 
     // 穏やかで幸せな雰囲気
-    else if (emotions.joy > 0.6 && emotions.peace > 0.7) {
+    if (emotions.joy > 0.5 && emotions.peace > 0.5) {
       recommendations.push({
         mood: 'peaceful-happy',
         reasoning: '穏やかで幸せな写真の雰囲気に合う、心地よく優しい楽曲です',
@@ -237,7 +239,7 @@ export class SpotifyService {
     }
 
     // ダイナミックな雰囲気
-    else if (emotions.excitement > 0.7 || emotions.energy > 0.7) {
+    if (emotions.excitement > 0.6 || emotions.energy > 0.7) {
       recommendations.push({
         mood: 'dynamic',
         reasoning: 'ダイナミックな写真の雰囲気に合う、力強くドラマチックな楽曲です',
@@ -280,7 +282,7 @@ export class SpotifyService {
     }
 
     // 落ち着いた雰囲気
-    else {
+    if (emotions.peace > 0.6 || (emotions.joy < 0.5 && emotions.energy < 0.5)) {
       recommendations.push({
         mood: 'calm',
         reasoning: '落ち着いた写真の雰囲気に合う、リラックスできる静かな楽曲です',

@@ -35,22 +35,46 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
       recentPosts.forEach(post => {
       // photoScoreがある場合は使用
       if (post.photoScore && post.photoScore.lighting && post.photoScore.overall !== undefined) {
-        totalEnergy += (post.photoScore.lighting.quality || 0.5) * 0.1;
-        totalPositivity += (post.photoScore.overall || 0.5) * 0.1;
+        // photoScoreは0-10の範囲なので、0-1に正規化
+        const normalizedEnergy = (post.photoScore.lighting.quality || 5) / 10;
+        const normalizedPositivity = (post.photoScore.overall || 5) / 10;
+        
+        totalEnergy += normalizedEnergy;
+        totalPositivity += normalizedPositivity;
         analyzedCount++;
+        
+        console.log(`📸 Post ${post.id} with photoScore:`, {
+          energy: normalizedEnergy,
+          positivity: normalizedPositivity
+        });
       } else {
         // photoScoreがない場合は、他の要素から推定
-        // いいね数やコメントから人気度を推定
-        const popularity = (post.likes_count || 0) * 0.1 + (post.comments?.length || 0) * 0.2;
-        const estimatedPositivity = Math.min(popularity * 0.1, 1);
+        // いいね数やコメントから人気度を推定（より大きな影響を与える）
+        const likesScore = Math.min(post.likes_count || 0, 10) / 10; // 最大10いいねで正規化
+        const commentsScore = Math.min((post.comments?.length || 0), 5) / 5; // 最大5コメントで正規化
+        const popularity = (likesScore + commentsScore) / 2;
         
         // 時間帯から活発さを推定（朝昼は活発、夜は落ち着いた）
         const postHour = new Date(post.created_at).getHours();
-        const estimatedEnergy = (postHour >= 6 && postHour <= 18) ? 0.7 : 0.3;
+        const timeEnergy = 
+          (postHour >= 6 && postHour <= 11) ? 0.8 :    // 朝は活発
+          (postHour >= 12 && postHour <= 17) ? 0.7 :   // 昼も活発
+          (postHour >= 18 && postHour <= 22) ? 0.5 :   // 夕方は中間
+          0.3;                                          // 夜は落ち着いた
         
-        totalEnergy += estimatedEnergy;
-        totalPositivity += estimatedPositivity;
+        // ランダム要素を少し追加（同じ結果を避けるため）
+        const randomFactor = Math.random() * 0.2 - 0.1; // -0.1 ~ 0.1
+        
+        totalEnergy += Math.max(0, Math.min(1, timeEnergy + randomFactor));
+        totalPositivity += Math.max(0, Math.min(1, popularity + 0.4 + randomFactor)); // ベースラインを上げる
         analyzedCount++;
+        
+        console.log(`📸 Post ${post.id} without photoScore:`, {
+          energy: timeEnergy,
+          positivity: popularity + 0.4,
+          likes: post.likes_count,
+          hour: postHour
+        });
       }
     });
 
@@ -58,24 +82,28 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
     const avgEnergy = analyzedCount > 0 ? totalEnergy / analyzedCount : 0.5;
     const avgPositivity = analyzedCount > 0 ? totalPositivity / analyzedCount : 0.5;
 
-    // 感情パラメータを設定
+    // より細かい感情パラメータを設定
     const emotions = {
-      joy: avgPositivity > 0.7 ? 0.8 : 0.4,
-      peace: avgEnergy < 0.5 ? 0.8 : 0.4,
-      excitement: avgEnergy > 0.7 ? 0.8 : 0.4,
+      joy: avgPositivity,
+      peace: 1 - avgEnergy,  // エネルギーが低いほど平和
+      excitement: avgEnergy,
       energy: avgEnergy
     };
 
-    // 写真の雰囲気を判定
-    if (avgPositivity > 0.7 && avgEnergy > 0.6) {
-      setPhotoMood('明るく活発');
-    } else if (avgPositivity > 0.7 && avgEnergy <= 0.6) {
-      setPhotoMood('穏やかで幸せ');
-    } else if (avgPositivity <= 0.5 && avgEnergy > 0.6) {
-      setPhotoMood('ダイナミック');
-    } else {
-      setPhotoMood('落ち着いた');
+    // 写真の雰囲気を判定（より詳細に）
+    const moodDescription = [];
+    
+    if (avgPositivity > 0.6) moodDescription.push('明るい');
+    if (avgPositivity < 0.4) moodDescription.push('落ち着いた');
+    
+    if (avgEnergy > 0.6) moodDescription.push('活発な');
+    if (avgEnergy < 0.4) moodDescription.push('静かな');
+    
+    if (moodDescription.length === 0) {
+      moodDescription.push('バランスの取れた');
     }
+    
+    setPhotoMood(moodDescription.join('・') + '雰囲気');
 
     // Spotifyから推薦を取得
     const recommendations = await spotifyService.getMoodBasedRecommendations(emotions);
