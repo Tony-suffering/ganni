@@ -150,41 +150,173 @@ export class SpotifyService {
   private getMockRecommendations(emotions: any): MoodBasedRecommendation[] {
     const recommendations: MoodBasedRecommendation[] = [];
 
-    if (emotions.joy > 0.7) {
+    // 明るく活発な雰囲気
+    if (emotions.joy > 0.7 && emotions.energy > 0.6) {
       recommendations.push({
-        mood: 'joyful',
-        reasoning: '喜びの感情が高いため、アップビートで明るい楽曲をお勧めします',
+        mood: 'energetic-happy',
+        reasoning: '明るく活発な写真の雰囲気に合う、エネルギッシュで前向きな楽曲です',
         tracks: [
           {
             id: 'mock1',
-            name: 'Happy',
-            artists: ['Pharrell Williams'],
-            album: 'G I R L',
+            name: 'Good Time',
+            artists: ['Owl City', 'Carly Rae Jepsen'],
+            album: 'The Midsummer Station',
             preview_url: null,
-            external_urls: { spotify: 'https://open.spotify.com/track/example' },
-            energy: 0.8,
-            valence: 0.9,
-            tempo: 160
+            external_urls: { spotify: 'https://open.spotify.com/track/5Z7ygHQo02SUrFmcgpwsKW' },
+            energy: 0.82,
+            valence: 0.89,
+            tempo: 126
+          },
+          {
+            id: 'mock2',
+            name: 'Walking On Sunshine',
+            artists: ['Katrina & The Waves'],
+            album: 'Walking on Sunshine',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/05wIrZSwuaVWhcv5FfqeH0' },
+            energy: 0.78,
+            valence: 0.96,
+            tempo: 109
+          },
+          {
+            id: 'mock3',
+            name: 'Can\'t Stop The Feeling!',
+            artists: ['Justin Timberlake'],
+            album: 'Trolls',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/6JV2JOEocMgcZxYSZelKcc' },
+            energy: 0.82,
+            valence: 0.93,
+            tempo: 113
           }
         ]
       });
     }
 
-    if (emotions.peace > 0.7) {
+    // 穏やかで幸せな雰囲気
+    else if (emotions.joy > 0.6 && emotions.peace > 0.7) {
       recommendations.push({
-        mood: 'peaceful',
-        reasoning: '穏やかな気分のため、リラックスできる楽曲をお勧めします',
+        mood: 'peaceful-happy',
+        reasoning: '穏やかで幸せな写真の雰囲気に合う、心地よく優しい楽曲です',
         tracks: [
           {
-            id: 'mock2',
-            name: 'Weightless',
-            artists: ['Marconi Union'],
-            album: 'Ambient Music',
+            id: 'mock4',
+            name: 'Somewhere Over The Rainbow',
+            artists: ['Israel Kamakawiwoʻole'],
+            album: 'Facing Future',
             preview_url: null,
-            external_urls: { spotify: 'https://open.spotify.com/track/example2' },
-            energy: 0.1,
-            valence: 0.6,
-            tempo: 50
+            external_urls: { spotify: 'https://open.spotify.com/track/3skn2lauGk7Dx6bVIt5DVj' },
+            energy: 0.26,
+            valence: 0.64,
+            tempo: 91
+          },
+          {
+            id: 'mock5',
+            name: 'Better Days',
+            artists: ['OneRepublic'],
+            album: 'Human',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/5FfCiHTkMJQPB7EqsqBqOB' },
+            energy: 0.65,
+            valence: 0.78,
+            tempo: 115
+          },
+          {
+            id: 'mock6',
+            name: 'Three Little Birds',
+            artists: ['Bob Marley & The Wailers'],
+            album: 'Exodus',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/1YrnDTqvcnUKxAIeXyaEmU' },
+            energy: 0.60,
+            valence: 0.83,
+            tempo: 76
+          }
+        ]
+      });
+    }
+
+    // ダイナミックな雰囲気
+    else if (emotions.excitement > 0.7 || emotions.energy > 0.7) {
+      recommendations.push({
+        mood: 'dynamic',
+        reasoning: 'ダイナミックな写真の雰囲気に合う、力強くドラマチックな楽曲です',
+        tracks: [
+          {
+            id: 'mock7',
+            name: 'Thunder',
+            artists: ['Imagine Dragons'],
+            album: 'Evolve',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/1zB4vmk8tFRmM9UULNzbLB' },
+            energy: 0.81,
+            valence: 0.29,
+            tempo: 168
+          },
+          {
+            id: 'mock8',
+            name: 'Eye of the Tiger',
+            artists: ['Survivor'],
+            album: 'Eye of the Tiger',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/2KH16WveTQWT6KOG9Rg6e2' },
+            energy: 0.82,
+            valence: 0.51,
+            tempo: 109
+          },
+          {
+            id: 'mock9',
+            name: 'Titanium',
+            artists: ['David Guetta', 'Sia'],
+            album: 'Nothing but the Beat',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/0lHAMNU8RGiIObNnlR8f1F' },
+            energy: 0.79,
+            valence: 0.28,
+            tempo: 126
+          }
+        ]
+      });
+    }
+
+    // 落ち着いた雰囲気
+    else {
+      recommendations.push({
+        mood: 'calm',
+        reasoning: '落ち着いた写真の雰囲気に合う、リラックスできる静かな楽曲です',
+        tracks: [
+          {
+            id: 'mock10',
+            name: 'River Flows In You',
+            artists: ['Yiruma'],
+            album: 'First Love',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/7tJQNzahITYkHdKR2PQBH1' },
+            energy: 0.21,
+            valence: 0.22,
+            tempo: 64
+          },
+          {
+            id: 'mock11',
+            name: 'Clair de Lune',
+            artists: ['Claude Debussy'],
+            album: 'Suite Bergamasque',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/6pWgRkpqVfxnj3WuIcJ7WP' },
+            energy: 0.12,
+            valence: 0.09,
+            tempo: 68
+          },
+          {
+            id: 'mock12',
+            name: 'The Night We Met',
+            artists: ['Lord Huron'],
+            album: 'Strange Trails',
+            preview_url: null,
+            external_urls: { spotify: 'https://open.spotify.com/track/0yAeHSMpDrOgrCMdq8vPiX' },
+            energy: 0.44,
+            valence: 0.21,
+            tempo: 88
           }
         ]
       });
