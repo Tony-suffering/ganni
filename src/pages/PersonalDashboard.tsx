@@ -29,6 +29,7 @@ import { GamificationTab } from '../components/dashboard/GamificationTab';
 import { CollectionTab } from '../components/dashboard/CollectionTab';
 import { ProfileEditTab } from '../components/dashboard/ProfileEditTab';
 import { SpotifyIntegration } from '../components/dashboard/SpotifyIntegration';
+import { SpotifyMoodSync } from '../components/dashboard/SpotifyMoodSync';
 
 export const PersonalDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -292,6 +293,9 @@ export const PersonalDashboard: React.FC = () => {
                   transition={{ duration: 0.3 }}
                 >
                   <SpotifyIntegration />
+                  {posts.length > 0 && (
+                    <SpotifyMoodSync posts={posts} />
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>
