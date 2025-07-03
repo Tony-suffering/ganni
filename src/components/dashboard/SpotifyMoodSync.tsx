@@ -234,6 +234,13 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
       
       console.log('🎵 Extracted analysis:', { keywords, emotions, locations });
       
+      // キーワードベースで音楽カテゴリを決定
+      const musicMood = determineMusicMoodFromContent({
+        keywords: [...new Set(keywords)], // 重複除去
+        emotions: [...new Set(emotions)],
+        locations: [...new Set(locations)]
+      });
+      
       // 分析結果に基づいて音楽を推薦
       setPhotoMood(musicMood.description);
       const recommendations = await spotifyService.getContentBasedRecommendations(musicMood);
