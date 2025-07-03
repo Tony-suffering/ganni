@@ -13,6 +13,7 @@ interface SpotifyMoodSyncProps {
 export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
   const [moodRecommendations, setMoodRecommendations] = useState<any[]>([]);
   const [photoMood, setPhotoMood] = useState<string>('');
+  const [analyzedPosts, setAnalyzedPosts] = useState<Post[]>([]);
 
   useEffect(() => {
     if (posts.length > 0) {
@@ -24,19 +25,36 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
     // 最近の投稿から感情を分析
     const recentPosts = posts.slice(0, 5);
     
-    // 写真の雰囲気から感情を推定（実際のAI分析結果を使用）
+    // 写真の雰囲気から感情を推定
     let totalEnergy = 0;
     let totalPositivity = 0;
+    let analyzedCount = 0;
     
     recentPosts.forEach(post => {
+      // photoScoreがある場合は使用
       if (post.photoScore) {
         totalEnergy += post.photoScore.lighting.quality * 0.1;
         totalPositivity += post.photoScore.overall * 0.1;
+        analyzedCount++;
+      } else {
+        // photoScoreがない場合は、他の要素から推定
+        // いいね数やコメントから人気度を推定
+        const popularity = (post.likes_count || 0) * 0.1 + (post.comments?.length || 0) * 0.2;
+        const estimatedPositivity = Math.min(popularity * 0.1, 1);
+        
+        // 時間帯から活発さを推定（朝昼は活発、夜は落ち着いた）
+        const postHour = new Date(post.created_at).getHours();
+        const estimatedEnergy = (postHour >= 6 && postHour <= 18) ? 0.7 : 0.3;
+        
+        totalEnergy += estimatedEnergy;
+        totalPositivity += estimatedPositivity;
+        analyzedCount++;
       }
     });
 
-    const avgEnergy = totalEnergy / recentPosts.length;
-    const avgPositivity = totalPositivity / recentPosts.length;
+    // 分析した投稿がない場合のデフォルト値
+    const avgEnergy = analyzedCount > 0 ? totalEnergy / analyzedCount : 0.5;
+    const avgPositivity = analyzedCount > 0 ? totalPositivity / analyzedCount : 0.5;
 
     // 感情パラメータを設定
     const emotions = {
@@ -60,6 +78,7 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
     // Spotifyから推薦を取得
     const recommendations = await spotifyService.getMoodBasedRecommendations(emotions);
     setMoodRecommendations(recommendations);
+    setAnalyzedPosts(recentPosts);
   };
 
   return (
@@ -107,15 +126,36 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
         </div>
       )}
 
+      {/* 分析対象の投稿を表示 */}
+      {analyzedPosts.length > 0 && (
+        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          <p className="text-sm text-gray-600 mb-2">
+            <Camera className="w-4 h-4 inline mr-1" />
+            最新{analyzedPosts.length}件の投稿を分析しました
+          </p>
+          <div className="flex gap-2 overflow-x-auto">
+            {analyzedPosts.map((post) => (
+              <img
+                key={post.id}
+                src={post.imageUrl}
+                alt={post.title}
+                className="w-16 h-16 object-cover rounded-lg"
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mt-4 p-4 bg-purple-50 rounded-lg">
         <div className="flex items-center gap-2 mb-2">
           <Sparkles className="w-5 h-5 text-purple-600" />
-          <h4 className="font-medium text-purple-900">こんな活用ができます</h4>
+          <h4 className="font-medium text-purple-900">分析の仕組み</h4>
         </div>
         <ul className="text-sm text-purple-700 space-y-1">
-          <li>• 投稿に合うBGMを自動で提案</li>
-          <li>• 写真の雰囲気に合わせたプレイリスト作成</li>
-          <li>• 音楽と写真を組み合わせたストーリー投稿</li>
+          <li>• AI写真スコア（明るさ、構図など）を分析</li>
+          <li>• 投稿時間帯から活動パターンを推定</li>
+          <li>• いいね数から人気度を考慮</li>
+          <li>• 総合的な雰囲気から最適な音楽を選定</li>
         </ul>
       </div>
     </div>
