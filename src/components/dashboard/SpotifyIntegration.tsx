@@ -47,7 +47,35 @@ export const SpotifyIntegration: React.FC = () => {
 
       if (!error && data) {
         setIsConnected(true);
-        await loadMusicProfile(data.access_token);
+        
+        // トークンの有効期限をチェック
+        const expiresAt = new Date(data.expires_at);
+        const now = new Date();
+        
+        if (expiresAt <= now) {
+          console.log('🎵 Spotify token expired, refreshing...');
+          try {
+            const refreshedData = await spotifyService.refreshUserToken(data.refresh_token);
+            
+            // 新しいトークンをDBに保存
+            const newExpiresAt = new Date(Date.now() + refreshedData.expires_in * 1000);
+            await supabase
+              .from('user_spotify_tokens')
+              .update({
+                access_token: refreshedData.access_token,
+                expires_at: newExpiresAt.toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', user.id);
+              
+            await loadMusicProfile(refreshedData.access_token);
+          } catch (refreshError) {
+            console.error('🎵 Failed to refresh token:', refreshError);
+            setIsConnected(false);
+          }
+        } else {
+          await loadMusicProfile(data.access_token);
+        }
       }
     } catch (error) {
       console.error('Error checking Spotify connection:', error);
@@ -58,7 +86,14 @@ export const SpotifyIntegration: React.FC = () => {
 
   const loadMusicProfile = async (accessToken: string) => {
     try {
+      console.log('🎵 Loading music profile with access token');
       const topTracks = await spotifyService.getUserTopTracks(accessToken);
+      
+      if (!topTracks || topTracks.length === 0) {
+        console.warn('🎵 No top tracks returned from Spotify');
+        return;
+      }
+      
       const analysis = spotifyService.mapMusicToEmotion(topTracks);
 
       setMusicProfile({

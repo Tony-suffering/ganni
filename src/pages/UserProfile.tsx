@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { usePosts } from '../hooks/usePosts';
-import { MasonryGrid } from '../components/MasonryGrid';
-import { PostModal } from '../components/PostModal';
+import { MasonryGrid } from '../components/layout/MasonryGrid';
+import { PostModal } from '../components/modals/PostModal';
 import { Post, User } from '../types';
 import { supabase } from '../supabase';
 import { ArrowLeft } from 'lucide-react';

@@ -95,6 +95,7 @@ export class SpotifyService {
    * コンテンツ分析に基づく音楽推薦
    */
   async getContentBasedRecommendations(musicMood: any): Promise<MoodBasedRecommendation[]> {
+    console.log('🎵 getContentBasedRecommendations called with musicMood:', musicMood);
     return this.getContentBasedMockRecommendations(musicMood);
   }
 
@@ -331,6 +332,17 @@ export class SpotifyService {
       });
     }
 
+    console.log('🎵 Returning recommendations:', {
+      length: recommendations.length,
+      firstTrackName: recommendations[0]?.tracks?.[0]?.name,
+      allRecommendations: recommendations.map(r => ({
+        mood: r.mood,
+        reasoning: r.reasoning,
+        trackCount: r.tracks?.length,
+        firstTrack: r.tracks?.[0]?.name
+      }))
+    });
+    
     return recommendations;
   }
 
@@ -340,7 +352,9 @@ export class SpotifyService {
   private getContentBasedMockRecommendations(musicMood: any): MoodBasedRecommendation[] {
     const recommendations: MoodBasedRecommendation[] = [];
     
-    console.log('🎵 Generating content-based recommendations for:', musicMood.category);
+    console.log('🎵 Generating content-based recommendations for category:', musicMood.category);
+    console.log('🎵 Available tags:', JSON.stringify(musicMood.tags));
+    console.log('🎵 Full musicMood object:', JSON.stringify(musicMood));
     
     // 🎯 具体的な検出内容に基づく推薦
     if (musicMood.tags.includes('boeing') || musicMood.tags.includes('commercial_aviation')) {
@@ -418,7 +432,7 @@ export class SpotifyService {
             artists: ['石川さゆり'],
             album: 'ベスト・コレクション',
             preview_url: null,
-            external_urls: { spotify: 'https://open.spotify.com/track/example_tsugaru' },
+            external_urls: { spotify: 'https://open.spotify.com/search/%E6%B4%A5%E8%BB%BD%E6%B5%B7%E5%B3%A1%E5%86%AC%E6%99%AF%E8%89%B2%20%E7%9F%B3%E5%B7%9D%E3%81%95%E3%82%86%E3%82%8A' },
             energy: 0.3,
             valence: 0.6,
             tempo: 88
@@ -434,25 +448,25 @@ export class SpotifyService {
         tracks: [
           {
             id: 'golden1',
-            name: 'Golden',
-            artists: ['Harry Styles'],
-            album: 'Fine Line',
+            name: '上を向いて歩こう',
+            artists: ['坂本九'],
+            album: 'Sukiyaki and Other Japanese Hits',
             preview_url: null,
-            external_urls: { spotify: 'https://open.spotify.com/track/6Gg1gjgKi2AK4e0qzsJi9W' },
-            energy: 0.6,
+            external_urls: { spotify: 'https://open.spotify.com/search/%E4%B8%8A%E3%82%92%E5%90%91%E3%81%84%E3%81%A6%E6%AD%A9%E3%81%93%E3%81%86%20%E5%9D%82%E6%9C%AC%E4%B9%9D' },
+            energy: 0.5,
             valence: 0.8,
-            tempo: 139
+            tempo: 120
           },
           {
             id: 'golden2',
-            name: 'California Gurls',
-            artists: ['Katy Perry', 'Snoop Dogg'],
-            album: 'Teenage Dream',
+            name: '乾杯',
+            artists: ['長渕剛'],
+            album: 'ベスト・コレクション',
             preview_url: null,
-            external_urls: { spotify: 'https://open.spotify.com/track/6jG2YzhxptolDzLHTGLt7S' },
-            energy: 0.9,
-            valence: 0.9,
-            tempo: 126
+            external_urls: { spotify: 'https://open.spotify.com/search/%E4%B9%BE%E6%9D%AF%20%E9%95%B7%E6%B8%95%E5%89%9B' },
+            energy: 0.4,
+            valence: 0.7,
+            tempo: 95
           },
           {
             id: 'golden3',
@@ -511,7 +525,52 @@ export class SpotifyService {
       });
     }
 
+    console.log('🎵 ENHANCED switch statement checking category:', musicMood.category);
+    
+    // 🎯 実際のユーザーデータに基づく新しい推薦カテゴリ
     switch (musicMood.category) {
+      case 'nature':
+        recommendations.push({
+          mood: 'nature_harmony',
+          reasoning: '自然の緑と植生を検出。新鮮で有機的な自然の調和を表現した楽曲です',
+          tracks: [
+            {
+              id: 'nature1',
+              name: 'Bloom',
+              artists: ['The Paper Kites'],
+              album: 'twelvefour',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/4v0tapCyBcdyEhOinUrjbE' },
+              energy: 0.4,
+              valence: 0.8,
+              tempo: 95
+            },
+            {
+              id: 'nature2',
+              name: 'Green Eyes',
+              artists: ['Coldplay'],
+              album: 'A Rush of Blood to the Head',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/3Pzo2gMhXqAQpWskxUTdHB' },
+              energy: 0.3,
+              valence: 0.7,
+              tempo: 88
+            },
+            {
+              id: 'nature3',
+              name: '森のうた',
+              artists: ['久石譲'],
+              album: 'もののけ姫 サウンドトラック',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/search/%E6%A3%AE%E3%81%AE%E3%81%86%E3%81%9F%20%E4%B9%85%E7%9F%B3%E8%AD%B2' },
+              energy: 0.5,
+              valence: 0.8,
+              tempo: 110
+            }
+          ]
+        });
+        break;
+        
       case 'departure':
         recommendations.push({
           mood: 'departure',
@@ -638,47 +697,6 @@ export class SpotifyService {
         });
         break;
         
-      case 'chill':
-        recommendations.push({
-          mood: 'chill',
-          reasoning: '穏やかでリラックスした時間を演出する、心地よい楽曲です',
-          tracks: [
-            {
-              id: 'ch1',
-              name: 'Electric Feel',
-              artists: ['MGMT'],
-              album: 'Oracular Spectacular',
-              preview_url: null,
-              external_urls: { spotify: 'https://open.spotify.com/track/3FtYBEfBWJFaWd2yQBRHKB' },
-              energy: 0.6,
-              valence: 0.7,
-              tempo: 108
-            },
-            {
-              id: 'ch2',
-              name: 'Breathe Me',
-              artists: ['Sia'],
-              album: 'Colour the Small One',
-              preview_url: null,
-              external_urls: { spotify: 'https://open.spotify.com/track/7hUfABNQbPdBc0lYNZiEOm' },
-              energy: 0.3,
-              valence: 0.4,
-              tempo: 140
-            },
-            {
-              id: 'ch3',
-              name: 'Mad World',
-              artists: ['Gary Jules'],
-              album: 'Trading Snakeoil for Wolftickets',
-              preview_url: null,
-              external_urls: { spotify: 'https://open.spotify.com/track/3JOVTQ5h4FNwYSCZOUhOAC' },
-              energy: 0.2,
-              valence: 0.2,
-              tempo: 89
-            }
-          ]
-        });
-        break;
         
       case 'nostalgic':
         recommendations.push({
@@ -764,6 +782,301 @@ export class SpotifyService {
         });
         break;
         
+      case 'ocean':
+        recommendations.push({
+          mood: 'ocean',
+          reasoning: '海の広がりと波の音を感じる、開放的で癒される楽曲です',
+          tracks: [
+            {
+              id: 'ocean1',
+              name: '津軽海峡冬景色',
+              artists: ['石川さゆり'],
+              album: 'ベスト・コレクション',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/4lLmRVfYM8fF7Xw4nYrI2z' },
+              energy: 0.3,
+              valence: 0.6,
+              tempo: 88
+            },
+            {
+              id: 'ocean2',
+              name: '海の声',
+              artists: ['浦島太郎（桐谷健太）'],
+              album: '海の声',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/6FuZjsYaTmYl1HNcgd8G7h' },
+              energy: 0.4,
+              valence: 0.8,
+              tempo: 72
+            },
+            {
+              id: 'ocean3',
+              name: 'Beyond the Sea',
+              artists: ['Bobby Darin'],
+              album: 'That\'s All',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/3y5kqWFNVpg4H7wOq7eMGF' },
+              energy: 0.6,
+              valence: 0.8,
+              tempo: 146
+            }
+          ]
+        });
+        break;
+        
+      case 'mountain':
+        recommendations.push({
+          mood: 'mountain',
+          reasoning: '山の雄大さと静寂を表現する、壮大で落ち着いた楽曲です',
+          tracks: [
+            {
+              id: 'mount1',
+              name: 'The Sound of Silence',
+              artists: ['Simon & Garfunkel'],
+              album: 'Wednesday Morning, 3 A.M.',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/3kxfsdCCCmK3dZHuNmFUgf' },
+              energy: 0.3,
+              valence: 0.3,
+              tempo: 106
+            },
+            {
+              id: 'mount2',
+              name: 'Mountains',
+              artists: ['Biffy Clyro'],
+              album: 'Puzzle',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/3PnHqzqfqBb8LS1Vvp0fAm' },
+              energy: 0.7,
+              valence: 0.5,
+              tempo: 138
+            },
+            {
+              id: 'mount3',
+              name: 'Big Country',
+              artists: ['Béla Fleck and the Flecktones'],
+              album: 'Left of Cool',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/4bBzgQvOYuMNgLZdKvzLLM' },
+              energy: 0.6,
+              valence: 0.7,
+              tempo: 120
+            }
+          ]
+        });
+        break;
+        
+      case 'road_trip':
+        recommendations.push({
+          mood: 'road_trip',
+          reasoning: 'ドライブに最適な、自由と冒険を感じる楽曲です',
+          tracks: [
+            {
+              id: 'road1',
+              name: 'Life is a Highway',
+              artists: ['Tom Cochrane'],
+              album: 'Mad Mad World',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/1V1fxSYlBqLdlL0wWV51FU' },
+              energy: 0.8,
+              valence: 0.9,
+              tempo: 124
+            },
+            {
+              id: 'road2',
+              name: 'Born to Be Wild',
+              artists: ['Steppenwolf'],
+              album: 'Steppenwolf',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/0ngN0YBDPtGrxk8RadvYCq' },
+              energy: 0.8,
+              valence: 0.7,
+              tempo: 146
+            },
+            {
+              id: 'road3',
+              name: 'Route 66',
+              artists: ['Nat King Cole'],
+              album: 'After Midnight',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/3F7kAHCoTPeNKD7u1IFhSP' },
+              energy: 0.7,
+              valence: 0.8,
+              tempo: 125
+            }
+          ]
+        });
+        break;
+        
+      case 'human_stories':
+        recommendations.push({
+          mood: 'human_stories',
+          reasoning: '人々の温かさと繋がりを感じる、心に響く楽曲です',
+          tracks: [
+            {
+              id: 'human1',
+              name: '乾杯',
+              artists: ['長渕剛'],
+              album: '乾杯',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/search/%E4%B9%BE%E6%9D%AF%20%E9%95%B7%E6%B8%95%E5%89%9B' },
+              energy: 0.5,
+              valence: 0.7,
+              tempo: 95
+            },
+            {
+              id: 'human2',
+              name: '贈る言葉',
+              artists: ['海援隊'],
+              album: '贈る言葉',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/search/%E8%B4%88%E3%82%8B%E8%A8%80%E8%91%89%20%E6%B5%B7%E6%8F%B4%E9%9A%8A' },
+              energy: 0.4,
+              valence: 0.6,
+              tempo: 82
+            },
+            {
+              id: 'human3',
+              name: 'Lean on Me',
+              artists: ['Bill Withers'],
+              album: 'Still Bill',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/3M8FzayQWKkvWyLNGBpGsW' },
+              energy: 0.5,
+              valence: 0.7,
+              tempo: 77
+            }
+          ]
+        });
+        break;
+        
+      case 'everyday':
+        recommendations.push({
+          mood: 'everyday',
+          reasoning: '日常の心地よさを彩る、親しみやすい楽曲です',
+          tracks: [
+            {
+              id: 'every1',
+              name: '青春',
+              artists: ['毛皮のマリーズ'],
+              album: '青春',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/2mRlY3K8xB4h8jFnZ9Lm8E' },
+              energy: 0.6,
+              valence: 0.7,
+              tempo: 110
+            },
+            {
+              id: 'every2',
+              name: '夏色',
+              artists: ['ゆず'],
+              album: 'ゆずえん',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/1wQlK9fF8XhCZjwgm5Pz3A' },
+              energy: 0.8,
+              valence: 0.9,
+              tempo: 138
+            },
+            {
+              id: 'every3',
+              name: 'Sunday Morning',
+              artists: ['The Velvet Underground'],
+              album: 'The Velvet Underground & Nico',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/1Y373MqadDRtclJNdnUXVc' },
+              energy: 0.4,
+              valence: 0.7,
+              tempo: 100
+            }
+          ]
+        });
+        break;
+        
+      case 'digital':
+        recommendations.push({
+          mood: 'digital',
+          reasoning: 'デジタル時代の集中力とクリエイティビティを高める楽曲です',
+          tracks: [
+            {
+              id: 'digi1',
+              name: 'Technologic',
+              artists: ['Daft Punk'],
+              album: 'Human After All',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/6gpjBbQe1F7pNKsKcvom7u' },
+              energy: 0.8,
+              valence: 0.5,
+              tempo: 123
+            },
+            {
+              id: 'digi2',
+              name: 'Digital Love',
+              artists: ['Daft Punk'],
+              album: 'Discovery',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/2LD2gT7gwAurzdQ4ZpgIQH' },
+              energy: 0.7,
+              valence: 0.8,
+              tempo: 124
+            },
+            {
+              id: 'digi3',
+              name: 'Computer Blue',
+              artists: ['Prince'],
+              album: 'Purple Rain',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/0P6yQKGWQv7cQlnj1KCGbc' },
+              energy: 0.6,
+              valence: 0.4,
+              tempo: 116
+            }
+          ]
+        });
+        break;
+        
+      case 'chill':
+        console.log('🎵 Adding chill recommendations with Japanese songs...');
+        recommendations.push({
+          mood: 'chill',
+          reasoning: '穏やかでリラックスした雰囲気に合う、心地よい楽曲です',
+          tracks: [
+            {
+              id: 'chill1',
+              name: '贈る言葉',
+              artists: ['海援隊'],
+              album: 'ベスト・コレクション',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/search/%E8%B4%88%E3%82%8B%E8%A8%80%E8%91%89%20%E6%B5%B7%E6%8F%B4%E9%9A%8A' },
+              energy: 0.4,
+              valence: 0.6,
+              tempo: 85
+            },
+            {
+              id: 'chill2',
+              name: '夜空ノムコウ',
+              artists: ['SMAP'],
+              album: 'ベスト・コレクション',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/search/%E5%A4%9C%E7%A9%BA%E3%83%8E%E3%83%A0%E3%82%B3%E3%82%A6%20SMAP' },
+              energy: 0.3,
+              valence: 0.5,
+              tempo: 78
+            },
+            {
+              id: 'chill3',
+              name: 'Mad World',
+              artists: ['Gary Jules'],
+              album: 'Trading Snakeoil for Wolftickets',
+              preview_url: null,
+              external_urls: { spotify: 'https://open.spotify.com/track/3JOVTQ5h4FNwYSCZOUhOAC' },
+              energy: 0.2,
+              valence: 0.2,
+              tempo: 89
+            }
+          ]
+        });
+        break;
+        
       case 'night':
         recommendations.push({
           mood: 'night',
@@ -807,6 +1120,8 @@ export class SpotifyService {
         break;
         
       default:
+        console.log('🎵 No specific category matched, falling back to balanced recommendations. Category was:', musicMood.category);
+        console.log('🎵 Adding balanced recommendations...');
         recommendations.push({
           mood: 'balanced',
           reasoning: 'バランスの取れた心地よい楽曲で、どんな場面にも合います',
@@ -934,10 +1249,45 @@ export class SpotifyService {
   }
 
   /**
+   * リフレッシュトークンを使用してアクセストークンを更新
+   */
+  async refreshUserToken(refreshToken: string): Promise<{
+    access_token: string;
+    expires_in: number;
+  }> {
+    try {
+      const response = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': 'Basic ' + btoa(`${this.config.clientId}:${this.config.clientSecret}`)
+        },
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          refresh_token: refreshToken
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to refresh token');
+      }
+
+      const data = await response.json();
+      console.log('🎵 Successfully refreshed Spotify token');
+      return data;
+    } catch (error) {
+      console.error('Error refreshing Spotify token:', error);
+      throw error;
+    }
+  }
+
+  /**
    * ユーザーのトップトラック取得
    */
   async getUserTopTracks(userToken: string, timeRange: 'short_term' | 'medium_term' | 'long_term' = 'medium_term'): Promise<SpotifyTrack[]> {
     try {
+      console.log('🎵 Attempting to fetch user top tracks with token:', userToken ? 'Token exists' : 'No token');
+      
       const response = await fetch(
         `https://api.spotify.com/v1/me/top/tracks?time_range=${timeRange}&limit=10`,
         {
@@ -948,6 +1298,10 @@ export class SpotifyService {
       );
 
       if (!response.ok) {
+        console.error('🎵 Spotify API error:', response.status, response.statusText);
+        if (response.status === 401) {
+          console.error('🎵 Token may be expired or invalid');
+        }
         throw new Error('Failed to fetch user top tracks');
       }
 

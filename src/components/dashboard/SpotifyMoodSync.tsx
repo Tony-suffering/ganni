@@ -90,13 +90,125 @@ const getTimeOfDay = (date: Date): string => {
   return 'night';
 };
 
-// コンテンツ分析から音楽ムード決定
+// コンテンツ分析から音楽ムード決定（実際のユーザーデータに基づく完全強化版）
 const determineMusicMoodFromContent = (analysis: ContentAnalysis): MusicMood => {
   const { keywords, emotions, locations } = analysis;
   
-  // 空港・旅行系
+  console.log('🎯 ENHANCED determineMusicMoodFromContent called with:', {
+    keywords: keywords,
+    emotions: emotions,
+    locations: locations,
+    keywordsLength: keywords.length,
+    emotionsLength: emotions.length,
+    locationsLength: locations.length,
+    keywordsDetail: JSON.stringify(keywords),
+    emotionsDetail: JSON.stringify(emotions)
+  });
+  
+  // 👥 人物・社交系（実際のデータ: "人間", "3人の男性"）
+  console.log('🎯 Checking people/social keywords:', {
+    hasPeople: keywords.includes('people'),
+    hasHumanConnection: keywords.includes('human_connection'),
+    hasSocial: keywords.includes('social'),
+    hasSocialScene: keywords.includes('social_scene')
+  });
+  
+  if (keywords.includes('people') || keywords.includes('human_connection') || keywords.includes('social') || keywords.includes('social_scene')) {
+    console.log('✅ Found people/social keywords! Returning human_stories category');
+    return {
+      category: 'human_stories',
+      description: '人々の温かさと繋がりを感じる音楽',
+      energy: 0.6,
+      valence: 0.8,
+      tags: ['people', 'social', 'warm', 'human_connection']
+    };
+  }
+  
+  // 🌊 海・自然系（実際のデータ: "海", "海岸線"）
+  console.log('🎯 Checking ocean/nature keywords:', {
+    hasOcean: keywords.includes('ocean'),
+    hasCoastal: keywords.includes('coastal'),
+    hasCoastline: keywords.includes('coastline'),
+    hasNature: keywords.includes('nature')
+  });
+  
+  if (keywords.includes('ocean') || keywords.includes('coastal') || keywords.includes('coastline')) {
+    console.log('✅ Found ocean/coastal keywords! Returning ocean category');
+    return {
+      category: 'ocean',
+      description: '海の広がりと波の音を感じる音楽',
+      energy: 0.5,
+      valence: 0.8,
+      tags: ['ocean', 'coastal', 'nature', 'expansive']
+    };
+  }
+  
+  // 🏔️ 山・高地系（実際のデータ: "山々"）
+  if (keywords.includes('mountains') || keywords.includes('mountain') || keywords.includes('majestic_view') || keywords.includes('highlands')) {
+    console.log('✅ Found mountain keywords! Returning mountain category');
+    return {
+      category: 'mountain',
+      description: '山々の雄大さと静寂を表現する音楽',
+      energy: 0.4,
+      valence: 0.7,
+      tags: ['mountain', 'majestic', 'nature']
+    };
+  }
+  
+  // 🛣️ 道路・旅系（実際のデータ: "道路"）
+  console.log('🎯 Checking road/journey keywords:', {
+    hasRoad: keywords.includes('road'),
+    hasJourney: keywords.includes('journey'),
+    hasUrban: keywords.includes('urban')
+  });
+  
+  if (keywords.includes('road') || keywords.includes('journey') || keywords.includes('urban')) {
+    console.log('✅ Found road/journey keywords! Returning road_trip category');
+    return {
+      category: 'road_trip',
+      description: '道路の自由と冷険心を感じる音楽',
+      energy: 0.7,
+      valence: 0.8,
+      tags: ['road', 'journey', 'freedom', 'exploration']
+    };
+  }
+  
+  // 💻 テクノロジー・仕事系（実際のデータ: "メール", "HTMLスタイル"）
+  console.log('🎯 Checking technology/work keywords:', {
+    hasTechnology: keywords.includes('technology'),
+    hasWork: keywords.includes('work'),
+    hasDigitalInterface: keywords.includes('digital_interface'),
+    hasInterface: keywords.includes('interface')
+  });
+  
+  if (keywords.includes('technology') || keywords.includes('work') || keywords.includes('digital_interface') || keywords.includes('interface')) {
+    console.log('✅ Found technology/work keywords! Returning digital category');
+    return {
+      category: 'digital',
+      description: 'デジタル作業と集中力を高める音楽',
+      energy: 0.6,
+      valence: 0.6,
+      tags: ['technology', 'focused', 'modern', 'productive']
+    };
+  }
+  
+  // 🌳 自然・植生系（実際のデータ: "緑の木々", "植生"）
+  if (keywords.includes('trees') || keywords.includes('green_scenery') || keywords.includes('nature')) {
+    console.log('✅ Found nature/trees keywords! Returning nature category');
+    return {
+      category: 'nature',
+      description: '自然の緑とやすらぎを感じる音楽',
+      energy: 0.4,
+      valence: 0.7,
+      tags: ['nature', 'organic', 'fresh']
+    };
+  }
+  
+  // 🎅 空港・旅行系
   if (keywords.includes('airport') || keywords.includes('travel')) {
+    console.log('🎯 Found airport/travel keywords!');
     if (keywords.includes('departure') || keywords.includes('takeoff')) {
+      console.log('🎯 Found departure/takeoff keywords!');
       return {
         category: 'departure',
         description: '出発・旅立ちの高揚感',
@@ -106,6 +218,7 @@ const determineMusicMoodFromContent = (analysis: ContentAnalysis): MusicMood => 
       };
     }
     if (keywords.includes('arrival') || keywords.includes('landing')) {
+      console.log('🎯 Found arrival/landing keywords!');
       return {
         category: 'arrival',
         description: '到着・帰郷の安堵感',
@@ -147,6 +260,69 @@ const determineMusicMoodFromContent = (analysis: ContentAnalysis): MusicMood => 
     };
   }
   
+  // 自然・風景ベース
+  if (keywords.includes('ocean') || keywords.includes('nature')) {
+    return {
+      category: 'ocean',
+      description: '海の広がりと自然の壮大さ',
+      energy: 0.5,
+      valence: 0.8,
+      tags: ['ocean', 'nature', 'expansive']
+    };
+  }
+  
+  if (keywords.includes('mountain')) {
+    return {
+      category: 'mountain',
+      description: '山の雄大さと静寂',
+      energy: 0.4,
+      valence: 0.7,
+      tags: ['mountain', 'nature', 'majestic']
+    };
+  }
+  
+  if (keywords.includes('road') || keywords.includes('journey')) {
+    return {
+      category: 'road_trip',
+      description: '道路の自由と冒険心',
+      energy: 0.7,
+      valence: 0.8,
+      tags: ['road', 'journey', 'freedom']
+    };
+  }
+  
+  // 人物・日常ベース
+  if (keywords.includes('people') || keywords.includes('human_connection')) {
+    return {
+      category: 'human_stories',
+      description: '人々の温かさと日常の物語',
+      energy: 0.5,
+      valence: 0.7,
+      tags: ['people', 'social', 'warm']
+    };
+  }
+  
+  if (keywords.includes('daily_life') || emotions.includes('comfortable')) {
+    return {
+      category: 'everyday',
+      description: '日常の心地よさと親しみ',
+      energy: 0.4,
+      valence: 0.7,
+      tags: ['daily', 'comfortable', 'familiar']
+    };
+  }
+  
+  // テクノロジー・仕事ベース
+  if (keywords.includes('technology') || keywords.includes('work')) {
+    return {
+      category: 'digital',
+      description: 'デジタル時代の集中とクリエイティビティ',
+      energy: 0.6,
+      valence: 0.6,
+      tags: ['technology', 'focused', 'modern']
+    };
+  }
+  
   // 時間帯ベース
   if (keywords.includes('morning')) {
     return {
@@ -168,7 +344,52 @@ const determineMusicMoodFromContent = (analysis: ContentAnalysis): MusicMood => 
     };
   }
   
+  // 🚀 感情ベースの判定（キーワードでマッチしなかった場合）
+  if (emotions.includes('excited') || emotions.includes('happy')) {
+    console.log('✅ Found excited/happy emotions! Returning upbeat category');
+    return {
+      category: 'upbeat',
+      description: '明るく元気な気分',
+      energy: 0.9,
+      valence: 0.9,
+      tags: ['happy', 'energetic', 'positive']
+    };
+  }
+  
+  if (emotions.includes('peaceful') || emotions.includes('serene')) {
+    console.log('✅ Found peaceful emotions! Returning chill category');
+    return {
+      category: 'chill',
+      description: '穏やかでリラックスした雰囲気',
+      energy: 0.3,
+      valence: 0.7,
+      tags: ['chill', 'relaxing', 'peaceful']
+    };
+  }
+  
+  if (emotions.includes('nostalgic')) {
+    console.log('✅ Found nostalgic emotions! Returning nostalgic category');
+    return {
+      category: 'nostalgic',
+      description: '懐かしさと思い出に浸る',
+      energy: 0.4,
+      valence: 0.6,
+      tags: ['nostalgic', 'memories', 'reflective']
+    };
+  }
+  
   // デフォルト
+  console.log('⚠️ No specific conditions matched, using balanced default');
+  console.log('🎯 FINAL analysis summary:', {
+    totalKeywords: keywords.length,
+    totalEmotions: emotions.length,
+    totalLocations: locations.length,
+    keywords: JSON.stringify(keywords),
+    emotions: JSON.stringify(emotions),
+    locations: JSON.stringify(locations),
+    message: 'No specific patterns detected - falling back to balanced music'
+  });
+  
   return {
     category: 'balanced',
     description: 'バランスの取れた心地よい雰囲気',
@@ -178,7 +399,7 @@ const determineMusicMoodFromContent = (analysis: ContentAnalysis): MusicMood => 
   };
 };
 
-// 🎯 AI分析結果から具体的な内容を抽出
+// 🎯 AI分析結果から具体的な内容を抽出（実際のユーザーデータに基づく完全修正版）
 const extractFromAIAnalysis = (post: Post) => {
   const analysis = {
     detectedElements: [],
@@ -189,7 +410,116 @@ const extractFromAIAnalysis = (post: Post) => {
     reasoning: ''
   };
   
-  // AI画像分析結果を解析
+  console.log('🔍 ENHANCED extractFromAIAnalysis input:', {
+    title: post.title,
+    hasImageAIDescription: !!post.imageAIDescription,
+    imageAIDescriptionPreview: post.imageAIDescription?.substring(0, 150) + '...',
+    hasPhotoScore: !!post.photoScore,
+    photoScoreDetails: post.photoScore?.image_analysis?.specificContent?.substring(0, 100),
+    hasAIComments: !!(post.aiComments && post.aiComments.length > 0)
+  });
+  
+  // タイトルから直接分析（実際のユーザーデータパターンに基づく）
+  const title = post.title.toLowerCase();
+  console.log('🔍 Analyzing title for specific content:', title);
+  
+  // 🌊 海・自然の検出（実際のデータ: "海"）
+  if (title.includes('海')) {
+    analysis.detectedElements.push('ocean', 'nature', 'coastal');
+    analysis.emotions.push('peaceful', 'expansive', 'serene');
+    analysis.musicalContext = 'ocean_waves';
+    analysis.specificContent.push('海の風景');
+    console.log('✅ Detected ocean from title');
+  }
+  
+  // 👥 人物の検出（実際のデータ: "人間"）
+  if (title.includes('人間') || title.includes('人') || title.includes('人物')) {
+    analysis.detectedElements.push('people', 'human_connection', 'social');
+    analysis.emotions.push('social', 'warm', 'human');
+    analysis.musicalContext = 'human_stories';
+    analysis.specificContent.push('人物の写真');
+    console.log('✅ Detected people from title');
+  }
+  
+  // 🎯 PhotoScore の画像分析から抽出（実際のUIデータを完全解析）
+  if (post.photoScore?.image_analysis?.specificContent) {
+    const specificContent = post.photoScore.image_analysis.specificContent.toLowerCase();
+    console.log('🔍 ENHANCED Analyzing specificContent:', specificContent);
+    
+    // 実際のデータ例: "3人の男性、帽、道路、緑の木々"
+    // 人物検出の強化
+    if (specificContent.includes('男性') || specificContent.includes('女性') || specificContent.includes('人') || specificContent.includes('people')) {
+      analysis.detectedElements.push('people', 'human_connection', 'social_scene');
+      analysis.emotions.push('social', 'warm', 'human_interaction');
+      analysis.musicalContext = 'human_stories';
+      analysis.specificContent.push('人物が含まれる写真');
+      console.log('✅ Enhanced people detection from specificContent');
+    }
+    
+    // 帽子・ファッション検出
+    if (specificContent.includes('帽') || specificContent.includes('服') || specificContent.includes('ファッション')) {
+      analysis.detectedElements.push('fashion', 'lifestyle', 'casual');
+      analysis.emotions.push('stylish', 'casual', 'contemporary');
+      analysis.musicalContext = 'lifestyle_moments';
+    }
+    
+    // 道路・交通の検出
+    if (specificContent.includes('道路') || specificContent.includes('street') || specificContent.includes('道')) {
+      analysis.detectedElements.push('road', 'journey', 'urban');
+      analysis.emotions.push('freedom', 'movement', 'exploration');
+      analysis.musicalContext = 'road_trip';
+      analysis.specificContent.push('道路の風景');
+      console.log('✅ Enhanced road detection from specificContent');
+    }
+    
+    // 植生・自然の検出（実際のデータ: "緑の木々"）
+    if (specificContent.includes('木') || specificContent.includes('緑') || specificContent.includes('植生') || specificContent.includes('自然')) {
+      analysis.detectedElements.push('trees', 'nature', 'green_scenery');
+      analysis.emotions.push('natural', 'fresh', 'organic');
+      analysis.musicalContext = 'nature_sounds';
+      analysis.specificContent.push('自然の緑');
+      console.log('✅ Enhanced nature detection from specificContent');
+    }
+    
+    // 実際のデータ例: "海岸線、山々、道路、植生"
+    if (specificContent.includes('海岸') || specificContent.includes('海岸線')) {
+      analysis.detectedElements.push('coastline', 'ocean', 'scenic_route');
+      analysis.emotions.push('coastal', 'scenic', 'breathtaking');
+      analysis.musicalContext = 'coastal_drive';
+      analysis.specificContent.push('海岸線の景色');
+      console.log('✅ Enhanced coastline detection');
+    }
+    
+    if (specificContent.includes('山') || specificContent.includes('山々')) {
+      analysis.detectedElements.push('mountains', 'highlands', 'majestic_view');
+      analysis.emotions.push('majestic', 'elevated', 'inspiring');
+      analysis.musicalContext = 'mountain_majesty';
+      analysis.specificContent.push('山々の風景');
+      console.log('✅ Enhanced mountain detection');
+    }
+    
+    // 💻 実際のデータ例: "メールアドレス、フォント設定、HTMLスタイル"
+    if (specificContent.includes('メール') || specificContent.includes('フォント') || specificContent.includes('html') || specificContent.includes('設定') || specificContent.includes('画面') || specificContent.includes('google')) {
+      analysis.detectedElements.push('technology', 'work', 'digital_interface');
+      analysis.emotions.push('focused', 'productive', 'technical');
+      analysis.musicalContext = 'digital_life';
+      analysis.specificContent.push('デジタル作業環境');
+      console.log('✅ Enhanced technology detection from specificContent');
+    }
+    
+    // Webフォーム・アンケート関連（実際のデータ例に基づく）
+    if (specificContent.includes('フォーム') || specificContent.includes('アンケート') || specificContent.includes('入力') || specificContent.includes('質問')) {
+      analysis.detectedElements.push('interface', 'interaction', 'systematic');
+      analysis.emotions.push('systematic', 'organized', 'methodical');
+      analysis.musicalContext = 'workflow';
+      analysis.specificContent.push('インターフェース操作');
+      console.log('✅ Enhanced interface detection');
+    }
+    
+    analysis.specificContent.push(post.photoScore.image_analysis.specificContent);
+  }
+  
+  // AI画像分析結果を解析（従来の方法）
   if (post.imageAIDescription) {
     const aiDesc = post.imageAIDescription.toLowerCase();
     
@@ -259,6 +589,47 @@ const extractFromAIAnalysis = (post: Post) => {
       analysis.detectedElements.push('terminal', 'modern_architecture');
       analysis.emotions.push('busy', 'purposeful');
     }
+    
+    // 🌊 自然・風景の検出
+    if (aiDesc.includes('海') || aiDesc.includes('ocean') || aiDesc.includes('sea') || aiDesc.includes('海岸')) {
+      analysis.detectedElements.push('ocean', 'nature');
+      analysis.emotions.push('peaceful', 'expansive');
+      analysis.musicalContext = 'ocean_waves';
+    }
+    if (aiDesc.includes('山') || aiDesc.includes('mountain')) {
+      analysis.detectedElements.push('mountain', 'nature');
+      analysis.emotions.push('majestic', 'grounded');
+      analysis.musicalContext = 'mountain_heights';
+    }
+    if (aiDesc.includes('道路') || aiDesc.includes('road') || aiDesc.includes('ドライブ')) {
+      analysis.detectedElements.push('road', 'journey');
+      analysis.emotions.push('freedom', 'adventure');
+      analysis.musicalContext = 'road_trip';
+    }
+    
+    // 👥 人物・日常の検出
+    if (aiDesc.includes('人') || aiDesc.includes('男性') || aiDesc.includes('女性') || aiDesc.includes('people')) {
+      analysis.detectedElements.push('people', 'human_connection');
+      analysis.emotions.push('social', 'warm');
+      analysis.musicalContext = 'human_stories';
+    }
+    if (aiDesc.includes('住宅街') || aiDesc.includes('日常') || aiDesc.includes('カジュアル')) {
+      analysis.detectedElements.push('daily_life', 'casual');
+      analysis.emotions.push('comfortable', 'familiar');
+      analysis.musicalContext = 'everyday_moments';
+    }
+    
+    // 💻 テクノロジー・仕事の検出
+    if (aiDesc.includes('メール') || aiDesc.includes('設定') || aiDesc.includes('画面') || aiDesc.includes('google')) {
+      analysis.detectedElements.push('technology', 'work');
+      analysis.emotions.push('focused', 'productive');
+      analysis.musicalContext = 'digital_life';
+    }
+    if (aiDesc.includes('フォーム') || aiDesc.includes('アンケート') || aiDesc.includes('入力')) {
+      analysis.detectedElements.push('interface', 'interaction');
+      analysis.emotions.push('systematic', 'organized');
+      analysis.musicalContext = 'workflow';
+    }
   }
   
   // AI コメントからも抽出
@@ -315,7 +686,7 @@ const analyzeImageMetadataFromPost = (post: Post) => {
   };
   
   // 投稿時間から推測
-  const postDate = new Date(post.created_at);
+  const postDate = new Date(post.createdAt);
   const hour = postDate.getHours();
   const month = postDate.getMonth() + 1;
   
@@ -346,7 +717,7 @@ const analyzeImageMetadataFromPost = (post: Post) => {
   }
   
   // タイトルやコメントから技術的推測
-  const text = (post.title + ' ' + (post.content || '') + ' ' + (post.userComment || '')).toLowerCase();
+  const text = (post.title + ' ' + (post.userComment || '')).toLowerCase();
   
   if (text.includes('夜景') || text.includes('night')) {
     insights.tags.push('night_photography', 'long_exposure');
@@ -375,12 +746,67 @@ const analyzeImageMetadataFromPost = (post: Post) => {
   }
   
   // いいね数から写真の魅力度推測
-  if (post.likes_count && post.likes_count > 5) {
+  if (post.likeCount && post.likeCount > 5) {
     insights.tags.push('appealing', 'well_composed');
     insights.technicalAnalysis = '魅力的な構図（いいね多数）';
   }
   
   return insights.tags.length > 0 ? insights : null;
+};
+
+// 🎯 詳細な理由説明を生成（透明性を提供）
+const generateDetailedReasoning = (metadataInsights: any[], contentAnalysis: any, musicMood: any): string => {
+  const reasons: string[] = [];
+  
+  // 検出された具体的内容を説明
+  if (metadataInsights.length > 0) {
+    const specificContents = metadataInsights
+      .filter(insight => insight.specificContent && insight.specificContent.length > 0)
+      .flatMap(insight => insight.specificContent);
+    
+    if (specificContents.length > 0) {
+      reasons.push(`「${specificContents.slice(0, 2).join('・')}」を検出`);
+    }
+  }
+  
+  // キーワードベースの説明
+  if (contentAnalysis.keywords.length > 0) {
+    const keywordGroups = {
+      people: ['people', 'human_connection', 'social', 'social_scene'],
+      nature: ['ocean', 'coastal', 'coastline', 'mountains', 'trees', 'nature'],
+      road: ['road', 'journey', 'urban'],
+      tech: ['technology', 'work', 'digital_interface', 'interface']
+    };
+    
+    for (const [group, groupKeywords] of Object.entries(keywordGroups)) {
+      const matchedKeywords = contentAnalysis.keywords.filter(k => groupKeywords.includes(k));
+      if (matchedKeywords.length > 0) {
+        switch (group) {
+          case 'people':
+            reasons.push('人物・社交的な要素');
+            break;
+          case 'nature':
+            reasons.push('自然・風景的な要素');
+            break;
+          case 'road':
+            reasons.push('道路・旅的な要素');
+            break;
+          case 'tech':
+            reasons.push('デジタル・作業的な要素');
+            break;
+        }
+        break; // 最初にマッチしたグループのみ
+      }
+    }
+  }
+  
+  // 感情ベースの説明
+  if (contentAnalysis.emotions.length > 0) {
+    const emotionSummary = contentAnalysis.emotions.slice(0, 2).join('・');
+    reasons.push(`${emotionSummary}な雰囲気`);
+  }
+  
+  return reasons.length > 0 ? reasons.join('、') : '写真の全体的な雰囲気';
 };
 
 export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
@@ -389,9 +815,14 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
   const [analyzedPosts, setAnalyzedPosts] = useState<Post[]>([]);
   const [metadataAnalysis, setMetadataAnalysis] = useState<any[]>([]);
 
+  console.log('🎵 SpotifyMoodSync rendered with posts:', posts.length);
+
   useEffect(() => {
+    console.log('🎵 SpotifyMoodSync useEffect triggered, posts.length:', posts.length);
     if (posts.length > 0) {
       analyzeMoodFromPhotos();
+    } else {
+      console.log('🎵 No posts available for music analysis');
     }
   }, [posts]);
 
@@ -400,6 +831,18 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
       // 最近の投稿から感情を分析
       const recentPosts = posts.slice(0, 5);
       console.log('🎵 Analyzing posts for music sync:', recentPosts.length);
+      
+      // デバッグ用：各投稿のAI分析データを確認
+      recentPosts.forEach((post, idx) => {
+        console.log(`🔍 Post ${idx + 1} debugging:`, {
+          title: post.title,
+          hasImageAIDescription: !!post.imageAIDescription,
+          imageAIDescription: post.imageAIDescription?.substring(0, 100),
+          hasAIComments: !!(post.aiComments && post.aiComments.length > 0),
+          aiCommentsCount: post.aiComments?.length || 0,
+          hasPhotoScore: !!post.photoScore
+        });
+      });
       
       // テキスト分析によるキーワード抽出
       const keywords: string[] = [];
@@ -410,6 +853,8 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
       recentPosts.forEach(post => {
         // 🎯 AIが実際に分析した内容を優先使用
         const aiAnalysis = extractFromAIAnalysis(post);
+        console.log(`🎯 AI Analysis for "${post.title}":`, JSON.stringify(aiAnalysis));
+        
         if (aiAnalysis) {
           metadataInsights.push({
             postId: post.id,
@@ -430,8 +875,8 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
           keywords.push(...titleKeywords);
         }
         
-        if (post.content || post.userComment) {
-          const text = post.content || post.userComment || '';
+        if (post.userComment) {
+          const text = post.userComment || '';
           const textEmotions = extractEmotions(text);
           emotions.push(...textEmotions);
           
@@ -449,18 +894,46 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
         }
       });
       
-      console.log('🎵 Extracted analysis:', { keywords, emotions, locations });
+      console.log('🎵 Extracted analysis:', { 
+        keywords: keywords, 
+        emotions: emotions, 
+        locations: locations,
+        keywordsCount: keywords.length,
+        emotionsCount: emotions.length,
+        locationsCount: locations.length
+      });
       
       // キーワードベースで音楽カテゴリを決定
-      const musicMood = determineMusicMoodFromContent({
+      const contentAnalysis = {
         keywords: [...new Set(keywords)], // 重複除去
         emotions: [...new Set(emotions)],
         locations: [...new Set(locations)]
+      };
+      
+      console.log('🎵 Final content analysis for music mood:', {
+        ...contentAnalysis,
+        keywordsArray: contentAnalysis.keywords,
+        emotionsArray: contentAnalysis.emotions,
+        locationsArray: contentAnalysis.locations
       });
       
+      const musicMood = determineMusicMoodFromContent(contentAnalysis);
+      
+      console.log('🎵 Determined music mood:', musicMood);
+      
+      // 🎯 分析理由の詳細生成
+      const detailedReasoning = generateDetailedReasoning(metadataInsights, contentAnalysis, musicMood);
+      console.log('🎵 Generated detailed reasoning:', detailedReasoning);
+      
       // 分析結果に基づいて音楽を推薦
-      setPhotoMood(musicMood.description);
+      setPhotoMood(musicMood.description + ' - ' + detailedReasoning);
       const recommendations = await spotifyService.getContentBasedRecommendations(musicMood);
+      
+      console.log('🎵 Setting recommendations:', {
+        recommendationsLength: recommendations.length,
+        recommendations: JSON.stringify(recommendations, null, 2)
+      });
+      
       setMoodRecommendations(recommendations);
       setAnalyzedPosts(recentPosts);
       setMetadataAnalysis(metadataInsights);
@@ -480,6 +953,14 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
     }
   };
 
+  console.log('🎵 SpotifyMoodSync rendering:', {
+    postsLength: posts.length,
+    moodRecommendationsLength: moodRecommendations.length,
+    photoMood: photoMood,
+    analyzedPostsLength: analyzedPosts.length,
+    moodRecommendations: JSON.stringify(moodRecommendations)
+  });
+
   return (
     <div className="bg-white rounded-lg shadow p-6 mt-6">
       <div className="flex items-center gap-3 mb-4">
@@ -487,14 +968,17 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
           <Music2 className="w-6 h-6 text-purple-600" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold">写真の雰囲気に合う音楽</h3>
+          <h3 className="text-lg font-semibold">🎵 写真の雰囲気に合う音楽</h3>
           <p className="text-sm text-gray-600">
-            あなたの写真から感じる雰囲気：{photoMood}
+            あなたの写真から感じる雰囲気：{photoMood || '分析中...'}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            デバッグ: posts={posts.length}, recommendations={moodRecommendations.length}
           </p>
         </div>
       </div>
 
-      {moodRecommendations.length > 0 && (
+      {moodRecommendations.length > 0 ? (
         <div className="space-y-4">
           {moodRecommendations.map((rec, index) => (
             <div key={index} className="bg-gray-50 rounded-lg p-4">
@@ -522,6 +1006,18 @@ export const SpotifyMoodSync: React.FC<SpotifyMoodSyncProps> = ({ posts }) => {
               </div>
             </div>
           ))}
+        </div>
+      ) : (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <p className="text-blue-700 text-sm">
+            🎵 写真を分析して音楽を推薦中です...
+            {posts.length === 0 && ' まず写真を投稿してください。'}
+          </p>
+          {posts.length > 0 && (
+            <p className="text-xs text-blue-600 mt-1">
+              投稿数: {posts.length}件 | 分析済み: {analyzedPosts.length}件
+            </p>
+          )}
         </div>
       )}
 

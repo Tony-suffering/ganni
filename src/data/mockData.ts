@@ -37,10 +37,10 @@ const generateAIComments = (): AIComment[] => [
 export const mockPosts: Post[] = [
   {
     id: '1',
-    title: '光の聖堂 - 羽田空港の朝',
+    title: '光の聖堂 - 朝の家での時間',
     imageUrl: 'https://images.pexels.com/photos/358319/pexels-photo-358319.jpeg?auto=compress&cs=tinysrgb&w=800',
-    aiDescription: 'A magnificent glass terminal stretches endlessly, with natural light streaming through geometric patterns. The architectural grandeur creates a cathedral-like atmosphere where travelers become silhouettes against the luminous backdrop.',
-    userComment: '羽田空港の国際線ターミナルで撮影。朝の光が建物全体を包み込んで、まるで光の聖堂のようでした。旅立ちの高揚感と建築の美しさが重なる瞬間。',
+    aiDescription: 'A magnificent room is filled with natural light streaming through geometric patterns. The architectural beauty creates a cathedral-like atmosphere where everyday moments become silhouettes against the luminous backdrop.',
+    userComment: '家のリビングで撮影。朝の光が部屋全体を包み込んで、まるで光の聖堂のようでした。日常の中の小さな幸せと建築の美しさが重なる瞬間。',
     tags: [mockTags[1], mockTags[6]],
     createdAt: '2024-01-15T08:30:00Z',
     updatedAt: '2024-01-15T08:30:00Z',
@@ -54,10 +54,10 @@ export const mockPosts: Post[] = [
   },
   {
     id: '2',
-    title: '雲海を舞う - 成田発の詩',
+    title: '雲海を舞う - 散歩での風景',
     imageUrl: 'https://images.pexels.com/photos/912050/pexels-photo-912050.jpeg?auto=compress&cs=tinysrgb&w=800',
-    aiDescription: 'A commercial aircraft gracefully ascends against a canvas of golden clouds, its silhouette cutting through the amber twilight sky. The scene captures the poetry of flight in its most serene moment.',
-    userComment: '成田から飛び立つ瞬間を捉えました。夕日に染まった雲海の中を上昇していく機体が、まるで空の舞踏のよう。旅の始まりの感動がよみがえります。',
+    aiDescription: 'Clouds gracefully float against a canvas of golden sky, creating beautiful silhouettes through the amber twilight. The scene captures the poetry of nature in its most serene moment.',
+    userComment: '散歩中に空を見上げた瞬間を捉えました。夕日に染まった雲海が、まるで空の舞踏のよう。日常の中の小さな感動がよみがえります。',
     tags: [mockTags[0], mockTags[9]],
     createdAt: '2024-01-14T18:45:00Z',
     updatedAt: '2024-01-14T18:45:00Z',
@@ -151,8 +151,8 @@ export const mockPosts: Post[] = [
     id: '6',
     title: '黄金の休息 - 夕方のカフェタイム',
     imageUrl: 'https://images.pexels.com/photos/2026365/pexels-photo-2026365.jpeg?auto=compress&cs=tinysrgb&w=800',
-    aiDescription: 'Golden hour bathes the terminal in warm amber light, transforming ordinary waiting areas into spaces of contemplation and dreams. Shadows and light play together in perfect harmony.',
-    userComment: '夕方の空港カフェ。旅行者がコーヒーを飲みながら窓の外を眺める姿が、とても絵になっていました。旅の途中の束の間の安らぎ。',
+    aiDescription: 'Golden hour bathes the cafe in warm amber light, transforming ordinary seating areas into spaces of contemplation and dreams. Shadows and light play together in perfect harmony.',
+    userComment: '夕方のカフェ。お客さんがコーヒーを飲みながら窓の外を眺める姿が、とても絵になっていました。日常の中の束の間の安らぎ。',
     tags: [mockTags[1], mockTags[5]],
     createdAt: '2024-01-10T17:20:00Z',
     updatedAt: '2024-01-10T17:20:00Z',
@@ -161,7 +161,7 @@ export const mockPosts: Post[] = [
       {
         id: '8',
         type: 'comment',
-        content: 'カフェタイムが旅のハイライトだよね ☕ 黄金の光がいい感じ出してる',
+        content: 'カフェタイムが日常のハイライトだよね ☕ 黄金の光がいい感じ出してる',
         createdAt: new Date(Date.now() - 6300000).toISOString()
       },
       {

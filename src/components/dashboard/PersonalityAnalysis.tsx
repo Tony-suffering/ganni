@@ -13,7 +13,6 @@ import {
   Lightbulb
 } from 'lucide-react';
 import { Post } from '../../types';
-import { MonetizationEngine } from '../monetization/MonetizationEngine';
 import { analyticsService } from '../../services/analyticsService';
 
 interface PersonalityAnalysisProps {

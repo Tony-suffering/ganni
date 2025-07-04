@@ -3,8 +3,8 @@ import { motion } from 'framer-motion';
 import { Sparkles, Search, ArrowRight } from 'lucide-react';
 import { supabase } from '../../supabase';
 import { Post } from '../../types';
-import { MasonryGrid } from '../MasonryGrid';
-import { PostModal } from '../PostModal';
+import { MasonryGrid } from '../layout/MasonryGrid';
+import { PostModal } from '../modals/PostModal';
 
 interface CollectionTabProps {
   userId: string;

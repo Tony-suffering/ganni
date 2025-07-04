@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../supabase';
 import { Post } from '../types';
 import PostCard from '../components/PostCard';
-import { MasonryGrid } from '../components/MasonryGrid';
+import { MasonryGrid } from '../components/layout/MasonryGrid';
 
 interface InspirationData {
   id: string;

@@ -737,15 +737,20 @@ export const usePosts = (): UsePostsReturn => {
       .eq('id', postId)
       .single();
     
-    if (postData && postData.author_id !== user.id) {
+    if (postData) {
       // 通知作成
-      const { createNotification } = await import('../utils/notifications');
-      await createNotification({
-        recipientId: postData.author_id,
-        senderId: user.id,
-        postId: postId,
-        type: 'like'
-      });
+      if (postData.author_id !== user.id) {
+        const { createNotification } = await import('../utils/notifications');
+        await createNotification({
+          recipientId: postData.author_id,
+          senderId: user.id,
+          postId: postId,
+          type: 'like'
+        });
+      }
+
+      // ポイント付与機能は無効化
+      // console.log('いいね機能正常動作');
     }
     
     await fetchPosts();
@@ -766,15 +771,20 @@ export const usePosts = (): UsePostsReturn => {
       .eq('id', postId)
       .single();
     
-    if (postData && postData.author_id !== user.id) {
+    if (postData) {
       // 通知削除
-      const { deleteNotification } = await import('../utils/notifications');
-      await deleteNotification({
-        recipientId: postData.author_id,
-        senderId: user.id,
-        postId: postId,
-        type: 'like'
-      });
+      if (postData.author_id !== user.id) {
+        const { deleteNotification } = await import('../utils/notifications');
+        await deleteNotification({
+          recipientId: postData.author_id,
+          senderId: user.id,
+          postId: postId,
+          type: 'like'
+        });
+      }
+
+      // ポイント機能は無効化
+      // console.log('いいね取り消し機能正常動作');
     }
     
     await fetchPosts();
@@ -792,6 +802,21 @@ export const usePosts = (): UsePostsReturn => {
       console.error("Error bookmarking post:", error);
       setAllPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: false } : p));
       setDisplayedPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: false } : p));
+    } else {
+      // ブックマーク成功時にポイント付与
+      try {
+        // 投稿者IDを取得
+        const { data: postData } = await supabase
+          .from('posts')
+          .select('author_id')
+          .eq('id', postId)
+          .single();
+
+        // ポイント機能は無効化
+        // console.log('ブックマーク機能正常動作');
+      } catch (pointError) {
+        console.warn('⚠️ ブックマークエラー:', pointError);
+      }
     }
   }, []);
 
@@ -806,6 +831,21 @@ export const usePosts = (): UsePostsReturn => {
       console.error("Error unbookmarking post:", error);
       setAllPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: true } : p));
       setDisplayedPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: true } : p));
+    } else {
+      // ブックマーク削除成功時にポイント削除
+      try {
+        // 投稿者IDを取得
+        const { data: postData } = await supabase
+          .from('posts')
+          .select('author_id')
+          .eq('id', postId)
+          .single();
+
+        // ポイント機能は無効化
+        // console.log('ブックマーク削除機能正常動作');
+      } catch (pointError) {
+        console.warn('⚠️ ブックマーク削除エラー:', pointError);
+      }
     }
   }, []);
 

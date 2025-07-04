@@ -496,3 +496,6 @@ ${description ? `説明: ${description}` : ''}
     return { level: 'E', description: '要練習', color: '#FFEAA7' };
   }
 }
+
+// インスタンスをエクスポート
+export const photoScoringService = new PhotoScoringService();

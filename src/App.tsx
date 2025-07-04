@@ -16,20 +16,18 @@ import { analyticsService } from './services/analyticsService';
 import { PostBonusService } from './services/postBonusService';
 
 // Components
-import { Header } from './components/Header';
-import { PhotoRankingSection } from './components/PhotoRankingSection';
-import { MasonryGrid } from './components/MasonryGrid';
-import { PostModal } from './components/PostModal';
-import { NewPostModal } from './components/NewPostModal';
-import { AIAnalysisResultModal } from './components/AIAnalysisResultModal';
+import { Header } from './components/navigation/Header';
+import { PhotoRankingSection } from './components/scoring/PhotoRankingSection';
+import { MasonryGrid } from './components/layout/MasonryGrid';
+import { PostModal } from './components/modals/PostModal';
+import { NewPostModal } from './components/modals/NewPostModal';
+import { AIAnalysisResultModal } from './components/modals/AIAnalysisResultModal';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { LoginModal } from './components/auth/LoginModal';
 import { RegisterModal } from './components/auth/RegisterModal';
 import { PersonalJourneyCTA } from './components/cta/PersonalJourneyCTA';
-import BottomNavBar from './components/BottomNavBar';
+import BottomNavBar from './components/navigation/BottomNavBar';
 import UserProfile from './pages/UserProfile';
-import { ImageDebugTest } from './components/ImageDebugTest';
-import { LazyImageDirectTest } from './components/LazyImageDirectTest';
 import { UserPointsDisplay } from './components/gamification/UserPointsDisplay';
 import { UserBadgesDisplay } from './components/gamification/UserBadgesDisplay';
 
@@ -64,7 +62,8 @@ function AppContent() {
   // useAuthフックで認証状態とローディング状態を取得
   const { loading: authLoading, user } = useAuth();
   
-  // ゲーミフィケーションデータを取得
+  // ゲーミフィケーションデータを取得（条件付き）
+  const shouldLoadGamification = !!user && !authLoading;
   const { userPoints, levelInfo, displayBadges, photoStats, loading: gamificationLoading } = useGamification();
   
   // 画面サイズ監視
@@ -144,6 +143,7 @@ function AppContent() {
     photoScore,
     aiComments,
     productRecommendations,
+    personalPattern,
     progress,
     isAnalysisComplete,
     analyzePost,
@@ -156,6 +156,17 @@ function AppContent() {
     updateIntervalMinutes: 30, // 30分間隔で更新
     enabled: !authLoading && !postsLoading
   });
+
+  // デバッグ用: モーダルの状態を確認
+  useEffect(() => {
+    console.log('🔍 Modal states:', {
+      isAnalysisModalOpen,
+      analyzingPostId,
+      isAnalyzing,
+      photoScore: !!photoScore,
+      aiComments: aiComments?.length || 0
+    });
+  }, [isAnalysisModalOpen, analyzingPostId, isAnalyzing, photoScore, aiComments]);
 
   // フィルター機能は削除済み - シンプルな無限ローディングのみ
 
@@ -278,18 +289,6 @@ function AppContent() {
       setSelectedPost(post);
     }
   };
-
-
-  // デバッグ用: モーダルの状態を確認
-  useEffect(() => {
-    console.log('🔍 Modal states:', {
-      isAnalysisModalOpen,
-      analyzingPostId,
-      isAnalyzing,
-      photoScore: !!photoScore,
-      aiComments: aiComments?.length || 0
-    });
-  }, [isAnalysisModalOpen, analyzingPostId, isAnalyzing, photoScore, aiComments]);
 
   // ユーザーがログインしている場合の表示
   return (
@@ -442,6 +441,7 @@ function AppContent() {
         photoScore={photoScore}
         aiComments={aiComments}
         productRecommendations={productRecommendations}
+        personalPattern={personalPattern}
         isAnalyzing={isAnalyzing}
         analysisProgress={progress}
       />

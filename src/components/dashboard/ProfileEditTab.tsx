@@ -140,6 +140,9 @@ export const ProfileEditTab: React.FC<ProfileEditTabProps> = ({ userId, user }) 
         setMessage('プロフィールを更新しました');
         setMessageType('success');
       }
+      
+      // プロフィール完成度ボーナス機能は無効化
+      // console.log('プロフィール更新完了');
 
       // 3. 投稿の作者名も更新（もし投稿がある場合）
       try {

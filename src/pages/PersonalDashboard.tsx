@@ -305,8 +305,14 @@ export const PersonalDashboard: React.FC = () => {
                   transition={{ duration: 0.3 }}
                 >
                   <SpotifyIntegration />
-                  {posts.length > 0 && (
+                  {posts.length > 0 ? (
                     <SpotifyMoodSync posts={posts} />
+                  ) : (
+                    <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-yellow-700">
+                        音楽推薦を表示するには、まず写真を投稿してください。
+                      </p>
+                    </div>
                   )}
                 </motion.div>
               )}

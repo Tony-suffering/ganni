@@ -48,10 +48,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     // 認証状態の変化を監視するリスナーを設定
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // ログイン処理完了
+        if (event === 'SIGNED_IN' && session?.user) {
+          console.log('✅ ユーザーログイン完了:', session.user.id);
+        }
       }
     );
 
@@ -134,8 +139,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {/* 認証状態のチェックが終わるまで子要素を表示しない */}
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };

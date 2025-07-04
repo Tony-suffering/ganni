@@ -1,5 +1,5 @@
 {
-  "name": "airport-moments-blog",
+  "name": "ai-diary",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -47,7 +47,7 @@
     "typescript-eslint": "^8.3.0",
     "vite": "^5.4.2"
   },
-  "description": "美しい空港写真とAI生成コメントを共有するブログプラットフォーム",
+  "description": "日々のできごとや思いを写真とAIコメントで記録するデジタル日記アプリ",
   "main": "eslint.config.js",
   "repository": {
     "type": "git",

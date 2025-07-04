@@ -123,7 +123,7 @@ export const useGamification = () => {
       console.error('❌ ポイント取得エラー:', error);
       setError('ポイント情報の取得に失敗しました');
     }
-  }, [user]);
+  }, [user?.id]);
 
   // ユーザーバッジ取得
   const fetchUserBadges = useCallback(async () => {
@@ -161,7 +161,7 @@ export const useGamification = () => {
       console.error('バッジ取得エラー:', error);
       setError('バッジ情報の取得に失敗しました');
     }
-  }, [user]);
+  }, [user?.id]);
 
   // 利用可能なバッジ取得
   const fetchAvailableBadges = useCallback(async () => {
@@ -235,7 +235,7 @@ export const useGamification = () => {
       console.error('❌ 統計取得エラー:', error);
       // エラーがあってもアプリケーションを停止させない
     }
-  }, [user]);
+  }, [user?.id]);
 
   // ランキング取得
   const fetchRanking = useCallback(async (type: 'learning' | 'influence' | 'total' = 'total', limit: number = 10): Promise<RankingUser[]> => {
@@ -322,6 +322,23 @@ export const useGamification = () => {
     try {
       console.log('📸 写真スコア統計取得開始 - ユーザーID:', user.id);
       
+      // まずテーブルの存在を確認
+      const { data: testData, error: testError } = await supabase
+        .from('posts')
+        .select('id')
+        .eq('author_id', user.id)
+        .limit(1);
+      
+      if (testError) {
+        console.warn('⚠️ posts テーブルにアクセスできません:', testError);
+        setPhotoStats({
+          averagePhotoScore: 0,
+          highestPhotoScore: 0,
+          totalPhotoScores: 0
+        });
+        return;
+      }
+      
       const userPostService = new UserPostService();
       const stats = await userPostService.getUserStats(user.id);
       
@@ -346,7 +363,7 @@ export const useGamification = () => {
         totalPhotoScores: 0
       });
     }
-  }, [user]);
+  }, [user?.id]);
 
   // バッジ表示切り替え
   const toggleBadgeDisplay = useCallback(async (badgeId: string, isDisplayed: boolean) => {
@@ -369,7 +386,7 @@ export const useGamification = () => {
     } catch (error) {
       console.error('バッジ表示切り替えエラー:', error);
     }
-  }, [user, fetchUserBadges]);
+  }, [user?.id, fetchUserBadges]);
 
   // リアルタイムポイント更新の処理
   const handlePointsUpdate = useCallback((payload: any) => {
@@ -400,7 +417,7 @@ export const useGamification = () => {
     }
   }, [user?.id]); // fetchUserPointsの代わりにuser.idのみを依存関係にする
 
-  // 初期データ読み込み
+  // 初期データ読み込み（遅延ロード）
   useEffect(() => {
     const loadData = async () => {
       if (!user) {
@@ -408,25 +425,46 @@ export const useGamification = () => {
         return;
       }
 
+      // 基本的なポイントデータのみを同期的に読み込む
       setLoading(true);
+      setError(null);
+      
       try {
-        await Promise.all([
-          fetchUserPoints(),
-          fetchUserBadges(),
-          fetchAvailableBadges(),
-          fetchUserStats(),
-          fetchPhotoStats()
-        ]);
+        console.log('🔄 ゲーミフィケーションデータの読み込み開始');
+        
+        // 最重要データのみを最初に読み込む
+        await fetchUserPoints();
+        setLoading(false);
+        
+        // 他のデータは非同期で順次読み込み
+        setTimeout(() => {
+          fetchUserBadges();
+        }, 50);
+        
+        setTimeout(() => {
+          fetchAvailableBadges();
+        }, 100);
+        
+        setTimeout(() => {
+          fetchUserStats();
+        }, 150);
+        
+        setTimeout(() => {
+          fetchPhotoStats();
+        }, 200);
+        
+        console.log('✅ ゲーミフィケーションデータの読み込み完了');
       } catch (error) {
-        console.error('データ読み込みエラー:', error);
+        console.error('❌ データ読み込みエラー:', error);
         setError('データの読み込みに失敗しました');
-      } finally {
         setLoading(false);
       }
     };
 
-    loadData();
-  }, [user, fetchUserPoints, fetchUserBadges, fetchAvailableBadges, fetchUserStats, fetchPhotoStats]);
+    // デバウンスして重複実行を防ぐ
+    const timeoutId = setTimeout(loadData, 10);
+    return () => clearTimeout(timeoutId);
+  }, [user?.id]); // userオブジェクトではなくuser.idのみを依存関係に
 
   // リアルタイムポイント更新のSubscription
   useEffect(() => {

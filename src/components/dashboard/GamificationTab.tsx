@@ -26,10 +26,14 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId }) => {
     userPoints, 
     userBadges, 
     levelInfo,
-    pointHistory,
-    rankings,
-    loading 
-  } = useGamification(userId);
+    loading,
+    error,
+    fetchRanking
+  } = useGamification();
+  
+  // モックデータ（実際の実装では適切なデータを取得）
+  const pointHistory: any[] = [];
+  const rankings: any[] = [];
 
   const [activeSection, setActiveSection] = useState<'overview' | 'bonuses' | 'history' | 'achievements' | 'ranking'>('overview');
 
@@ -39,6 +43,17 @@ export const GamificationTab: React.FC<GamificationTabProps> = ({ userId }) => {
         <div className="flex items-center space-x-3">
           <div className="w-6 h-6 border-2 border-gray-500 border-t-transparent rounded-full animate-spin" />
           <span className="text-gray-600">ゲーミフィケーション情報を読み込み中...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">{error}</p>
+          <p className="text-gray-500 text-sm">ゲーミフィケーション機能は準備中です</p>
         </div>
       </div>
     );

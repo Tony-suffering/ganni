@@ -53,14 +53,49 @@ ${imageAIDescription ? `画像分析: ${imageAIDescription}` : ''}
   }
 
   /**
+   * 共通のGemini API呼び出しメソッド（統合サービス用）
+   */
+  async callGeminiAPI(prompt: string): Promise<string> {
+    if (!this.model) {
+      throw new Error('Gemini API is not available');
+    }
+
+    try {
+      const result = await this.model.generateContent(prompt);
+      const response = await result.response;
+      return response.text().trim();
+    } catch (error) {
+      console.error('Gemini API call failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * テキスト生成用のシンプルなメソッド
+   */
+  async generateText(prompt: string): Promise<string> {
+    if (!this.model) {
+      console.warn('Gemini API not available, using fallback response');
+      return 'API接続エラーのため、デフォルトの応答を使用しています。';
+    }
+    
+    try {
+      return await this.callGeminiAPI(prompt);
+    } catch (error) {
+      console.error('Gemini generateText failed:', error);
+      return 'AI分析の生成に失敗しました。しばらく時間をおいて再試行してください。';
+    }
+  }
+
+  /**
    * 投稿に対する魅力的なAIコメントを1つ生成
    */
-  async generateAIComments(title: string, userComment: string, aiDescription: string): Promise<AIComment[]> {
+  async generateAIComments(title: string, userComment: string, aiDescription: string, contextualInfo?: string): Promise<AIComment[]> {
     if (!this.model) {
       return this.getFallbackComments();
     }
 
-    const inspiringPrompt = this.createInspiringCommentPrompt(title, userComment, aiDescription);
+    const inspiringPrompt = this.createInspiringCommentPrompt(title, userComment, aiDescription, contextualInfo);
 
     try {
       const result = await this.model.generateContent(inspiringPrompt);
@@ -80,13 +115,14 @@ ${imageAIDescription ? `画像分析: ${imageAIDescription}` : ''}
     }
   }
 
-  private createInspiringCommentPrompt(title: string, userComment: string, aiDescription: string): string {
+  private createInspiringCommentPrompt(title: string, userComment: string, aiDescription: string, contextualInfo?: string): string {
     return `
 あなたは人気のフォトグラファーのAIアシスタントです。この素敵な投稿に、投稿者が喜び、「またこのアプリを使いたい」と思えるような魅力的なコメントを書いてください。
 
 タイトル: ${title}
 投稿者コメント: ${userComment}
 分析結果: ${aiDescription}
+${contextualInfo ? `追加コンテキスト: ${contextualInfo}` : ''}
 
 コメントのガイドライン:
 • 120文字以内で印象的に

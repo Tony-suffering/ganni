@@ -12,7 +12,7 @@ import {
   Search
 } from 'lucide-react';
 import { Post } from '../../types';
-import { LazyImage } from '../LazyImage';
+import { LazyImage } from '../layout/LazyImage';
 import { UserPostService } from '../../services/userPostService';
 
 interface PostGalleryProps {
