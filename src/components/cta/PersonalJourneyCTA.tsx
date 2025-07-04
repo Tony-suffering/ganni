@@ -20,18 +20,45 @@ import { analyticsService } from '../../services/analyticsService';
 interface PersonalJourneyCTAProps {
   variant?: 'header' | 'mobile' | 'floating' | 'inline';
   className?: string;
+  // アニメーション用のprops
+  userPoints?: any;
+  levelInfo?: any;
+  previousPoints?: number;
 }
 
 export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({ 
   variant = 'header', 
-  className = '' 
+  className = '',
+  userPoints: propUserPoints,
+  levelInfo: propLevelInfo,
+  previousPoints: propPreviousPoints
 }) => {
   const { user } = useAuth();
-  const { userPoints, levelInfo } = useGamification();
+  const { userPoints: hookUserPoints, levelInfo: hookLevelInfo, previousPoints: hookPreviousPoints } = useGamification();
+  
+  // propsが渡された場合はpropsを優先、そうでなければhookの値を使用
+  const userPoints = propUserPoints || hookUserPoints;
+  const levelInfo = propLevelInfo || hookLevelInfo;
+  const previousPoints = propPreviousPoints !== undefined ? propPreviousPoints : hookPreviousPoints;
+  
+  // デバッグ: propsとhookの値を比較
+  useEffect(() => {
+    if (variant === 'mobile') {
+      console.log('📱 PersonalJourneyCTA [mobile] - Props vs Hook 比較:', {
+        'props.userPoints': !!propUserPoints,
+        'props.previousPoints': propPreviousPoints,
+        'hook.userPoints': !!hookUserPoints,
+        'hook.previousPoints': hookPreviousPoints,
+        'final.userPoints': !!userPoints,
+        'final.previousPoints': previousPoints
+      });
+    }
+  }, [variant, propUserPoints, propPreviousPoints, hookUserPoints, hookPreviousPoints, userPoints, previousPoints]);
   const location = useLocation();
   const [isHovered, setIsHovered] = useState(false);
   const [pulseCount, setPulseCount] = useState(0);
   const [showSparkles, setShowSparkles] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
 
   // パルスアニメーション
   useEffect(() => {
@@ -51,6 +78,29 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
 
     return () => clearInterval(sparkleInterval);
   }, []);
+
+  // ポイント変化検知でアニメーション発火
+  useEffect(() => {
+    console.log(`📱 PersonalJourneyCTA [${variant}] - ポイント変化チェック:`, {
+      currentPoints: userPoints?.total_points,
+      previousPoints,
+      variant,
+      shouldAnimate: variant === 'mobile' && previousPoints !== undefined && userPoints && 
+        previousPoints !== userPoints.total_points && previousPoints < userPoints.total_points
+    });
+    
+    // モバイル版でポイントが増加した場合のアニメーション
+    if (variant === 'mobile' && previousPoints !== undefined && userPoints && 
+        previousPoints < userPoints.total_points) {
+      console.log('✨ PersonalJourneyCTA [mobile] アニメーション開始！ 増加分:', userPoints.total_points - previousPoints);
+      setIsAnimating(true);
+      setTimeout(() => {
+        console.log('🏁 PersonalJourneyCTA [mobile] アニメーション終了');
+        setIsAnimating(false);
+      }, 2000);
+    }
+  }, [userPoints?.total_points, previousPoints, variant]);
+
 
   const handleClick = () => {
     analyticsService.trackEvent('dashboard_cta_click', 'navigation', variant);
@@ -187,16 +237,56 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
         >
           {/* シンプルな白い背景 */}
           <div className="absolute inset-0 bg-white border border-gray-200 rounded-lg shadow-sm" />
+          
+          {/* 波紋エフェクト */}
+          <AnimatePresence>
+            {isAnimating && (
+              <motion.div
+                className="absolute inset-0 rounded-lg bg-yellow-400"
+                initial={{ scale: 0.5, opacity: 0.7 }}
+                animate={{ scale: 2.5, opacity: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1.2 }}
+                style={{ transformOrigin: 'center' }}
+              />
+            )}
+          </AnimatePresence>
 
           <div className="relative flex flex-col items-center justify-center px-2 py-1 text-gray-700 min-w-12 min-h-12">
             {/* 点数とレベルを表示 */}
             {userPoints && levelInfo ? (
               <>
                 <div className="flex items-center gap-1">
-                  <span className="text-xs">⭐</span>
-                  <span className="text-xs font-bold">{userPoints.total_points}</span>
+                  <motion.span 
+                    className="text-xs"
+                    animate={isAnimating ? {
+                      rotate: [0, 360],
+                      scale: [1, 1.3, 1]
+                    } : {}}
+                    transition={{ duration: 0.6 }}
+                  >
+                    ⭐
+                  </motion.span>
+                  <motion.span 
+                    className="text-xs font-bold"
+                    animate={isAnimating ? {
+                      scale: [1, 1.4, 1],
+                      color: ['#374151', '#FCD34D', '#374151']
+                    } : {}}
+                    transition={{ duration: 0.6 }}
+                  >
+                    {userPoints.total_points}
+                  </motion.span>
                 </div>
-                <span className="text-xs">Lv.{levelInfo.level}</span>
+                <motion.span 
+                  className="text-xs"
+                  animate={isAnimating ? {
+                    scale: [1, 1.1, 1]
+                  } : {}}
+                  transition={{ duration: 0.3, delay: 0.2 }}
+                >
+                  Lv.{levelInfo.level}
+                </motion.span>
               </>
             ) : (
               <>
@@ -205,6 +295,23 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
               </>
             )}
           </div>
+          
+          {/* ポイント増加通知 */}
+          <AnimatePresence>
+            {isAnimating && previousPoints !== undefined && userPoints && (
+              <motion.div
+                className="absolute -top-6 left-1/2 transform -translate-x-1/2"
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                  +{userPoints.total_points - previousPoints}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       </Link>
     );

@@ -1,0 +1,49 @@
+# AI日記プロジェクト - Claude Code 指示書
+
+## 開発方針
+**重要: 全ての機能はスマホ・タブレット・デスクトップの全デバイスで動作することを前提に開発する**
+
+### UI/UX設計原則
+- **モバイルファースト**: スマホUI（md:hidden）とデスクトップUI（hidden md:block）の両方を必ず実装
+- **レスポンシブ対応**: 画面サイズに応じた適切なレイアウト調整
+- **タッチ対応**: スマホでのタップ操作に最適化（ボタンサイズ、間隔など）
+
+### コンポーネント開発ルール
+1. 新規コンポーネント作成時は必ずvariant props（`desktop` | `mobile` | `responsive`）を含める
+2. アニメーション効果は全デバイスで同等の体験を提供する
+3. フォントサイズ、余白、ボタンサイズはTailwindのresponsiveクラスを使用
+
+
+### 技術スタック
+- React + TypeScript
+- Tailwind CSS（レスポンシブ対応）
+- Framer Motion（アニメーション）
+- Supabase（バックエンド）
+
+### ファイル構造
+```
+src/
+├── components/
+│   ├── gamification/
+│   │   ├── AnimatedPointsDisplay.tsx (デスクトップ版)
+│   │   └── MobilePointsDisplay.tsx (スマホ版) ✅
+│   └── navigation/
+│       └── BottomNavBar.tsx (スマホナビゲーション)
+├── hooks/
+│   └── useGamification.ts
+└── App.tsx
+```
+
+### 実装完了事項 ✅
+- **スマホ用ポイントアニメーション**: MobilePointsDisplay.tsx作成済み
+- **デスクトップ用ポイントアニメーション**: AnimatedPointsDisplay.tsx作成済み  
+- **BottomNavBarへの統合**: スマホナビゲーションにポイント表示追加
+- **マルチバリアント対応**: navbar, compact, inline の3つのバリアント
+- **レスポンシブ対応**: 全デバイスでアニメーション動作
+
+### アニメーション機能詳細
+1. **カウントアップアニメーション**: react-countupライブラリ使用
+2. **パーティクルエフェクト**: 星が飛び散るアニメーション（モバイル用に調整済み）
+3. **波紋エフェクト**: ポイント増加時の視覚効果
+4. **スケールアニメーション**: 数値の拡大・縮小
+5. **ポイント増加通知**: +○○の表示

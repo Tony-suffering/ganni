@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, useSearchParams } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 
@@ -30,6 +30,8 @@ import BottomNavBar from './components/navigation/BottomNavBar';
 import UserProfile from './pages/UserProfile';
 import { UserPointsDisplay } from './components/gamification/UserPointsDisplay';
 import { UserBadgesDisplay } from './components/gamification/UserBadgesDisplay';
+import { AnimatedPointsDisplay } from './components/gamification/AnimatedPointsDisplay';
+import { MobilePointsDisplay } from './components/gamification/MobilePointsDisplay';
 
 // Pages
 import { ProfileEdit } from './pages/ProfileEdit';
@@ -64,7 +66,18 @@ function AppContent() {
   
   // ゲーミフィケーションデータを取得（条件付き）
   const shouldLoadGamification = !!user && !authLoading;
-  const { userPoints, levelInfo, displayBadges, photoStats, loading: gamificationLoading } = useGamification();
+  const { userPoints, previousPoints, levelInfo, displayBadges, photoStats, loading: gamificationLoading, fetchUserPoints } = useGamification();
+  
+  // デバッグ: ゲーミフィケーション関数の状態をログ出力
+  useEffect(() => {
+    console.log('🎮 App.tsx - useGamification状態:', {
+      hasUser: !!user,
+      fetchUserPointsExists: !!fetchUserPoints,
+      userPointsExists: !!userPoints,
+      previousPoints,
+      gamificationLoading
+    });
+  }, [user, fetchUserPoints, userPoints, previousPoints, gamificationLoading]);
   
   // 画面サイズ監視
   useEffect(() => {
@@ -168,6 +181,57 @@ function AppContent() {
     });
   }, [isAnalysisModalOpen, analyzingPostId, isAnalyzing, photoScore, aiComments]);
 
+  // いいね処理をラップしてポイント更新を含める
+  const handleLikePost = useCallback(async (postId: string) => {
+    console.log('👍 App.tsx - いいね処理開始');
+    console.log('🔍 fetchUserPoints関数の状態:', !!fetchUserPoints);
+    
+    // ポイント更新を先に実行（いいね処理の完了を待たない）
+    if (fetchUserPoints) {
+      console.log('📊 App.tsx - 即座にポイント更新実行');
+      fetchUserPoints(); // 即座に実行
+      
+      setTimeout(() => {
+        console.log('📊 App.tsx - 遅延ポイント更新実行（500ms後）');
+        fetchUserPoints(); // 遅延実行
+      }, 500);
+      
+      setTimeout(() => {
+        console.log('📊 App.tsx - 最終ポイント更新実行（1000ms後）');
+        fetchUserPoints(); // 最終確認用
+      }, 1000);
+    } else {
+      console.warn('❌ App.tsx - fetchUserPoints関数が利用できません');
+    }
+    
+    try {
+      await likePost(postId);
+      console.log('✅ App.tsx - いいね処理完了');
+    } catch (error) {
+      console.error('❌ App.tsx - いいね処理エラー:', error);
+    }
+  }, [likePost, fetchUserPoints]);
+
+  const handleUnlikePost = useCallback(async (postId: string) => {
+    console.log('👎 App.tsx - いいね解除処理開始');
+    
+    // ポイント更新を先に実行
+    if (fetchUserPoints) {
+      console.log('📊 App.tsx - いいね解除後のポイント更新実行');
+      fetchUserPoints(); // 即座に実行
+      setTimeout(() => {
+        fetchUserPoints(); // 遅延実行
+      }, 500);
+    }
+    
+    try {
+      await unlikePost(postId);
+      console.log('✅ App.tsx - いいね解除処理完了');
+    } catch (error) {
+      console.error('❌ App.tsx - いいね解除処理エラー:', error);
+    }
+  }, [unlikePost, fetchUserPoints]);
+
   // フィルター機能は削除済み - シンプルな無限ローディングのみ
 
   // 認証または投稿データの読み込み中はローディングスピナーを表示
@@ -179,6 +243,7 @@ function AppContent() {
     );
   }
   // 新しい投稿データを処理する関数
+
   const handleNewPost = async (postData: Parameters<typeof addPost>[0]) => {
     console.log('🔍 App.handleNewPost - 受信した投稿データ:');
     console.log('  - inspirationSourceId:', postData.inspirationSourceId);
@@ -310,18 +375,12 @@ function AppContent() {
             <div className="flex items-center gap-4">
               {/* シンプルな総合点数とレベル表示 */}
               {userPoints && levelInfo ? (
-                <div className="flex items-center gap-3 px-3 py-2 bg-white border border-gray-200 rounded-lg shadow-sm">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-500">⭐</span>
-                    <span className="text-lg font-bold text-gray-900">{userPoints.total_points}</span>
-                    <span className="text-xs text-gray-500">点</span>
-                  </div>
-                  <div className="w-px h-4 bg-gray-300"></div>
-                  <div className="flex items-center gap-1">
-                    <span className="text-xs text-gray-500 font-medium">Lv.{levelInfo.level}</span>
-                    <span className="text-xs text-gray-400">{levelInfo.levelName}</span>
-                  </div>
-                </div>
+                <AnimatedPointsDisplay
+                  currentPoints={userPoints.total_points}
+                  level={levelInfo.level}
+                  levelName={levelInfo.levelName}
+                  previousPoints={previousPoints}
+                />
               ) : (
                 <div className="flex items-center space-x-2 text-sm">
                   <span className="text-gray-600">レベル情報を読み込み中...</span>
@@ -353,6 +412,7 @@ function AppContent() {
           marginTop: isMobile ? '64px' : (userPoints && levelInfo ? '120px' : '80px')
         }}
       >
+
         <Routes>
           <Route
             path="/"
@@ -373,8 +433,8 @@ function AppContent() {
                   onLoadMore={loadMore}
                   loading={postsLoading}
                   isLoadingMore={isLoadingMore}
-                  likePost={likePost}
-                  unlikePost={unlikePost}
+                  likePost={handleLikePost}
+                  unlikePost={handleUnlikePost}
                   bookmarkPost={bookmarkPost}
                   unbookmarkPost={unbookmarkPost}
                   deletePost={deletePost}
@@ -403,8 +463,8 @@ function AppContent() {
         post={selectedPost}
         isOpen={!!selectedPost}
         onClose={() => setSelectedPost(null)}
-        likePost={likePost}
-        unlikePost={unlikePost}
+        likePost={handleLikePost}
+        unlikePost={handleUnlikePost}
       />
 
       <NewPostModal
@@ -450,6 +510,9 @@ function AppContent() {
         onNewPostClick={() => setIsNewPostOpen(true)}
         onLoginClick={openLoginModal}
         onPostClick={handlePostClick}
+        userPoints={userPoints}
+        levelInfo={levelInfo}
+        previousPoints={previousPoints}
       />
     </div>
   );

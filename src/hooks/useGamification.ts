@@ -7,6 +7,7 @@ import { UserPostService } from '../services/userPostService';
 export const useGamification = () => {
   const { user } = useAuth();
   const [userPoints, setUserPoints] = useState<UserPoints | null>(null);
+  const [previousPoints, setPreviousPoints] = useState<number | undefined>(undefined);
   const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
   const [availableBadges, setAvailableBadges] = useState<Badge[]>([]);
   const [userStats, setUserStats] = useState<UserInspirationStats | null>(null);
@@ -65,6 +66,10 @@ export const useGamification = () => {
     console.log('🔍 useGamification: ポイント取得開始 - ユーザーID:', user.id);
 
     try {
+      // 現在のポイントを事前に保存
+      const currentPoints = userPoints?.total_points;
+      console.log('🔍 fetchUserPoints開始 - 現在のポイント:', currentPoints);
+      
       const { data, error } = await supabase
         .from('user_points')
         .select('*')
@@ -93,6 +98,27 @@ export const useGamification = () => {
 
       if (data) {
         console.log('✅ ポイントデータ取得成功:', data);
+        console.log('🔍 ポイント比較:', { currentPoints, newPoints: data.total_points, changed: currentPoints !== data.total_points });
+        
+        // 常に前回のポイントを更新（アニメーション検出のため）
+        if (currentPoints !== undefined) {
+          // ポイントが変化した場合のみアニメーション用の一時的なpreviousPointsを設定
+          if (currentPoints !== data.total_points) {
+            console.log('🎯 ポイント変化検出:', currentPoints, '->', data.total_points);
+            console.log('🎮 アニメーション用previousPointsを設定:', currentPoints);
+            
+            // アニメーション用に一時的にpreviousPointsを設定
+            setPreviousPoints(currentPoints);
+            
+            // 2秒後にpreviousPointsをクリアしてアニメーションを終了
+            setTimeout(() => {
+              console.log('🧹 アニメーション終了、previousPointsをクリア');
+              setPreviousPoints(undefined);
+            }, 2000);
+          }
+        }
+        
+        // 常にuserPointsを更新
         setUserPoints(data);
       } else {
         console.log('📝 ポイントデータが存在しないため初期化します');
@@ -521,6 +547,7 @@ export const useGamification = () => {
 
   return {
     userPoints,
+    previousPoints,
     userBadges,
     availableBadges,
     userStats,

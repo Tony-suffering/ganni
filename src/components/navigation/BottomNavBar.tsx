@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useGamification } from '../../hooks/useGamification';
 import { UserMenu } from '../auth/UserMenu';
 import { NotificationBell } from './NotificationBell';
 import { PersonalJourneyCTA } from '../cta/PersonalJourneyCTA';
@@ -13,13 +14,38 @@ interface BottomNavBarProps {
   onToggleFilter?: () => void;
   onPostClick?: (postId: string) => void;
   hasActiveFilters?: boolean;
+  // App.tsxから渡されるゲーミフィケーション状態
+  userPoints?: any;
+  levelInfo?: any;
+  previousPoints?: number;
 }
 
-const BottomNavBar = ({ onNewPostClick, onLoginClick, onToggleFilter, onPostClick, hasActiveFilters = false }: BottomNavBarProps) => {
+const BottomNavBar = ({ 
+  onNewPostClick, 
+  onLoginClick, 
+  onToggleFilter, 
+  onPostClick, 
+  hasActiveFilters = false,
+  userPoints: propUserPoints,
+  levelInfo: propLevelInfo,
+  previousPoints: propPreviousPoints
+}: BottomNavBarProps) => {
   const { user } = useAuth();
+  const { userPoints: hookUserPoints, levelInfo: hookLevelInfo, previousPoints: hookPreviousPoints } = useGamification();
   const location = useLocation();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
+  
+  // App.tsxから渡されたpropsを優先使用
+  const userPoints = propUserPoints || hookUserPoints;
+  const levelInfo = propLevelInfo || hookLevelInfo;
+  const previousPoints = propPreviousPoints !== undefined ? propPreviousPoints : hookPreviousPoints;
+  
+  console.log('📱 BottomNavBar - App.tsxからのprops:', {
+    'prop.userPoints': !!propUserPoints,
+    'prop.previousPoints': propPreviousPoints,
+    'final.previousPoints': previousPoints
+  });
 
   const iconStyle = "w-7 h-7 transition-transform duration-200 ease-in-out group-hover:scale-110";
   const activeIconStyle = "text-blue-500 dark:text-blue-400";
@@ -62,7 +88,12 @@ const BottomNavBar = ({ onNewPostClick, onLoginClick, onToggleFilter, onPostClic
         {/* Enhanced Dashboard CTA / Experience Button */}
         {user ? (
           <div className="inline-flex flex-col items-center justify-center px-1">
-            <PersonalJourneyCTA variant="mobile" />
+            <PersonalJourneyCTA 
+              variant="mobile" 
+              userPoints={userPoints}
+              levelInfo={levelInfo}
+              previousPoints={previousPoints}
+            />
           </div>
         ) : (
           <button 
@@ -70,7 +101,12 @@ const BottomNavBar = ({ onNewPostClick, onLoginClick, onToggleFilter, onPostClic
             type="button" 
             className="inline-flex flex-col items-center justify-center px-1 hover:bg-gray-50 dark:hover:bg-gray-700 group"
           >
-            <PersonalJourneyCTA variant="mobile" />
+            <PersonalJourneyCTA 
+              variant="mobile" 
+              userPoints={userPoints}
+              levelInfo={levelInfo}
+              previousPoints={previousPoints}
+            />
           </button>
         )}
         {/* New Post */}
