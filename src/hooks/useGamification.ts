@@ -402,34 +402,6 @@ export const useGamification = () => {
     }
   }, [user?.id, fetchUserBadges]);
 
-  // リアルタイムポイント更新の処理
-  const handlePointsUpdate = useCallback((payload: any) => {
-    console.log('🔥 リアルタイムポイント更新:', payload);
-    
-    if (payload.eventType === 'INSERT' && payload.new) {
-      const newEntry = payload.new;
-      
-      // いいね関連のポイント更新を検出
-      if (newEntry.source_type === 'like_given' || newEntry.source_type === 'like_received') {
-        setRecentPointsGained({
-          points: newEntry.points,
-          type: newEntry.points_type === 'influence' ? 'influence' : 'learning',
-          source: newEntry.source_type === 'like_given' ? 'いいねを送信' : 'いいねを受信',
-          timestamp: new Date()
-        });
-        
-        // 3秒後に通知を消す
-        setTimeout(() => {
-          setRecentPointsGained(null);
-        }, 3000);
-        
-        // ポイントデータを再取得（直接呼び出し）
-        if (user) {
-          fetchUserPoints();
-        }
-      }
-    }
-  }, [user?.id]); // fetchUserPointsの代わりにuser.idのみを依存関係にする
 
   // 初期データ読み込み（遅延ロード）
   useEffect(() => {
@@ -478,51 +450,29 @@ export const useGamification = () => {
     return () => clearTimeout(timeoutId);
   }, [user?.id]); // userオブジェクトではなくuser.idのみを依存関係に
 
-  // リアルタイムポイント更新のSubscription
-  useEffect(() => {
-    if (!user) return;
-
-    // point_historyテーブルが存在しない場合はリアルタイム更新をスキップ
-    const enableRealtime = false; // 一時的に無効化してエラーを回避
+  // リアルタイムポイント更新の処理（App.tsxから呼び出される）
+  const handlePointsUpdate = useCallback((payload: any, addNotification?: any) => {
+    console.log('🔥 リアルタイムポイント更新:', payload);
     
-    if (!enableRealtime) {
-      return;
-    }
-
-    // ユニークなチャンネル名を生成
-    const channelName = `point-updates-${user.id}-${Date.now()}`;
-    console.log('🔄 ポイント履歴のリアルタイム更新を開始:', { userId: user.id, channelName });
-    
-    const subscription = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'point_history',
-          filter: `user_id=eq.${user.id}`
-        },
-        handlePointsUpdate
-      )
-      .subscribe((status) => {
-        console.log('📡 サブスクリプション状態:', status);
-        if (status === 'SUBSCRIPTION_ERROR') {
-          console.error('❌ サブスクリプションエラーが発生しました');
-        }
-      });
-
-    return () => {
-      console.log('🔄 ポイント履歴のリアルタイム更新を停止:', channelName);
-      try {
-        if (subscription) {
-          subscription.unsubscribe();
-        }
-      } catch (error) {
-        console.warn('⚠️ サブスクリプション停止エラー:', error);
+    if (payload.eventType === 'INSERT' && payload.new) {
+      const newEntry = payload.new;
+      
+      // 通知システムに追加（addNotificationが渡された場合のみ）
+      if (addNotification) {
+        addNotification({
+          points: newEntry.points,
+          type: newEntry.point_type,
+          source: newEntry.description || 'ポイント獲得',
+          icon: newEntry.source_type === 'like_given' || newEntry.source_type === 'like_received' ? 'like' :
+                newEntry.source_type === 'photo_quality' ? 'photo_quality' :
+                newEntry.source_type === 'milestone' ? 'milestone' : 'default'
+        });
       }
-    };
-  }, [user?.id, handlePointsUpdate]);
+
+      // ポイントデータを再取得
+      fetchUserPoints();
+    }
+  }, [fetchUserPoints]);
 
   // レベル情報を計算
   const levelInfo = userPoints ? calculateLevelInfo(userPoints.total_points) : null;
@@ -548,7 +498,8 @@ export const useGamification = () => {
     fetchPhotoStats,
     fetchRanking,
     toggleBadgeDisplay,
-    calculateLevelInfo
+    calculateLevelInfo,
+    handlePointsUpdate
   };
 };
 

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Award, Star, MessageCircle, ShoppingBag, Eye, Lightbulb, ArrowRight, Brain, User } from 'lucide-react';
-import { PhotoScore, AIComment, ProductRecommendation } from '../../types';
+import { PhotoScore, AIComment } from '../../types';
 import { PhotoScoringService } from '../../services/photoScoringService';
 import { RelatedProducts } from '../products/RelatedProducts';
 import { PersonalPattern } from '../../services/patternAnalysisService';
@@ -12,13 +12,11 @@ interface AIAnalysisResultModalProps {
   onViewPost?: () => void;
   photoScore?: PhotoScore | null;
   aiComments?: AIComment[];
-  productRecommendations?: ProductRecommendation | null;
   personalPattern?: PersonalPattern | null;
   isAnalyzing?: boolean;
   analysisProgress?: {
     photoScore: boolean;
     aiComments: boolean;
-    productRecommendations: boolean;
     personalPattern: boolean;
   };
 }
@@ -29,21 +27,19 @@ export const AIAnalysisResultModal: React.FC<AIAnalysisResultModalProps> = ({
   onViewPost,
   photoScore,
   aiComments = [],
-  productRecommendations,
   personalPattern,
   isAnalyzing = false,
   analysisProgress = {
     photoScore: false,
     aiComments: false,
-    productRecommendations: false,
     personalPattern: false
   }
 }) => {
-  const [activeTab, setActiveTab] = useState<'score' | 'comments' | 'products' | 'pattern'>('score');
+  const [activeTab, setActiveTab] = useState<'score' | 'comments' | 'pattern'>('score');
   
   
   const isAnalysisComplete = !isAnalyzing && 
-    (photoScore || aiComments.length > 0 || productRecommendations || personalPattern);
+    (photoScore || aiComments.length > 0 || personalPattern);
 
   const getScoreInfo = (score?: PhotoScore | null) => {
     if (!score) return null;
@@ -124,13 +120,6 @@ export const AIAnalysisResultModal: React.FC<AIAnalysisResultModalProps> = ({
                       📊 写真採点
                     </div>
                     <div className={`p-2 rounded text-center text-xs ${
-                      analysisProgress.productRecommendations 
-                        ? 'bg-green-100 text-green-700' 
-                        : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      🛍️ 商品推薦
-                    </div>
-                    <div className={`p-2 rounded text-center text-xs ${
                       analysisProgress.personalPattern 
                         ? 'bg-green-100 text-green-700' 
                         : 'bg-gray-100 text-gray-500'
@@ -157,19 +146,6 @@ export const AIAnalysisResultModal: React.FC<AIAnalysisResultModalProps> = ({
                     >
                       <Award className="w-4 h-4 inline mr-2" />
                       写真採点
-                    </button>
-                  )}
-                  {productRecommendations && (
-                    <button
-                      onClick={() => setActiveTab('products')}
-                      className={`flex-1 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                        activeTab === 'products'
-                          ? 'border-orange-500 text-orange-600'
-                          : 'border-transparent text-gray-600 hover:text-gray-900'
-                      }`}
-                    >
-                      <ShoppingBag className="w-4 h-4 inline mr-2" />
-                      関連商品
                     </button>
                   )}
                   {personalPattern && (
@@ -273,21 +249,6 @@ export const AIAnalysisResultModal: React.FC<AIAnalysisResultModalProps> = ({
                   )}
 
 
-                  {/* 関連商品タブ */}
-                  {activeTab === 'products' && productRecommendations && (
-                    <motion.div
-                      key="products"
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                    >
-                      <RelatedProducts
-                        recommendations={productRecommendations.recommendations}
-                        showHeader={false}
-                        maxGroupsToShow={3}
-                      />
-                    </motion.div>
-                  )}
 
                   {/* パターン分析タブ */}
                   {activeTab === 'pattern' && personalPattern && (

@@ -1,22 +1,54 @@
 import { useState, useCallback } from 'react';
-import { PhotoScore, AIComment, ProductRecommendation, Post } from '../types';
+import { PhotoScore, AIComment } from '../types';
 import { PhotoScoringService } from '../services/photoScoringService';
-import { productRecommendationService } from '../services/productRecommendationService';
-import { geminiService } from '../services/geminiService';
 import { integratedAnalysisService, IntegratedAnalysisResult } from '../services/integratedAnalysisService';
 import { PersonalPattern } from '../services/patternAnalysisService';
 import { supabase } from '../supabase';
+
+// テストモード用のランダムスコア生成
+const generateRandomPhotoScore = (): PhotoScore => {
+  const technical = Math.floor(Math.random() * 31) + 70; // 70-100
+  const composition = Math.floor(Math.random() * 31) + 70; // 70-100
+  const creativity = Math.floor(Math.random() * 31) + 70; // 70-100
+  const engagement = Math.floor(Math.random() * 31) + 70; // 70-100
+  const total = Math.floor((technical + composition + creativity + engagement) / 4);
+  
+  let level, description;
+  if (total >= 90) {
+    level = 'S';
+    description = 'プロフェッショナル級の傑作';
+  } else if (total >= 80) {
+    level = 'A';
+    description = '非常に優秀な作品';
+  } else if (total >= 70) {
+    level = 'B';
+    description = '良好な品質';
+  } else {
+    level = 'C';
+    description = '標準的な品質';
+  }
+  
+  return {
+    technical_score: technical,
+    composition_score: composition,
+    creativity_score: creativity,
+    engagement_score: engagement,
+    total_score: total,
+    score_level: level,
+    level_description: description,
+    ai_comment: `テストモード: ${description}（総合スコア: ${total}点）`,
+    image_analysis: 'テストモードで生成されたランダムスコア'
+  };
+};
 
 interface AIAnalysisState {
   isAnalyzing: boolean;
   photoScore: PhotoScore | null;
   aiComments: AIComment[]; // 互換性のため保持（空配列）
-  productRecommendations: ProductRecommendation | null;
   personalPattern: PersonalPattern | null;
   progress: {
     photoScore: boolean;
     aiComments: boolean; // 互換性のため保持（常にtrue）
-    productRecommendations: boolean;
     personalPattern: boolean;
   };
   error: string | null;
@@ -31,7 +63,6 @@ interface AIAnalysisState {
 interface AIAnalysisResult {
   photoScore?: PhotoScore;
   aiComments?: AIComment[];
-  productRecommendations?: ProductRecommendation;
   personalPattern?: PersonalPattern;
 }
 
@@ -40,12 +71,10 @@ export const usePostAIAnalysis = () => {
     isAnalyzing: false,
     photoScore: null,
     aiComments: [],
-    productRecommendations: null,
     personalPattern: null,
     progress: {
       photoScore: false,
       aiComments: true, // 常にtrueで互換性維持（AIコメント機能削除）
-      productRecommendations: false,
       personalPattern: false
     },
     error: null,
@@ -57,12 +86,10 @@ export const usePostAIAnalysis = () => {
       isAnalyzing: false,
       photoScore: null,
       aiComments: [],
-      productRecommendations: null,
       personalPattern: null,
       progress: {
         photoScore: false,
         aiComments: false,
-        productRecommendations: false,
         personalPattern: false
       },
       error: null,
@@ -74,13 +101,18 @@ export const usePostAIAnalysis = () => {
     imageUrl: string,
     title: string,
     userComment: string,
-    imageAIDescription?: string
+    imageAIDescription?: string,
+    postId?: string
   ): Promise<AIAnalysisResult> => {
+    const isTestMode = import.meta.env.VITE_TEST_MODE === 'true';
+    
     console.log('🤖 Starting post-submission AI analysis...');
+    console.log('🔧 Test Mode:', isTestMode);
     console.log('📸 Image URL:', imageUrl?.substring(0, 100) + '...');
     console.log('📝 Title:', title);
     console.log('💬 User Comment:', userComment);
     console.log('🌐 Environment check:', {
+      testMode: isTestMode,
       geminiApiKey: !!import.meta.env.VITE_GEMINI_API_KEY,
       apiKeyLength: import.meta.env.VITE_GEMINI_API_KEY?.length || 0,
       useIntegratedAnalysis: import.meta.env.VITE_USE_INTEGRATED_ANALYSIS === 'true',
@@ -94,7 +126,6 @@ export const usePostAIAnalysis = () => {
       progress: {
         photoScore: false,
         aiComments: false,
-        productRecommendations: false,
         personalPattern: false
       },
       integrationMetadata: undefined
@@ -107,21 +138,40 @@ export const usePostAIAnalysis = () => {
       const { data: { user } } = await supabase.auth.getUser();
       const userId = user?.id;
 
-      // 統合分析サービスを使用
-      console.log('🚀 Starting integrated analysis...');
-      const integratedResult: IntegratedAnalysisResult = await integratedAnalysisService.analyzePostComprehensive(
-        imageUrl,
-        title,
-        userComment,
-        imageAIDescription,
-        userId,
-        undefined // location は将来的に位置情報APIから取得
-      );
+      let integratedResult: IntegratedAnalysisResult;
+
+      if (isTestMode) {
+        console.log('🎲 Using test mode - generating random scores...');
+        // テストモード: ランダムスコアを生成
+        await new Promise(resolve => setTimeout(resolve, 1000)); // 1秒待機でリアルな感じを演出
+        
+        integratedResult = {
+          photoScore: generateRandomPhotoScore(),
+          aiComments: [],
+          personalPattern: null, // テストモードではパターン分析はスキップ
+          integration_metadata: {
+            api_calls_saved: 4, // テストモードなので4回のAPI呼び出しを節約
+            analysis_method: 'test_mode' as any,
+            processing_time: 1000,
+            pattern_analysis_enabled: false
+          }
+        };
+      } else {
+        // 通常モード: 統合分析サービスを使用
+        console.log('🚀 Starting integrated analysis...');
+        integratedResult = await integratedAnalysisService.analyzePostComprehensive(
+          imageUrl,
+          title,
+          userComment,
+          imageAIDescription,
+          userId,
+          undefined // location は将来的に位置情報APIから取得
+        );
+      }
 
       // 結果をレガシー形式にマッピング（AIコメントとAI説明文除去）
       result.photoScore = integratedResult.photoScore;
       result.aiComments = []; // 空配列で互換性維持
-      result.productRecommendations = integratedResult.productRecommendations;
       result.personalPattern = integratedResult.personalPattern;
 
       // 状態を更新
@@ -130,16 +180,43 @@ export const usePostAIAnalysis = () => {
         isAnalyzing: false,
         photoScore: integratedResult.photoScore,
         aiComments: [], // 空配列で互換性維持
-        productRecommendations: integratedResult.productRecommendations,
         personalPattern: integratedResult.personalPattern,
         progress: {
           photoScore: true,
           aiComments: true, // 常にtrueで互換性維持
-          productRecommendations: true,
           personalPattern: !!integratedResult.personalPattern
         },
         integrationMetadata: integratedResult.integration_metadata
       }));
+
+      // postIdが指定されている場合、AI分析結果をデータベースに保存
+      if (postId && integratedResult.photoScore) {
+        try {
+          console.log('💾 Saving photo score to database for post:', postId);
+          const { error: scoreError } = await supabase
+            .from('photo_scores')
+            .insert({
+              post_id: postId,
+              technical_score: integratedResult.photoScore.technical_score,
+              composition_score: integratedResult.photoScore.composition_score,
+              creativity_score: integratedResult.photoScore.creativity_score,
+              engagement_score: integratedResult.photoScore.engagement_score,
+              total_score: integratedResult.photoScore.total_score,
+              score_level: integratedResult.photoScore.score_level,
+              level_description: integratedResult.photoScore.level_description,
+              ai_comment: integratedResult.photoScore.ai_comment,
+              image_analysis: integratedResult.photoScore.image_analysis
+            });
+
+          if (scoreError) {
+            console.error('❌ Failed to save photo score:', scoreError);
+          } else {
+            console.log('✅ Photo score saved successfully to database');
+          }
+        } catch (dbError) {
+          console.error('❌ Database error while saving photo score:', dbError);
+        }
+      }
 
       console.log('🎉 Photo scoring analysis completed successfully!');
       console.log('💰 API calls saved:', integratedResult.integration_metadata.api_calls_saved);
@@ -190,22 +267,14 @@ export const usePostAIAnalysis = () => {
     }));
   }, []);
 
-  const setProductRecommendations = useCallback((productRecommendations: ProductRecommendation) => {
-    setAnalysisState(prev => ({
-      ...prev,
-      productRecommendations,
-      progress: { ...prev.progress, productRecommendations: true }
-    }));
-  }, []);
 
   const isAnalysisComplete = !analysisState.isAnalyzing && (
     analysisState.photoScore !== null ||
     analysisState.aiComments.length > 0 ||
-    analysisState.productRecommendations !== null ||
     analysisState.personalPattern !== null
   );
 
-  const completionPercentage = Object.values(analysisState.progress).filter(Boolean).length / 3 * 100;
+  const completionPercentage = Object.values(analysisState.progress).filter(Boolean).length / 2 * 100;
 
   return {
     // State
@@ -218,7 +287,6 @@ export const usePostAIAnalysis = () => {
     resetAnalysis,
     updateProgress,
     setPhotoScore,
-    setAIComments,
-    setProductRecommendations
+    setAIComments
   };
 };

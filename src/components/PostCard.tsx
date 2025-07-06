@@ -10,8 +10,6 @@ import { LazyImage } from './layout/LazyImage';
 import { ShareModal } from './modals/ShareModal';
 import { PhotoScoreBadge } from './scoring/PhotoScoreBadge';
 import { UserBadgesDisplay } from './gamification/UserBadgesDisplay';
-import { PointsNotification } from './gamification/PointsNotification';
-import { useGamification } from '../hooks/useGamification';
 
 interface PostCardProps {
   post: Post;
@@ -28,7 +26,6 @@ interface PostCardProps {
 const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost, unbookmarkPost, deletePost, priority = false, index = 0 }: PostCardProps) => {
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
-  const { recentPointsGained } = useGamification();
   const { author, title, userComment, imageUrl, likeCount, likedByCurrentUser, bookmarkedByCurrentUser, createdAt, commentCount, inspiration } = post;
   const [isOptionsOpen, setIsOptionsOpen] = useState(false);
   const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
@@ -309,15 +306,6 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
         post={post}
       />
 
-      {/* ポイント獲得通知 */}
-      {recentPointsGained && (
-        <PointsNotification
-          points={recentPointsGained.points}
-          type={recentPointsGained.type}
-          source={recentPointsGained.source}
-          isVisible={true}
-        />
-      )}
     </>
   );
 });

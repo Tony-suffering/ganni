@@ -1,13 +1,17 @@
 import { supabase } from '../supabase';
 import { geminiService } from './geminiService';
 import { photoScoringService } from './photoScoringService';
-import { productRecommendationService } from './productRecommendationService';
 
 export interface IntegratedAnalysisResult {
-  photoScore: number;
+  photoScore: any; // PhotoScore型
   aiComments: string[];
-  productRecommendations: any[];
   personalPattern: any;
+  integration_metadata: {
+    api_calls_saved: number;
+    analysis_method: string;
+    processing_time: number;
+    pattern_analysis_enabled: boolean;
+  };
 }
 
 export interface AnalysisParams {
@@ -18,43 +22,92 @@ export interface AnalysisParams {
 }
 
 class IntegratedAnalysisService {
+  async analyzePostComprehensive(
+    imageUrl: string,
+    title?: string,
+    userComment?: string,
+    imageAIDescription?: string,
+    userId?: string,
+    location?: any
+  ): Promise<IntegratedAnalysisResult> {
+    const startTime = Date.now();
+    
+    try {
+      console.log('🔍 Starting comprehensive analysis...');
+      
+      // 写真スコア分析を実行
+      const rawPhotoScore = await photoScoringService.scorePhoto(imageUrl, title, userComment);
+      console.log('📊 Photo score analysis completed:', rawPhotoScore);
+      
+      // PhotoScore型に変換
+      const photoScore = {
+        technical_score: rawPhotoScore.technical,
+        composition_score: rawPhotoScore.composition,
+        creativity_score: rawPhotoScore.creativity,
+        engagement_score: rawPhotoScore.engagement,
+        total_score: rawPhotoScore.total,
+        score_level: this.getScoreLevel(rawPhotoScore.total),
+        level_description: this.getScoreLevelDescription(rawPhotoScore.total),
+        ai_comment: rawPhotoScore.comment,
+        image_analysis: rawPhotoScore.imageAnalysis ? {
+          mainColors: rawPhotoScore.imageAnalysis.mainColors || [],
+          colorTemperature: rawPhotoScore.imageAnalysis.colorTemperature || '',
+          compositionType: rawPhotoScore.imageAnalysis.compositionType || '',
+          mainSubject: rawPhotoScore.imageAnalysis.mainSubject || '',
+          specificContent: rawPhotoScore.imageAnalysis.specificContent || '',
+          backgroundElements: rawPhotoScore.imageAnalysis.backgroundElements || [],
+          lightingQuality: rawPhotoScore.imageAnalysis.lightingQuality || '',
+          moodAtmosphere: rawPhotoScore.imageAnalysis.moodAtmosphere || '',
+          shootingAngle: rawPhotoScore.imageAnalysis.shootingAngle || '',
+          depthPerception: rawPhotoScore.imageAnalysis.depthPerception || '',
+          visualImpact: rawPhotoScore.imageAnalysis.visualImpactDescription || '',
+          emotionalTrigger: rawPhotoScore.imageAnalysis.emotionalTrigger || '',
+          technicalSignature: rawPhotoScore.imageAnalysis.technicalSignature || ''
+        } : undefined
+      };
+      
+      // AIコメントは空配列（削除済み機能）
+      const aiComments: string[] = [];
+      
+      // パーソナルパターン分析
+      const personalPattern = {
+        interests: [],
+        style: 'casual',
+        mood: 'positive'
+      };
+      
+      const processingTime = Date.now() - startTime;
+      
+      return {
+        photoScore,
+        aiComments,
+        personalPattern,
+        integration_metadata: {
+          api_calls_saved: 0,
+          analysis_method: 'integrated',
+          processing_time: processingTime,
+          pattern_analysis_enabled: false
+        }
+      };
+    } catch (error) {
+      console.error('Comprehensive analysis failed:', error);
+      throw new Error('分析に失敗しました');
+    }
+  }
+
   async analyzePost(
     imageUrl: string,
     title?: string,
     userComment?: string,
     imageAIDescription?: string
   ): Promise<IntegratedAnalysisResult> {
-    try {
-      const analysisParams: AnalysisParams = {
-        imageUrl,
-        title,
-        userComment,
-        imageAIDescription
-      };
-
-      // 並列で各分析を実行
-      const [photoScore, aiComments, productRecommendations, personalPattern] = await Promise.all([
-        this.analyzePhotoScore(analysisParams),
-        this.generateAIComments(analysisParams),
-        this.generateProductRecommendations(analysisParams),
-        this.analyzePersonalPattern(analysisParams)
-      ]);
-
-      return {
-        photoScore,
-        aiComments,
-        productRecommendations,
-        personalPattern
-      };
-    } catch (error) {
-      console.error('Integrated analysis failed:', error);
-      throw new Error('分析に失敗しました');
-    }
+    // 後方互換性のため、analyzePostComprehensiveを呼び出す
+    return this.analyzePostComprehensive(imageUrl, title, userComment, imageAIDescription);
   }
 
   private async analyzePhotoScore(params: AnalysisParams): Promise<number> {
     try {
-      const result = await photoScoringService.analyzePhotoScore(params.imageUrl);
+      const result = await photoScoringService.scorePhoto(params.imageUrl, params.title, params.userComment);
       return result.total;
     } catch (error) {
       console.error('Photo scoring failed:', error);
@@ -76,32 +129,14 @@ class IntegratedAnalysisService {
         ["コメント1", "コメント2", "コメント3"]
       `;
 
-      const response = await geminiService.generateText(prompt);
-      
-      try {
-        const comments = JSON.parse(response);
-        return Array.isArray(comments) ? comments : [response];
-      } catch {
-        return [response];
-      }
+      // GeminiServiceのgenerateTextメソッドが削除されたため、空配列を返す
+      return [];
     } catch (error) {
       console.error('AI comment generation failed:', error);
       return ['素晴らしい写真ですね！'];
     }
   }
 
-  private async generateProductRecommendations(params: AnalysisParams): Promise<any[]> {
-    try {
-      return await productRecommendationService.generateRecommendations(
-        params.imageUrl,
-        params.title || '',
-        params.userComment || ''
-      );
-    } catch (error) {
-      console.error('Product recommendation failed:', error);
-      return [];
-    }
-  }
 
   private async analyzePersonalPattern(params: AnalysisParams): Promise<any> {
     try {
@@ -121,17 +156,12 @@ class IntegratedAnalysisService {
         }
       `;
 
-      const response = await geminiService.generateText(prompt);
-      
-      try {
-        return JSON.parse(response);
-      } catch {
-        return {
-          interests: [],
-          style: 'casual',
-          mood: 'positive'
-        };
-      }
+      // GeminiServiceのgenerateTextメソッドが削除されたため、デフォルト値を返す
+      return {
+        interests: [],
+        style: 'casual',
+        mood: 'positive'
+      };
     } catch (error) {
       console.error('Personal pattern analysis failed:', error);
       return {
@@ -140,6 +170,24 @@ class IntegratedAnalysisService {
         mood: 'positive'
       };
     }
+  }
+
+  private getScoreLevel(total: number): string {
+    if (total >= 90) return 'S';
+    if (total >= 80) return 'A';
+    if (total >= 70) return 'B';
+    if (total >= 60) return 'C';
+    if (total >= 50) return 'D';
+    return 'E';
+  }
+
+  private getScoreLevelDescription(total: number): string {
+    if (total >= 90) return 'プロフェッショナル級の傑作';
+    if (total >= 80) return '非常に優秀な作品';
+    if (total >= 70) return '良好な品質';
+    if (total >= 60) return '標準的な品質';
+    if (total >= 50) return '改善の余地あり';
+    return '要練習';
   }
 }
 

@@ -364,6 +364,14 @@ export const usePosts = (): UsePostsReturn => {
       // プロフィール情報は投稿オブジェクト作成時に使用
 
       // 5. postsテーブルにinsert
+      console.log('📝 投稿データをDBに保存中:', {
+        title: newPostInput.title,
+        image_url: publicUrl,
+        user_comment: newPostInput.userComment ?? '',
+        ai_description: newPostInput.aiDescription,
+        author_id: userId
+      });
+      
       const { data: postData, error: postError } = await supabase
         .from('posts')
         .insert({
@@ -379,6 +387,13 @@ export const usePosts = (): UsePostsReturn => {
         .single();
 
       if (postError) {
+        console.error('❌ postsテーブル挿入エラー詳細:', {
+          message: postError.message,
+          code: postError.code,
+          details: postError.details,
+          hint: postError.hint,
+          fullError: postError
+        });
         throw postError; // エラーをそのまま投げて呼び出し元で処理
       }
 
@@ -558,13 +573,35 @@ export const usePosts = (): UsePostsReturn => {
         // 新規投稿通知の送信に失敗
       }
 
+      // 投稿ボーナスを計算・付与
+      try {
+        const { PostBonusService } = await import('../services/postBonusService');
+        const totalBonus = await PostBonusService.calculateAndAwardPostBonus(
+          postData.id,
+          userId,
+          newPostInput.photoScore?.total_score
+        );
+        console.log('✅ 投稿ボーナス付与完了:', totalBonus);
+      } catch (error) {
+        console.warn('⚠️ 投稿ボーナス付与エラー:', error);
+        // ボーナス付与エラーでも投稿自体は成功させる
+      }
+
       // 新規投稿をpostsの先頭に追加（fetchPostsを呼ばずに直接追加）
       setDisplayedPosts(prevPosts => [newPost, ...prevPosts]);
       setAllPosts(prevAllPosts => [newPost, ...prevAllPosts]);
       
       return newPost;
     } catch (error) {
-      return null;
+      console.error('❌ 投稿作成エラー詳細:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        fullError: error,
+        stack: error.stack
+      });
+      throw error; // エラーを再スローして呼び出し元に伝える
     }
   }, [fetchPosts]);
 
@@ -655,7 +692,18 @@ export const usePosts = (): UsePostsReturn => {
     if (userError || !user) return;
     
     // いいねを追加
-    await supabase.from('likes').insert({ post_id: postId, user_id: user.id });
+    const { error: likeError } = await supabase.from('likes').insert({ post_id: postId, user_id: user.id });
+    
+    if (likeError) {
+      console.error('❌ いいね追加エラー詳細:', {
+        message: likeError.message,
+        code: likeError.code,
+        details: likeError.details,
+        hint: likeError.hint,
+        fullError: likeError
+      });
+      throw likeError;
+    }
     
     // 投稿者IDを取得して通知を作成
     const { data: postData } = await supabase
@@ -665,7 +713,8 @@ export const usePosts = (): UsePostsReturn => {
       .single();
     
     if (postData) {
-      // 通知作成（一時的に無効化 - データベーススキーマ問題のため）
+      // 通知作成（一時的に無効化 - notificationsテーブル問題のため）
+      /*
       if (postData.author_id !== user.id) {
         try {
           const { createNotification } = await import('../utils/notifications');
@@ -679,9 +728,24 @@ export const usePosts = (): UsePostsReturn => {
           // 通知機能のエラーは無視してメイン機能は正常動作させる
         }
       }
+      */
 
-      // ポイント付与機能は無効化
-      // console.log('いいね機能正常動作');
+      // いいねポイント付与
+      try {
+        const { error: pointsError } = await supabase.rpc('grant_like_points', {
+          p_liker_id: user.id,
+          p_post_id: postId
+        });
+        
+        if (pointsError) {
+          console.warn('⚠️ いいねポイント付与エラー:', pointsError);
+        } else {
+          console.log('✅ いいねポイント付与完了');
+        }
+      } catch (error) {
+        console.warn('⚠️ いいねポイント付与エラー:', error);
+        // ポイント付与エラーでもいいね機能は正常動作させる
+      }
     }
     
     await fetchPosts();

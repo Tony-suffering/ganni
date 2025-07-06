@@ -4,6 +4,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 
 // Providers and Hooks
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { PointsNotificationProvider } from './contexts/PointsNotificationContext';
 import { usePosts } from './hooks/usePosts';
 import { useTags } from './hooks/useTags';
 import { useHighlightUpdater } from './hooks/useHighlightUpdater';
@@ -32,6 +33,9 @@ import { UserPointsDisplay } from './components/gamification/UserPointsDisplay';
 import { UserBadgesDisplay } from './components/gamification/UserBadgesDisplay';
 import { AnimatedPointsDisplay } from './components/gamification/AnimatedPointsDisplay';
 import { MobilePointsDisplay } from './components/gamification/MobilePointsDisplay';
+import { GlobalPointsNotifications } from './components/gamification/GlobalPointsNotifications';
+import { usePointsNotification } from './contexts/PointsNotificationContext';
+import { supabase } from './supabase';
 
 // Pages
 import { ProfileEdit } from './pages/ProfileEdit';
@@ -66,7 +70,8 @@ function AppContent() {
   
   // ゲーミフィケーションデータを取得（条件付き）
   const shouldLoadGamification = !!user && !authLoading;
-  const { userPoints, previousPoints, levelInfo, displayBadges, photoStats, loading: gamificationLoading, fetchUserPoints } = useGamification();
+  const { userPoints, previousPoints, levelInfo, displayBadges, photoStats, loading: gamificationLoading, fetchUserPoints, handlePointsUpdate } = useGamification();
+  const { addNotification } = usePointsNotification();
   
   
   // 画面サイズ監視
@@ -95,6 +100,49 @@ function AppContent() {
       setIsNewPostOpen(true);
     }
   }, [searchParams, user, isNewPostOpen]);
+
+  // リアルタイムポイント更新のSubscription（App.tsxで管理）
+  useEffect(() => {
+    if (!user) return;
+
+    let subscription: any = null;
+
+    const setupSubscription = async () => {
+      try {
+        const channelName = `point-updates-${user.id}-${Date.now()}`;
+        console.log('🔄 ポイント履歴のリアルタイム更新を開始:', { userId: user.id });
+        
+        subscription = supabase
+          .channel(channelName)
+          .on(
+            'postgres_changes',
+            {
+              event: 'INSERT',
+              schema: 'public',
+              table: 'point_history',
+              filter: `user_id=eq.${user.id}`
+            },
+            (payload: any) => handlePointsUpdate(payload, addNotification)
+          )
+          .subscribe();
+      } catch (error) {
+        console.error('❌ サブスクリプション設定エラー:', error);
+      }
+    };
+
+    setupSubscription();
+
+    return () => {
+      if (subscription) {
+        console.log('🔄 ポイント履歴のリアルタイム更新を停止');
+        try {
+          subscription.unsubscribe();
+        } catch (error) {
+          console.warn('⚠️ サブスクリプション停止エラー:', error);
+        }
+      }
+    };
+  }, [user?.id, handlePointsUpdate, addNotification]);
 
   // 投稿データを管理するカスタムフック
   const {
@@ -135,7 +183,6 @@ function AppContent() {
     isAnalyzing,
     photoScore,
     aiComments,
-    productRecommendations,
     personalPattern,
     progress,
     isAnalysisComplete,
@@ -209,8 +256,9 @@ function AppContent() {
     console.log('  - inspirationNote:', postData.inspirationNote);
     console.log('  - 投稿データ全体:', postData);
     
-    const newPost = await addPost(postData);
-    if (newPost) {
+    try {
+      const newPost = await addPost(postData);
+      if (newPost) {
       console.log('✅ Post created:', newPost.id);
       
       // 投稿後のAI分析を開始
@@ -235,42 +283,56 @@ function AppContent() {
             newPost.imageUrl,
             newPost.title,
             newPost.userComment,
-            newPost.imageAIDescription
+            newPost.imageAIDescription,
+            newPost.id // postIdを渡してデータベース保存を有効化
           );
           
           console.log('🎉 AI analysis completed for post:', newPost.id);
           console.log('📊 Analysis result:', analysisResult);
           
-          // 分析結果でPostをデータベースに保存
-          try {
-            await updatePost(newPost.id, {
-              photoScore: analysisResult.photoScore,
-              aiComments: analysisResult.aiComments
-            });
-            console.log('✅ AI analysis results saved to database for post:', newPost.id);
+          // AI分析結果は自動的にデータベースに保存される
+          console.log('✅ AI analysis completed for post:', newPost.id);
+          
+          // 投稿リストを更新して新しい写真スコアを反映
+          if (analysisResult.photoScore) {
+            console.log('🔄 Updating post with new photo score...');
+            updatePost(newPost.id, { photoScore: analysisResult.photoScore });
+          }
             
-            // 投稿ボーナスを計算・付与
+          // 投稿ボーナスを計算・付与（写真スコアが利用可能になった後）
+          if (analysisResult.photoScore) {
             try {
               console.log('🎁 Calculating post bonus for post:', newPost.id);
               const bonusPoints = await PostBonusService.calculateAndAwardPostBonus(
                 newPost.id,
-                newPost.user_id,
-                analysisResult.photoScore
+                newPost.author.id,
+                analysisResult.photoScore.total_score
               );
               console.log('✅ Post bonus calculated and awarded:', bonusPoints, 'points');
             } catch (bonusError) {
               console.error('❌ Failed to calculate post bonus:', bonusError);
-              // ボーナス計算エラーは投稿処理を止めない
             }
-          } catch (updateError) {
-            console.error('❌ Failed to save AI analysis results to database:', updateError);
           }
           
         } catch (error) {
-          console.error('❌ AI analysis failed for post:', newPost.id, error);
+          console.error('❌ AI analysis failed for post:', newPost.id, {
+            message: error?.message,
+            code: error?.code,
+            details: error?.details,
+            fullError: error
+          });
           // エラーが発生してもモーダルは開いたままにする
         }
       }, 50); // より短いディレイで開始
+      }
+    } catch (postCreationError) {
+      console.error('❌ 投稿作成失敗:', {
+        message: postCreationError?.message,
+        code: postCreationError?.code,
+        details: postCreationError?.details,
+        fullError: postCreationError
+      });
+      // 投稿作成エラーをユーザーに通知する処理を追加することも可能
     }
   };
 
@@ -458,7 +520,6 @@ function AppContent() {
         onViewPost={viewAnalyzedPost}
         photoScore={photoScore}
         aiComments={aiComments}
-        productRecommendations={productRecommendations}
         personalPattern={personalPattern}
         isAnalyzing={isAnalyzing}
         analysisProgress={progress}
@@ -472,6 +533,9 @@ function AppContent() {
         levelInfo={levelInfo}
         previousPoints={previousPoints}
       />
+
+      {/* グローバルポイント通知 */}
+      <GlobalPointsNotifications />
     </div>
   );
 }
@@ -485,7 +549,9 @@ function App() {
     <ErrorBoundary FallbackComponent={ErrorFallback}>
       <BrowserRouter>
         <AuthProvider>
-          <AppContent />
+          <PointsNotificationProvider>
+            <AppContent />
+          </PointsNotificationProvider>
         </AuthProvider>
       </BrowserRouter>
     </ErrorBoundary>

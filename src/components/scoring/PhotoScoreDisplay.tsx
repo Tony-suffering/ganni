@@ -21,8 +21,6 @@ export const PhotoScoreDisplay: React.FC<PhotoScoreDisplayProps> = ({
   initialScore
 }) => {
   const [score, setScore] = useState<PhotoScore | null>(initialScore || null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!initialScore && !score) {
@@ -42,10 +40,6 @@ export const PhotoScoreDisplay: React.FC<PhotoScoreDisplayProps> = ({
         if (error.code === 'PGRST116') {
           // スコアが存在しない（正常）
           console.log('📊 No existing score found for post:', postId);
-        } else if (error.code === '42P01') {
-          // テーブルが存在しない
-          console.warn('⚠️ photo_scores table does not exist. Please create it first.');
-          setError('採点機能を使用するには、データベースにphoto_scoresテーブルを作成してください。');
         } else {
           console.error('❌ Error loading score:', error);
         }
@@ -58,54 +52,6 @@ export const PhotoScoreDisplay: React.FC<PhotoScoreDisplayProps> = ({
     }
   };
 
-  const generateScore = async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const scoringService = new PhotoScoringService();
-      
-      // APIキーをテスト
-      console.log('🧪 Testing API key...');
-      const isAPIValid = await scoringService.testAPIKey();
-      if (!isAPIValid) {
-        throw new Error('Gemini APIキーが無効です');
-      }
-      
-      const newScore = await scoringService.scorePhoto(imageUrl, title, description);
-      
-      // レベル情報を取得
-      const levelInfo = PhotoScoringService.getScoreLevel(newScore.total);
-      
-      // データベースに保存
-      const { data, error: saveError } = await supabase
-        .from('photo_scores')
-        .upsert({
-          post_id: postId,
-          technical_score: newScore.technical,
-          composition_score: newScore.composition,
-          creativity_score: newScore.creativity,
-          engagement_score: newScore.engagement,
-          total_score: newScore.total,
-          score_level: levelInfo.level,
-          level_description: levelInfo.description,
-          ai_comment: newScore.comment,
-          image_analysis: newScore.imageAnalysis || null
-        })
-        .select()
-        .single();
-
-      if (saveError) {
-        throw new Error('スコアの保存に失敗しました');
-      }
-      
-      setScore(data);
-    } catch (err: any) {
-      setError(err.message || 'スコアの生成に失敗しました');
-    } finally {
-      setLoading(false);
-    }
-  };
 
 
   // getLevelColor関数を削除（シンプルデザインのため不要）
@@ -115,29 +61,12 @@ export const PhotoScoreDisplay: React.FC<PhotoScoreDisplayProps> = ({
       <div className="bg-white border border-gray-200 rounded-xl p-6 text-center">
         <Award className="w-10 h-10 text-gray-400 mx-auto mb-3" />
         <h3 className="text-lg font-semibold text-gray-900 mb-2">AI写真採点</h3>
-        <p className="text-sm text-gray-600 mb-4">
-          AIが写真を分析して100点満点で採点します
+        <p className="text-sm text-gray-600 mb-2">
+          この投稿はまだ採点されていません
         </p>
-        <button
-          onClick={generateScore}
-          disabled={loading}
-          className="px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center mx-auto"
-        >
-          {loading ? (
-            <>
-              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-              採点中...
-            </>
-          ) : (
-            <>
-              <Camera className="w-4 h-4 mr-2" />
-              写真を採点する
-            </>
-          )}
-        </button>
-        {error && (
-          <p className="text-red-500 text-sm mt-2">{error}</p>
-        )}
+        <p className="text-xs text-gray-500">
+          投稿後のポップアップで自動採点されます
+        </p>
       </div>
     );
   }
@@ -201,11 +130,6 @@ export const PhotoScoreDisplay: React.FC<PhotoScoreDisplayProps> = ({
           <p className="text-sm text-gray-600 leading-relaxed">{score.ai_comment}</p>
         </div>
 
-        {error && (
-          <div className="mt-3 text-sm text-red-600 text-center">
-            {error}
-          </div>
-        )}
 
       </motion.div>
     </AnimatePresence>

@@ -47,10 +47,11 @@ export class PostBonusService {
     try {
       console.log('🎯 投稿ボーナスを計算中...', { postId, userId, photoScore });
 
+      // まずRPC関数を呼び出し
       const { data, error } = await supabase.rpc('calculate_post_bonus', {
         p_post_id: postId,
         p_user_id: userId,
-        p_photo_score: photoScore
+        p_photo_score: photoScore || 0
       });
 
       if (error) {
@@ -60,6 +61,27 @@ export class PostBonusService {
 
       const totalBonus = data || 0;
       console.log('✅ 投稿ボーナス計算完了:', totalBonus);
+
+      // リアルタイム更新を確実にトリガーするため、追加でポイント履歴を挿入
+      if (totalBonus > 0) {
+        console.log('🔔 リアルタイム更新用のポイント履歴を挿入中...');
+        const { error: historyError } = await supabase
+          .from('point_history')
+          .insert({
+            user_id: userId,
+            point_type: 'learning',
+            points: totalBonus,
+            source_type: 'post_creation',
+            source_id: postId,
+            description: `投稿ボーナス: ${totalBonus}ポイント`
+          });
+
+        if (historyError) {
+          console.warn('⚠️ リアルタイム更新用履歴挿入エラー:', historyError);
+        } else {
+          console.log('✅ リアルタイム更新用履歴挿入完了');
+        }
+      }
 
       return totalBonus;
     } catch (error) {

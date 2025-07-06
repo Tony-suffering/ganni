@@ -127,38 +127,6 @@ export interface Comment {
   };
 }
 
-// 商品推薦関連の型定義
-export interface Product {
-  id: string;
-  name: string;
-  price: string;
-  imageUrl?: string;
-  affiliateUrl: string;
-  category: string;
-  tags: string[];
-  reason?: string;
-}
-
-export interface ProductRecommendation {
-  products: Product[];
-  context: PostContext;
-  recommendations: RecommendationGroup[];
-}
-
-export interface PostContext {
-  objects: string[];
-  scene: string;
-  emotion: string;
-  needs: string[];
-  season?: string;
-  timeOfDay?: string;
-}
-
-export interface RecommendationGroup {
-  title: string;
-  products: Product[];
-  reason: string;
-}
 
 // ========================================
 // ゲーミフィケーション・ポイントシステム
