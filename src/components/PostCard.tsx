@@ -39,7 +39,11 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
   const timeAgo = formatDistanceToNow(new Date(createdAt), { addSuffix: true, locale: ja });
 
   const handleLikeClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
+    e.nativeEvent.stopImmediatePropagation();
+    
+    console.log('❤️ Like button clicked for post:', post.id);
     
     try {
       if (likedByCurrentUser) {
@@ -48,7 +52,7 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
         await likePost(post.id);
       }
     } catch (error) {
-      // Handle error silently
+      console.error('いいね処理エラー:', error);
     }
   };
   

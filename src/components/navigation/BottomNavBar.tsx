@@ -31,6 +31,7 @@ const BottomNavBar = ({
 }: BottomNavBarProps) => {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   
@@ -44,12 +45,18 @@ const BottomNavBar = ({
   const activeIconStyle = "text-blue-500 dark:text-blue-400";
   const inactiveIconStyle = "text-gray-600 dark:text-gray-400";
 
-  const handleHomeClick = () => {
-    console.log('🔥 FIXED VERSION: Home button clicked, reloading page and navigating to home');
-    // 確実にリロードする
-    setTimeout(() => {
-      window.location.reload();
-    }, 0);
+  const handleHomeClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('🏠 Home button clicked - navigating to home');
+    
+    // ページリロードではなく、正常なナビゲーションを使用
+    if (location.pathname !== '/') {
+      navigate('/');
+    } else {
+      // 既にホームページにいる場合は、ページトップにスクロール
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const handleNewPostClick = () => {
@@ -66,10 +73,7 @@ const BottomNavBar = ({
         {/* Home */}
         <button 
           type="button" 
-          onClick={() => {
-            console.log('🚀 DIRECT INLINE: Reloading page now!');
-            window.location.reload();
-          }}
+          onClick={handleHomeClick}
           className="inline-flex flex-col items-center justify-center px-5 hover:bg-gray-50 dark:hover:bg-gray-700 group touch-manipulation active:bg-gray-100" 
           style={{ minWidth: '60px', minHeight: '60px' }}
         >

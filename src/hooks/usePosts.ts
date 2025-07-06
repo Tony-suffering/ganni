@@ -263,19 +263,38 @@ export const usePosts = (): UsePostsReturn => {
   useEffect(() => {
     fetchPosts();
 
+    // デバウンス用のタイマー
+    let debounceTimer: NodeJS.Timeout | null = null;
+    
+    const debouncedFetchPosts = () => {
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
+      debounceTimer = setTimeout(() => {
+        console.log('🔄 リアルタイム更新: fetchPosts実行');
+        fetchPosts();
+      }, 500); // 500ms遅延
+    };
+
     // チャンネル名にタイムスタンプを追加してユニークにする
     const channelName = `realtime_posts_and_likes_${Date.now()}_${Math.random()}`;
     const channel = supabase
       .channel(channelName)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, async (payload) => {
-        await fetchPosts();
+        console.log('📝 postsテーブル変更検知:', payload.eventType);
+        debouncedFetchPosts();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'likes' }, async (payload) => {
-        await fetchPosts();
+        console.log('❤️ likesテーブル変更検知:', payload.eventType);
+        debouncedFetchPosts();
       })
       .subscribe();
 
     return () => {
+      // タイマーをクリア
+      if (debounceTimer) {
+        clearTimeout(debounceTimer);
+      }
       // チャンネルを適切にクリーンアップ
       channel.unsubscribe();
       supabase.removeChannel(channel);
