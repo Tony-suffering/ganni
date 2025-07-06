@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { useGamification } from '../../hooks/useGamification';
 import { UserMenu } from '../auth/UserMenu';
 import { NotificationBell } from './NotificationBell';
 import { PersonalJourneyCTA } from '../cta/PersonalJourneyCTA';
@@ -31,21 +30,15 @@ const BottomNavBar = ({
   previousPoints: propPreviousPoints
 }: BottomNavBarProps) => {
   const { user } = useAuth();
-  const { userPoints: hookUserPoints, levelInfo: hookLevelInfo, previousPoints: hookPreviousPoints } = useGamification();
   const location = useLocation();
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   
-  // App.tsxから渡されたpropsを優先使用
-  const userPoints = propUserPoints || hookUserPoints;
-  const levelInfo = propLevelInfo || hookLevelInfo;
-  const previousPoints = propPreviousPoints !== undefined ? propPreviousPoints : hookPreviousPoints;
+  // App.tsxから渡されたpropsを使用（重複したhook呼び出しを削除）
+  const userPoints = propUserPoints;
+  const levelInfo = propLevelInfo;
+  const previousPoints = propPreviousPoints;
   
-  console.log('📱 BottomNavBar - App.tsxからのprops:', {
-    'prop.userPoints': !!propUserPoints,
-    'prop.previousPoints': propPreviousPoints,
-    'final.previousPoints': previousPoints
-  });
 
   const iconStyle = "w-7 h-7 transition-transform duration-200 ease-in-out group-hover:scale-110";
   const activeIconStyle = "text-blue-500 dark:text-blue-400";

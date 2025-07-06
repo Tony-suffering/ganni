@@ -14,7 +14,6 @@ import {
   BarChart3
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useGamification } from '../../hooks/useGamification';
 import { analyticsService } from '../../services/analyticsService';
 
 interface PersonalJourneyCTAProps {
@@ -34,26 +33,12 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
   previousPoints: propPreviousPoints
 }) => {
   const { user } = useAuth();
-  const { userPoints: hookUserPoints, levelInfo: hookLevelInfo, previousPoints: hookPreviousPoints } = useGamification();
   
-  // propsが渡された場合はpropsを優先、そうでなければhookの値を使用
-  const userPoints = propUserPoints || hookUserPoints;
-  const levelInfo = propLevelInfo || hookLevelInfo;
-  const previousPoints = propPreviousPoints !== undefined ? propPreviousPoints : hookPreviousPoints;
+  // propsから直接使用（重複したhook呼び出しを削除）
+  const userPoints = propUserPoints;
+  const levelInfo = propLevelInfo;
+  const previousPoints = propPreviousPoints;
   
-  // デバッグ: propsとhookの値を比較
-  useEffect(() => {
-    if (variant === 'mobile') {
-      console.log('📱 PersonalJourneyCTA [mobile] - Props vs Hook 比較:', {
-        'props.userPoints': !!propUserPoints,
-        'props.previousPoints': propPreviousPoints,
-        'hook.userPoints': !!hookUserPoints,
-        'hook.previousPoints': hookPreviousPoints,
-        'final.userPoints': !!userPoints,
-        'final.previousPoints': previousPoints
-      });
-    }
-  }, [variant, propUserPoints, propPreviousPoints, hookUserPoints, hookPreviousPoints, userPoints, previousPoints]);
   const location = useLocation();
   const [isHovered, setIsHovered] = useState(false);
   const [pulseCount, setPulseCount] = useState(0);
@@ -81,22 +66,21 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
 
   // ポイント変化検知でアニメーション発火
   useEffect(() => {
-    console.log(`📱 PersonalJourneyCTA [${variant}] - ポイント変化チェック:`, {
+    console.log('📱 PersonalJourneyCTA - ポイント変化チェック:', {
+      variant,
       currentPoints: userPoints?.total_points,
       previousPoints,
-      variant,
-      shouldAnimate: variant === 'mobile' && previousPoints !== undefined && userPoints && 
-        previousPoints !== userPoints.total_points && previousPoints < userPoints.total_points
+      isIncrease: previousPoints !== undefined && userPoints && previousPoints < userPoints.total_points
     });
     
     // モバイル版でポイントが増加した場合のアニメーション
     if (variant === 'mobile' && previousPoints !== undefined && userPoints && 
         previousPoints < userPoints.total_points) {
-      console.log('✨ PersonalJourneyCTA [mobile] アニメーション開始！ 増加分:', userPoints.total_points - previousPoints);
+      console.log('✨ PersonalJourneyCTAモバイルアニメーション開始！ 増加分:', userPoints.total_points - previousPoints);
       setIsAnimating(true);
       setTimeout(() => {
-        console.log('🏁 PersonalJourneyCTA [mobile] アニメーション終了');
         setIsAnimating(false);
+        console.log('🎬 PersonalJourneyCTAモバイルアニメーション終了');
       }, 2000);
     }
   }, [userPoints?.total_points, previousPoints, variant]);

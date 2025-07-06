@@ -24,6 +24,7 @@ export const useGamification = () => {
     source: string;
     timestamp: Date;
   } | null>(null);
+  const [isUpdatingPoints, setIsUpdatingPoints] = useState(false); // 重複更新防止フラグ
 
   // レベル計算関数
   const calculateLevelInfo = useCallback((totalPoints: number): LevelInfo => {
@@ -58,17 +59,17 @@ export const useGamification = () => {
 
   // ユーザーポイント取得
   const fetchUserPoints = useCallback(async () => {
-    if (!user) {
-      console.log('🔍 useGamification: ユーザーが未ログイン');
+    if (!user || isUpdatingPoints) {
       return;
     }
 
-    console.log('🔍 useGamification: ポイント取得開始 - ユーザーID:', user.id);
+    setIsUpdatingPoints(true);
 
     try {
       // 現在のポイントを事前に保存
       const currentPoints = userPoints?.total_points;
-      console.log('🔍 fetchUserPoints開始 - 現在のポイント:', currentPoints);
+      
+      console.log('🎯 fetchUserPoints: 現在のポイント =', currentPoints);
       
       const { data, error } = await supabase
         .from('user_points')
@@ -76,52 +77,51 @@ export const useGamification = () => {
         .eq('user_id', user.id)
         .single();
 
-      console.log('🔍 useGamification: ポイント取得結果', { data, error });
-
       if (error) {
-        console.warn('⚠️ ポイント取得エラー:', {
-          code: error.code,
-          message: error.message,
-          details: error.details
-        });
-        
         // テーブルが存在しない場合やアクセス権限がない場合は無視
         if (error.code === 'PGRST116' || error.code === '42P01' || error.code === '406') {
-          console.log('💡 user_pointsテーブルが利用できません。スキップします。');
+          setIsUpdatingPoints(false);
           return;
         }
         
-        console.error('❌ ポイント取得エラー:', error);
         setError(`ポイント取得エラー: ${error.message}`);
+        setIsUpdatingPoints(false);
         return;
       }
 
       if (data) {
-        console.log('✅ ポイントデータ取得成功:', data);
-        console.log('🔍 ポイント比較:', { currentPoints, newPoints: data.total_points, changed: currentPoints !== data.total_points });
+        console.log('🎯 fetchUserPoints: 新しいポイント =', data.total_points);
         
-        // 常に前回のポイントを更新（アニメーション検出のため）
-        if (currentPoints !== undefined) {
-          // ポイントが変化した場合のみアニメーション用の一時的なpreviousPointsを設定
-          if (currentPoints !== data.total_points) {
-            console.log('🎯 ポイント変化検出:', currentPoints, '->', data.total_points);
-            console.log('🎮 アニメーション用previousPointsを設定:', currentPoints);
-            
-            // アニメーション用に一時的にpreviousPointsを設定
+        // ポイントが増加した場合のみアニメーション用のpreviousPointsを設定
+        if (currentPoints !== undefined && 
+            currentPoints !== data.total_points && 
+            currentPoints < data.total_points) {
+          
+          console.log('✨ ポイント増加を検知！アニメーション準備:', {
+            previous: currentPoints,
+            current: data.total_points,
+            increase: data.total_points - currentPoints
+          });
+          
+          // まずuserPointsを更新
+          setUserPoints(data);
+          
+          // 短いディレイでpreviousPointsを設定
+          setTimeout(() => {
             setPreviousPoints(currentPoints);
+            console.log('🎬 previousPoints設定完了:', currentPoints);
             
-            // 2秒後にpreviousPointsをクリアしてアニメーションを終了
+            // 3秒後にpreviousPointsをクリアしてアニメーションを終了
             setTimeout(() => {
-              console.log('🧹 アニメーション終了、previousPointsをクリア');
               setPreviousPoints(undefined);
-            }, 2000);
-          }
+              console.log('🎬 previousPointsクリア完了');
+            }, 3000);
+          }, 100);
+        } else {
+          // ポイントが変化していない場合は普通に更新
+          setUserPoints(data);
         }
-        
-        // 常にuserPointsを更新
-        setUserPoints(data);
       } else {
-        console.log('📝 ポイントデータが存在しないため初期化します');
         // ポイントデータが存在しない場合は初期化
         const { data: newPoints, error: insertError } = await supabase
           .from('user_points')
@@ -135,21 +135,19 @@ export const useGamification = () => {
           .select()
           .single();
 
-        console.log('🔍 ポイント初期化結果:', { newPoints, insertError });
-
         if (!insertError && newPoints) {
-          console.log('✅ ポイント初期化成功:', newPoints);
           setUserPoints(newPoints);
         } else {
-          console.error('❌ ポイント初期化エラー:', insertError);
           setError(`ポイント初期化エラー: ${insertError?.message}`);
         }
       }
     } catch (error) {
-      console.error('❌ ポイント取得エラー:', error);
       setError('ポイント情報の取得に失敗しました');
+      console.error('❌ fetchUserPoints エラー:', error);
+    } finally {
+      setIsUpdatingPoints(false);
     }
-  }, [user?.id]);
+  }, [user?.id, userPoints?.total_points, isUpdatingPoints]);
 
   // ユーザーバッジ取得
   const fetchUserBadges = useCallback(async () => {
@@ -226,7 +224,6 @@ export const useGamification = () => {
     if (!user) return;
 
     try {
-      console.log('📊 ユーザー統計取得開始 - ユーザーID:', user.id);
       
       const { data, error } = await supabase
         .from('user_inspiration_stats')
@@ -252,10 +249,8 @@ export const useGamification = () => {
       }
 
       if (data) {
-        console.log('✅ ユーザー統計取得完了:', data);
         setUserStats(data);
       } else {
-        console.log('📝 ユーザー統計データがありません');
       }
     } catch (error) {
       console.error('❌ 統計取得エラー:', error);
@@ -341,12 +336,10 @@ export const useGamification = () => {
   // 写真スコア統計取得
   const fetchPhotoStats = useCallback(async () => {
     if (!user) {
-      console.log('🔍 useGamification: ユーザーが未ログイン（写真スコア統計）');
       return;
     }
 
     try {
-      console.log('📸 写真スコア統計取得開始 - ユーザーID:', user.id);
       
       // まずテーブルの存在を確認
       const { data: testData, error: testError } = await supabase
@@ -374,11 +367,6 @@ export const useGamification = () => {
         totalPhotoScores: stats.totalPhotoScores
       });
 
-      console.log('✅ 写真スコア統計取得完了:', {
-        average: stats.averagePhotoScore,
-        highest: stats.highestPhotoScore,
-        total: stats.totalPhotoScores
-      });
     } catch (error) {
       console.error('❌ 写真スコア統計取得エラー:', error);
       // エラーがあってもアプリケーションを停止させない
@@ -456,7 +444,6 @@ export const useGamification = () => {
       setError(null);
       
       try {
-        console.log('🔄 ゲーミフィケーションデータの読み込み開始');
         
         // 最重要データのみを最初に読み込む
         await fetchUserPoints();
@@ -479,7 +466,6 @@ export const useGamification = () => {
           fetchPhotoStats();
         }, 200);
         
-        console.log('✅ ゲーミフィケーションデータの読み込み完了');
       } catch (error) {
         console.error('❌ データ読み込みエラー:', error);
         setError('データの読み込みに失敗しました');
@@ -500,7 +486,6 @@ export const useGamification = () => {
     const enableRealtime = false; // 一時的に無効化してエラーを回避
     
     if (!enableRealtime) {
-      console.log('⚠️ リアルタイムポイント更新は一時的に無効化されています');
       return;
     }
 

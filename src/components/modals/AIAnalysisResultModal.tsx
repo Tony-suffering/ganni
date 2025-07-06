@@ -41,15 +41,6 @@ export const AIAnalysisResultModal: React.FC<AIAnalysisResultModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'score' | 'comments' | 'products' | 'pattern'>('score');
   
-  console.log('🔍 AIAnalysisResultModal rendered:', {
-    isOpen,
-    isAnalyzing,
-    photoScore: !!photoScore,
-    aiCommentsCount: aiComments.length,
-    productRecommendations: !!productRecommendations,
-    personalPattern: !!personalPattern,
-    analysisProgress
-  });
   
   const isAnalysisComplete = !isAnalyzing && 
     (photoScore || aiComments.length > 0 || productRecommendations || personalPattern);

@@ -33,26 +33,17 @@ export class HighlightService {
   static async selectHighlightPosts(posts: Post[]): Promise<HighlightPost[]> {
     if (posts.length === 0) return [];
 
-    console.log('🎯 ハイライト選択開始:', {
-      総投稿数: posts.length,
-      タイムスタンプ: new Date().toISOString()
-    });
 
     // 重複除去: IDでユニークな投稿のみを処理
     const uniquePosts = posts.filter((post, index, arr) => 
       arr.findIndex(p => p.id === post.id) === index
     );
 
-    console.log('📊 重複除去後:', {
-      ユニーク投稿数: uniquePosts.length,
-      投稿タイトル: uniquePosts.map(p => p.title.slice(0, 20) + '...')
-    });
 
     const scoredPosts = uniquePosts.map(post => {
       const score = this.calculateHighlightScore(post, uniquePosts);
       const reason = this.generateHighlightReason(post);
       
-      console.log(`📈 投稿スコア計算: "${post.title.slice(0, 30)}..." = ${score} (${reason})`);
       
       return {
         ...post,
@@ -66,15 +57,6 @@ export class HighlightService {
     const candidateCount = Math.max(3, Math.ceil(scoredPosts.length * 0.2));
     const topCandidates = sortedPosts.slice(0, candidateCount);
     
-    console.log('🏆 上位候補選択:', {
-      全投稿数: scoredPosts.length,
-      候補数: candidateCount,
-      上位候補: topCandidates.map(p => ({
-        タイトル: p.title.slice(0, 25) + '...',
-        スコア: p.highlightScore,
-        理由: p.highlightReason
-      }))
-    });
 
     // 上位候補からランダムに選択（リロードするたびに変わる）
     // より強いランダム性を確保 - 複数の要素を組み合わせてシードを生成
@@ -88,13 +70,6 @@ export class HighlightService {
     randomValue = randomValue - Math.floor(randomValue); // 0-1の小数部分を取得
     const randomIndex = Math.floor(randomValue * topCandidates.length);
     
-    console.log('🎲 ランダム選択デバッグ:', {
-      候補数: topCandidates.length,
-      選択インデックス: randomIndex,
-      選択された投稿: topCandidates[randomIndex]?.title,
-      ランダム値: randomValue,
-      シード: complexSeed
-    });
     
     const selectedPost = topCandidates[randomIndex];
 
@@ -114,12 +89,6 @@ export class HighlightService {
    * 投稿のハイライトスコアを計算（写真採点スコアベース）
    */
   private static calculateHighlightScore(post: Post, allPosts: Post[]): number {
-    // デバッグログを追加
-    console.log(`📊 "${post.title.slice(0, 30)}..." のスコア計算:`, {
-      photoScore: post.photoScore,
-      photoScore_total: post.photoScore?.total_score,
-      photo_scores: post.photo_scores
-    });
     
     // 写真採点スコアが存在する場合は最優先
     if (post.photoScore && post.photoScore.total_score) {
@@ -133,7 +102,6 @@ export class HighlightService {
       const randomVariation = (Math.random() - 0.5) * 0.05; // ±2.5%の変動
       finalScore += randomVariation;
       
-      console.log(`✅ AI写真採点使用: ${post.photoScore.total_score}pt → ${finalScore}`);
       return Math.max(0, Math.min(1, Math.round(finalScore * 100) / 100));
     }
     
@@ -284,7 +252,6 @@ export class HighlightService {
       
       // テーブルが存在しない場合はスキップ
       if (checkError && checkError.message.includes('relation "public.highlight_posts" does not exist')) {
-        console.warn('highlight_postsテーブルが存在しません。マイグレーションを実行してください。');
         return;
       }
       
@@ -305,19 +272,15 @@ export class HighlightService {
         .insert(highlightData);
       
       if (error) {
-        console.error('ハイライト保存エラー:', error);
         // 401エラー（認証エラー）の場合は通知のみで例外を投げない
         if (error.message?.includes('Unauthorized') || error.message?.includes('401')) {
-          console.warn('認証が必要なため、ハイライト保存をスキップします');
           return;
         }
         throw error;
       }
     } catch (error) {
-      console.error('ハイライト保存に失敗:', error);
       // テーブルが存在しない場合はエラーを投げない
       if (error instanceof Error && error.message.includes('relation "public.highlight_posts" does not exist')) {
-        console.warn('highlight_postsテーブルが存在しないため、ハイライトの永続化をスキップします。');
         return;
       }
       throw error;
@@ -347,7 +310,6 @@ export class HighlightService {
 
       // テーブルが存在しない場合は空配列を返す
       if (error && error.message.includes('relation "public.highlight_posts" does not exist')) {
-        console.warn('highlight_postsテーブルが存在しません。空の配列を返します。');
         return [];
       }
 
@@ -395,7 +357,6 @@ export class HighlightService {
 
       return highlights;
     } catch (error) {
-      console.error('ハイライト取得に失敗:', error);
       // テーブルが存在しない場合は空配列を返す
       if (error instanceof Error && error.message.includes('relation "public.highlight_posts" does not exist')) {
         return [];
@@ -417,7 +378,6 @@ export class HighlightService {
       
       // テーブルが存在しない場合はスキップ
       if (checkError && checkError.message.includes('relation "public.highlight_posts" does not exist')) {
-        console.warn('highlight_postsテーブルが存在しません。クリアをスキップします。');
         return;
       }
       
@@ -428,21 +388,16 @@ export class HighlightService {
         .neq('id', '00000000-0000-0000-0000-000000000000');
       
       if (error) {
-        console.error('ハイライトクリアエラー:', error);
         // 401エラー（認証エラー）の場合は通知のみで例外を投げない
         if (error.message?.includes('Unauthorized') || error.message?.includes('401')) {
-          console.warn('認証が必要なため、ハイライトクリアをスキップします');
           return;
         }
         throw error;
       }
       
-      console.log('✅ 保存されたハイライトをクリアしました');
     } catch (error) {
-      console.error('ハイライトクリアに失敗:', error);
       // テーブルが存在しない場合はエラーを投げない
       if (error instanceof Error && error.message.includes('relation "public.highlight_posts" does not exist')) {
-        console.warn('highlight_postsテーブルが存在しないため、ハイライトクリアをスキップします。');
         return;
       }
       throw error;
@@ -454,13 +409,10 @@ export class HighlightService {
    */
   static async updateHighlights(allPosts: Post[]): Promise<void> {
     try {
-      console.log('ハイライト投稿を更新中...');
       await this.clearStoredHighlights();
       const highlights = await this.selectHighlightPosts(allPosts);
       await this.saveHighlights(highlights);
-      console.log(`${highlights.length}件のハイライト投稿を更新しました`);
     } catch (error) {
-      console.error('ハイライト更新に失敗:', error);
     }
   }
 }

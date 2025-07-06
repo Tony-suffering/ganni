@@ -38,23 +38,12 @@ export const HighlightSection: React.FC<HighlightSectionProps> = ({
       setLoading(true);
       setError(null);
 
-      console.log('🔄 ハイライト読み込み開始:', {
-        投稿数: memoizedAllPosts.length,
-        タイムスタンプ: new Date().toISOString(),
-        強制更新: true
-      });
 
       // 毎回新しくハイライトを生成（リロード毎に変更）
       // 前回の結果をクリアして完全に新しい選択を強制
       setHighlights([]);
       
       const newHighlights = await HighlightService.selectHighlightPosts(memoizedAllPosts);
-      console.log('🎨 新しいハイライト生成:', newHighlights.map(h => ({
-        id: h.id.slice(0,8) + '...',
-        タイトル: h.title.slice(0,25) + '...',
-        スコア: h.highlightScore,
-        理由: h.highlightReason
-      })));
       
       setHighlights(newHighlights);
       
@@ -64,19 +53,15 @@ export const HighlightSection: React.FC<HighlightSectionProps> = ({
         await HighlightService.clearStoredHighlights();
         await HighlightService.saveHighlights(newHighlights);
       } catch (err) {
-        console.warn('ハイライト保存に失敗:', err);
       }
     } catch (err) {
-      console.error('ハイライト読み込みエラー:', err);
       setError('ハイライトの読み込みに失敗しました');
       
       // フォールバック: 保存されたハイライトは使用せず、エラー時は空の状態を維持
       // これにより、毎回新しい選択を強制する
-      console.warn('⚠️ ハイライト生成に失敗。フォールバックはスキップして新しい選択を試行します。');
       
       // 一定時間後に再試行
       setTimeout(() => {
-        console.log('🔄 ハイライト生成を再試行中...');
         loadHighlights();
       }, 2000);
     } finally {
@@ -93,14 +78,12 @@ export const HighlightSection: React.FC<HighlightSectionProps> = ({
   // ページのフォーカス時にもリフレッシュ（リロード時の新しい選択を確保）
   useEffect(() => {
     const handleFocus = () => {
-      console.log('🔄 ページフォーカス時のハイライト更新');
       setRefreshKey(Date.now());
       setTimeout(() => loadHighlights(), 100);
     };
 
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('🔄 ページ表示時のハイライト更新');
         setRefreshKey(Date.now());
         setTimeout(() => loadHighlights(), 100);
       }
@@ -118,7 +101,6 @@ export const HighlightSection: React.FC<HighlightSectionProps> = ({
   // ページのフォーカス時にもリフレッシュ
   useEffect(() => {
     const handleFocus = () => {
-      console.log('🔄 ページフォーカス時にハイライトをリフレッシュ');
       setRefreshKey(Date.now());
       loadHighlights();
     };
@@ -129,11 +111,6 @@ export const HighlightSection: React.FC<HighlightSectionProps> = ({
 
   // highlightsの状態変化を監視
   useEffect(() => {
-    console.log('📱 HighlightSection highlights更新:', {
-      長さ: highlights.length,
-      投稿ID: highlights.map(h => `${h.id.slice(0,8)}...`),
-      重複チェック: highlights.length !== new Set(highlights.map(h => h.id)).size ? '⚠️ 重複あり' : '✅ 重複なし'
-    });
   }, [highlights]);
 
   // 不要な関数を削除

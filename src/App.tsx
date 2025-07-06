@@ -68,16 +68,6 @@ function AppContent() {
   const shouldLoadGamification = !!user && !authLoading;
   const { userPoints, previousPoints, levelInfo, displayBadges, photoStats, loading: gamificationLoading, fetchUserPoints } = useGamification();
   
-  // デバッグ: ゲーミフィケーション関数の状態をログ出力
-  useEffect(() => {
-    console.log('🎮 App.tsx - useGamification状態:', {
-      hasUser: !!user,
-      fetchUserPointsExists: !!fetchUserPoints,
-      userPointsExists: !!userPoints,
-      previousPoints,
-      gamificationLoading
-    });
-  }, [user, fetchUserPoints, userPoints, previousPoints, gamificationLoading]);
   
   // 画面サイズ監視
   useEffect(() => {
@@ -89,16 +79,6 @@ function AppContent() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // デバッグ用ログ
-  useEffect(() => {
-    console.log('🎮 App.tsx ゲーミフィケーションデバッグ:', {
-      user: !!user,
-      userPoints,
-      levelInfo,
-      displayBadges: displayBadges?.length || 0,
-      gamificationLoading
-    });
-  }, [user, userPoints, levelInfo, displayBadges, gamificationLoading]);
 
   // ユーザー情報をアナリティクスサービスに設定
   useEffect(() => {
@@ -183,52 +163,30 @@ function AppContent() {
 
   // いいね処理をラップしてポイント更新を含める
   const handleLikePost = useCallback(async (postId: string) => {
-    console.log('👍 App.tsx - いいね処理開始');
-    console.log('🔍 fetchUserPoints関数の状態:', !!fetchUserPoints);
-    
-    // ポイント更新を先に実行（いいね処理の完了を待たない）
-    if (fetchUserPoints) {
-      console.log('📊 App.tsx - 即座にポイント更新実行');
-      fetchUserPoints(); // 即座に実行
-      
-      setTimeout(() => {
-        console.log('📊 App.tsx - 遅延ポイント更新実行（500ms後）');
-        fetchUserPoints(); // 遅延実行
-      }, 500);
-      
-      setTimeout(() => {
-        console.log('📊 App.tsx - 最終ポイント更新実行（1000ms後）');
-        fetchUserPoints(); // 最終確認用
-      }, 1000);
-    } else {
-      console.warn('❌ App.tsx - fetchUserPoints関数が利用できません');
-    }
-    
     try {
       await likePost(postId);
-      console.log('✅ App.tsx - いいね処理完了');
+      // いいね後にポイントを更新（一度だけ）
+      if (fetchUserPoints) {
+        setTimeout(() => {
+          fetchUserPoints();
+        }, 100); // 短いディレイでデータベース更新を待つ
+      }
     } catch (error) {
-      console.error('❌ App.tsx - いいね処理エラー:', error);
+      console.error('いいね処理エラー:', error);
     }
   }, [likePost, fetchUserPoints]);
 
   const handleUnlikePost = useCallback(async (postId: string) => {
-    console.log('👎 App.tsx - いいね解除処理開始');
-    
-    // ポイント更新を先に実行
-    if (fetchUserPoints) {
-      console.log('📊 App.tsx - いいね解除後のポイント更新実行');
-      fetchUserPoints(); // 即座に実行
-      setTimeout(() => {
-        fetchUserPoints(); // 遅延実行
-      }, 500);
-    }
-    
     try {
       await unlikePost(postId);
-      console.log('✅ App.tsx - いいね解除処理完了');
+      // いいね解除後にポイントを更新（一度だけ）
+      if (fetchUserPoints) {
+        setTimeout(() => {
+          fetchUserPoints();
+        }, 100);
+      }
     } catch (error) {
-      console.error('❌ App.tsx - いいね解除処理エラー:', error);
+      console.error('いいね解除処理エラー:', error);
     }
   }, [unlikePost, fetchUserPoints]);
 

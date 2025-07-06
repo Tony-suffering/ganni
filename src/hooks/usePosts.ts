@@ -34,7 +34,6 @@ interface UsePostsReturn {
 const sendNewPostNotifications = async (postId: string, authorId: string) => {
   try {
     // user_notification_settingsテーブルが存在しない可能性があるため、エラーハンドリングを改善
-    console.log('📨 新規投稿通知の送信を試行中...');
     
     // 新規投稿通知を有効にしているユーザーを取得
     const { data: notificationUsers, error } = await supabase
@@ -45,7 +44,6 @@ const sendNewPostNotifications = async (postId: string, authorId: string) => {
 
     if (error) {
       // テーブルが存在しない場合は警告のみで処理を継続
-      console.warn('通知設定の取得に失敗 (テーブルが存在しない可能性があります):', error);
       return;
     }
 
@@ -68,12 +66,9 @@ const sendNewPostNotifications = async (postId: string, authorId: string) => {
       .insert(notifications);
 
     if (insertError) {
-      console.error('通知の作成に失敗:', insertError);
     } else {
-      console.log('✅ 通知を送信しました:', notifications.length, '件');
     }
   } catch (error) {
-    console.warn('新規投稿通知の送信でエラー (処理は継続):', error);
   }
 };
 
@@ -132,13 +127,10 @@ export const usePosts = (): UsePostsReturn => {
       if (bookmarksData.error) throw bookmarksData.error;
       if (commentsData.error) throw commentsData.error;
       if (photoScoresData.error) {
-        console.warn('photo_scores取得エラー:', photoScoresData.error);
+        // photo_scores取得エラー
       }
       if (inspirationsData.error) {
-        console.warn('inspirations取得エラー:', inspirationsData.error);
-      } else {
-        console.log('🎨 inspirationsData:', inspirationsData.data);
-        console.log('🆔 postIds for inspiration lookup:', postIds);
+        // inspirations取得エラー
       }
       
       const bookmarkedPostIds = new Set((bookmarksData.data ?? []).map(b => b.post_id));
@@ -172,12 +164,11 @@ export const usePosts = (): UsePostsReturn => {
           .in('id', sourcePostIds);
           
         if (sourcePostsError) {
-          console.warn('ソース投稿取得エラー:', sourcePostsError);
+          // ソース投稿取得エラー
         } else {
           (sourcePostsData ?? []).forEach(post => {
             sourcePostsMap.set(post.id, post);
           });
-          console.log('📚 ソース投稿データ:', sourcePostsData);
         }
       }
 
@@ -196,11 +187,9 @@ export const usePosts = (): UsePostsReturn => {
         const inspirationData = inspirationsMap.get(post.id);
         let inspiration = undefined;
         
-        console.log(`🔍 Post ${post.id} - inspirationData:`, inspirationData);
         
         if (inspirationData && inspirationData.source_post_id) {
           const sourcePost = sourcePostsMap.get(inspirationData.source_post_id);
-          console.log(`📖 Post ${post.id} - sourcePost:`, sourcePost);
           
           if (sourcePost) {
             inspiration = {
@@ -219,12 +208,7 @@ export const usePosts = (): UsePostsReturn => {
               note: inspirationData.inspiration_note,
               chain_level: inspirationData.chain_level
             };
-            console.log(`✅ Post ${post.id} にinspiration情報を設定:`, inspiration);
-          } else {
-            console.log(`⚠️ Post ${post.id} - ソース投稿が見つからない:`, inspirationData.source_post_id);
           }
-        } else if (inspirationData) {
-          console.log(`⚠️ Post ${post.id} にinspirationDataはあるがsource_post_idがない:`, inspirationData);
         }
         
         return {
@@ -264,11 +248,9 @@ export const usePosts = (): UsePostsReturn => {
       setDisplayedPosts(initialPosts);
       setPage(1);
       setHasNextPage(formattedPosts.length > POSTS_PER_PAGE);
-      console.log(`📊 Posts loaded: ${formattedPosts.length} total, ${initialPosts.length} displayed initially, hasNextPage: ${formattedPosts.length > POSTS_PER_PAGE}`);
       setLoading(false);
     } catch (e: any) {
       setError(`投稿の読み込みに失敗しました: ${e.message}`);
-      console.error(e);
       setAllPosts([]); // エラー時は空にする
       // Dynamic import for mockData
       import('../data/mockData').then(({ mockPosts }) => {
@@ -286,11 +268,9 @@ export const usePosts = (): UsePostsReturn => {
     const channel = supabase
       .channel(channelName)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, async (payload) => {
-        console.log('Posts change received!', payload);
         await fetchPosts();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'likes' }, async (payload) => {
-        console.log('Likes change received!', payload);
         await fetchPosts();
       })
       .subscribe();
@@ -306,7 +286,6 @@ export const usePosts = (): UsePostsReturn => {
     if (!hasNextPage || loading || isLoadingMore) return;
     
     setIsLoadingMore(true);
-    console.log('LoadMore実行:', { page, hasNextPage, displayedPostsLength: displayedPosts.length });
     
     try {
       const currentDisplayed = displayedPosts.length;
@@ -321,7 +300,6 @@ export const usePosts = (): UsePostsReturn => {
         setHasNextPage(false);
       }
       
-      console.log('LoadMore完了:', { newLength: Math.min(nextPageEnd, allPosts.length), hasNextPage: nextPageEnd < allPosts.length });
     } finally {
       setIsLoadingMore(false);
     }
@@ -350,7 +328,6 @@ export const usePosts = (): UsePostsReturn => {
         upsert: false
       });
       if (imageError) {
-        console.error('画像アップロードエラー:', imageError);
         throw new Error('画像アップロードに失敗しました。');
       }
 
@@ -383,19 +360,6 @@ export const usePosts = (): UsePostsReturn => {
         .single();
 
       if (postError) {
-        console.error('❌ 投稿保存エラー:', {
-          code: postError.code,
-          message: postError.message,
-          details: postError.details,
-          hint: postError.hint,
-          postData: {
-            title: newPostInput.title,
-            description: newPostInput.userComment,
-            image_url: newPostInput.imageUrl,
-            ai_description: newPostInput.aiDescription,
-            author_id: newPostInput.author.id
-          }
-        });
         throw postError; // エラーをそのまま投げて呼び出し元で処理
       }
 
@@ -406,7 +370,6 @@ export const usePosts = (): UsePostsReturn => {
         );
         
         if (tagError) {
-          console.error('Error saving post tags:', tagError);
           throw new Error('タグの保存に失敗しました');
         }
       }
@@ -433,18 +396,12 @@ export const usePosts = (): UsePostsReturn => {
         });
         
         if (scoreError) {
-          console.error('Error saving photo score:', scoreError);
           // 写真スコアの保存に失敗してもエラーは投げない（投稿自体は成功させる）
         }
       }
 
       // 7. インスピレーション情報を保存
       if (newPostInput.inspirationSourceId) {
-        console.log('🎨 インスピレーション情報を保存:', {
-          sourceId: newPostInput.inspirationSourceId,
-          type: newPostInput.inspirationType,
-          note: newPostInput.inspirationNote
-        });
         
         // チェーンレベルを計算（関数が存在しない場合は1を使用）
         let chainLevel = 1;
@@ -455,7 +412,7 @@ export const usePosts = (): UsePostsReturn => {
             });
           chainLevel = (chainLevelData || 0) + 1; // 深度 + 1 = チェーンレベル
         } catch (error) {
-          console.log('チェーンレベル計算をスキップ:', error);
+          // チェーンレベル計算をスキップ
         }
         
         try {
@@ -470,22 +427,8 @@ export const usePosts = (): UsePostsReturn => {
             });
           
           if (inspirationError) {
-            console.error('❌ インスピレーション保存エラー:', {
-              code: inspirationError.code,
-              message: inspirationError.message,
-              details: inspirationError.details,
-              hint: inspirationError.hint,
-              params: {
-                source_post_id: newPostInput.inspirationSourceId,
-                inspired_post_id: postData.id,
-                creator_id: userId,
-                inspiration_type: newPostInput.inspirationType || 'direct',
-                inspiration_note: newPostInput.inspirationNote
-              }
-            });
             // ポイント関連のエラーでも投稿自体は成功させる
           } else {
-            console.log('✅ インスピレーション保存成功！ID:', inspirationId);
             
             // ポイント付与の確認
             try {
@@ -493,29 +436,21 @@ export const usePosts = (): UsePostsReturn => {
                 .rpc('check_inspiration_points', { p_user_id: userId });
               
               if (pointsError) {
-                console.warn('⚠️ ポイント確認エラー:', pointsError);
-              } else {
-                console.log('💎 ポイント確認完了:', pointsCheck);
+                // ポイント確認エラー
               }
             } catch (pointsError) {
-              console.error('❌ ポイント確認で予期しないエラー:', pointsError);
+              // ポイント確認で予期しないエラー
             }
           }
         } catch (error) {
-          console.error('❌ インスピレーション保存で予期しないエラー:', error);
           // どんなエラーでも投稿は継続
         }
       }
 
       // インスピレーション情報を取得（もしあれば）
-      console.log('🔍 usePosts.addPost - インスピレーション情報デバッグ:');
-      console.log('  - newPostInput.inspirationSourceId:', newPostInput.inspirationSourceId);
-      console.log('  - newPostInput.inspirationType:', newPostInput.inspirationType);
-      console.log('  - newPostInput.inspirationNote:', newPostInput.inspirationNote);
       
       let inspirationData = null;
       if (newPostInput.inspirationSourceId) {
-        console.log('  - インスピレーション情報の取得を開始...');
         try {
           // インスピレーション元の投稿を取得
           const { data: sourcePost } = await supabase
@@ -566,13 +501,10 @@ export const usePosts = (): UsePostsReturn => {
               chain_level: 1 // 新規投稿なので1に設定
             };
             
-            console.log('  - インスピレーションデータを構築完了:', inspirationData);
           }
         } catch (error) {
-          console.error('インスピレーション情報の取得に失敗:', error);
+          // インスピレーション情報の取得に失敗
         }
-      } else {
-        console.log('  - インスピレーション元IDがないためスキップ');
       }
 
       // 投稿データを返す
@@ -599,43 +531,20 @@ export const usePosts = (): UsePostsReturn => {
         inspiration: inspirationData
       };
       
-      console.log('🎆 usePosts.addPost - 最終投稿データ:');
-      console.log('  - newPost.id:', newPost.id);
-      console.log('  - newPost.inspiration:', newPost.inspiration);
-      if (newPost.inspiration) {
-        console.log('    - source_post_id:', newPost.inspiration.source_post_id);
-        console.log('    - type:', newPost.inspiration.type);
-        console.log('    - note:', newPost.inspiration.note);
-        console.log('    - source_post:', newPost.inspiration.source_post);
-      }
 
       // 新規投稿通知を送信
       try {
         await sendNewPostNotifications(postData.id, userId);
       } catch (error) {
-        console.log('新規投稿通知の送信に失敗:', error);
+        // 新規投稿通知の送信に失敗
       }
 
       // 新規投稿をpostsの先頭に追加（fetchPostsを呼ばずに直接追加）
       setDisplayedPosts(prevPosts => [newPost, ...prevPosts]);
       setAllPosts(prevAllPosts => [newPost, ...prevAllPosts]);
-      console.log('✅ 新規投稿をPosts配列に直接追加しました');
       
       return newPost;
     } catch (error) {
-      console.error("❌ Failed to add post:", {
-        error,
-        errorMessage: error instanceof Error ? error.message : 'Unknown error',
-        newPostInput: {
-          title: newPostInput.title,
-          userComment: newPostInput.userComment,
-          imageUrl: newPostInput.imageUrl?.substring(0, 100) + '...',
-          aiDescription: newPostInput.aiDescription?.substring(0, 100) + '...',
-          author: newPostInput.author,
-          tags: newPostInput.tags.map(t => ({ id: t.id, name: t.name })),
-          aiComments: newPostInput.aiComments?.length || 0
-        }
-      });
       return null;
     }
   }, [fetchPosts]);
@@ -717,7 +626,6 @@ export const usePosts = (): UsePostsReturn => {
     setDisplayedPosts(prev => prev.filter(p => p.id !== postId));
     const { error } = await supabase.from('posts').delete().eq('id', postId);
     if (error) {
-      console.error("Error deleting post:", error);
       fetchPosts(); // Revert on error
     }
   }, [fetchPosts]);
@@ -738,15 +646,19 @@ export const usePosts = (): UsePostsReturn => {
       .single();
     
     if (postData) {
-      // 通知作成
+      // 通知作成（一時的に無効化 - データベーススキーマ問題のため）
       if (postData.author_id !== user.id) {
-        const { createNotification } = await import('../utils/notifications');
-        await createNotification({
-          recipientId: postData.author_id,
-          senderId: user.id,
-          postId: postId,
-          type: 'like'
-        });
+        try {
+          const { createNotification } = await import('../utils/notifications');
+          await createNotification({
+            recipientId: postData.author_id,
+            senderId: user.id,
+            postId: postId,
+            type: 'like'
+          });
+        } catch (error) {
+          // 通知機能のエラーは無視してメイン機能は正常動作させる
+        }
       }
 
       // ポイント付与機能は無効化
@@ -772,15 +684,19 @@ export const usePosts = (): UsePostsReturn => {
       .single();
     
     if (postData) {
-      // 通知削除
+      // 通知削除（一時的に無効化 - データベーススキーマ問題のため）
       if (postData.author_id !== user.id) {
-        const { deleteNotification } = await import('../utils/notifications');
-        await deleteNotification({
-          recipientId: postData.author_id,
-          senderId: user.id,
-          postId: postId,
-          type: 'like'
-        });
+        try {
+          const { deleteNotification } = await import('../utils/notifications');
+          await deleteNotification({
+            recipientId: postData.author_id,
+            senderId: user.id,
+            postId: postId,
+            type: 'like'
+          });
+        } catch (error) {
+          // 通知機能のエラーは無視してメイン機能は正常動作させる
+        }
       }
 
       // ポイント機能は無効化
@@ -799,7 +715,6 @@ export const usePosts = (): UsePostsReturn => {
     const { error } = await supabase.from('bookmarks').insert({ post_id: postId, user_id: user.id });
     
     if (error) {
-      console.error("Error bookmarking post:", error);
       setAllPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: false } : p));
       setDisplayedPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: false } : p));
     } else {
@@ -815,7 +730,7 @@ export const usePosts = (): UsePostsReturn => {
         // ポイント機能は無効化
         // console.log('ブックマーク機能正常動作');
       } catch (pointError) {
-        console.warn('⚠️ ブックマークエラー:', pointError);
+        // ブックマークエラー
       }
     }
   }, []);
@@ -828,7 +743,6 @@ export const usePosts = (): UsePostsReturn => {
     setDisplayedPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: false } : p));
     const { error } = await supabase.from('bookmarks').delete().match({ post_id: postId, user_id: user.id });
      if (error) {
-      console.error("Error unbookmarking post:", error);
       setAllPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: true } : p));
       setDisplayedPosts(prev => prev.map(p => p.id === postId ? { ...p, bookmarkedByCurrentUser: true } : p));
     } else {
@@ -844,11 +758,10 @@ export const usePosts = (): UsePostsReturn => {
         // ポイント機能は無効化
         // console.log('ブックマーク削除機能正常動作');
       } catch (pointError) {
-        console.warn('⚠️ ブックマーク削除エラー:', pointError);
+        // ブックマーク削除エラー
       }
     }
   }, []);
 
-  console.log(`🔍 usePosts return: displayedPosts=${displayedPosts.length}, allPosts=${allPosts.length}, hasNextPage=${hasNextPage}`);
   return { posts: displayedPosts, allPosts, loading, error, fetchPosts, addPost, updatePost, deletePost, likePost, unlikePost, bookmarkPost, unbookmarkPost, hasNextPage, loadMore, isLoadingMore };
 };

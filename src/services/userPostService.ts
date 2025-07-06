@@ -12,7 +12,6 @@ export class UserPostService {
    */
   async getUserPosts(userId: string): Promise<Post[]> {
     try {
-      console.log('📊 Fetching user posts for:', userId);
       
       // Supabaseから投稿データを取得
       const { data: postsData, error: postsError } = await supabase
@@ -27,16 +26,13 @@ export class UserPostService {
         .order('created_at', { ascending: false });
 
       if (postsError) {
-        console.error('❌ Error fetching user posts:', postsError);
         throw new Error(`投稿の取得に失敗しました: ${postsError.message}`);
       }
 
       if (!postsData) {
-        console.log('📝 No posts found for user');
         return [];
       }
 
-      console.log(`✅ Found ${postsData.length} posts for user`);
 
       // いいね数と写真スコアを取得
       const postIds = postsData.map(post => post.id);
@@ -66,7 +62,6 @@ export class UserPostService {
         photoScoresMap.set(score.post_id, score);
       });
 
-      console.log(`📸 Found ${photoScoresData?.length || 0} photo scores for ${postIds.length} posts`);
 
       // ユーザー情報を取得（作成者情報として使用）
       const { data: userData, error: userError } = await supabase
@@ -77,7 +72,6 @@ export class UserPostService {
 
       let userInfo = userData;
       if (userError) {
-        console.log('⚠️ User info not found in users table, trying profiles...');
         const { data: profileData } = await supabase
           .from('profiles')
           .select('id, name, avatar_url')
@@ -138,7 +132,6 @@ export class UserPostService {
       return formattedPosts;
       
     } catch (error) {
-      console.error('❌ getUserPosts failed:', error);
       throw error;
     }
   }
@@ -163,7 +156,6 @@ export class UserPostService {
     };
   }> {
     try {
-      console.log('📈 Calculating user stats for:', userId);
 
       // 基本統計を取得
       const { data: statsData, error: statsError } = await supabase
@@ -200,7 +192,6 @@ export class UserPostService {
         .in('post_id', statsData.map(post => post.id));
 
       if (likesError) {
-        console.warn('いいね数の取得に失敗:', likesError);
       }
 
       const totalLikes = likesData?.length || 0;
@@ -218,31 +209,18 @@ export class UserPostService {
           .in('post_id', statsData.map(post => post.id));
 
         if (photoScoresError) {
-          console.warn('⚠️ 写真スコアの取得に失敗:', {
-            code: photoScoresError.code,
-            message: photoScoresError.message,
-            details: photoScoresError.details
-          });
           
           // テーブルが存在しない場合やアクセス権限がない場合は無視
           if (photoScoresError.code === 'PGRST116' || photoScoresError.code === '42P01' || photoScoresError.code === '406') {
-            console.log('💡 photo_scoresテーブルが利用できません。スキップします。');
           }
         } else if (photoScoresData && photoScoresData.length > 0) {
           totalPhotoScores = photoScoresData.length;
           averagePhotoScore = Math.round(photoScoresData.reduce((sum, score) => sum + score.total_score, 0) / totalPhotoScores);
           highestPhotoScore = Math.max(...photoScoresData.map(score => score.total_score));
           
-          console.log('✅ 写真スコア統計取得完了:', {
-            total: totalPhotoScores,
-            average: averagePhotoScore,
-            highest: highestPhotoScore
-          });
         } else {
-          console.log('📝 写真スコアデータがありません');
         }
       } catch (error) {
-        console.error('❌ 写真スコア統計取得エラー:', error);
         // エラーがあってもアプリケーションを停止させない
       }
 
@@ -269,7 +247,6 @@ export class UserPostService {
       };
 
     } catch (error) {
-      console.error('❌ getUserStats failed:', error);
       throw error;
     }
   }
@@ -359,7 +336,6 @@ export class UserPostService {
         return aiCommentsData;
       }
     } catch (error) {
-      console.warn('Failed to parse AI comments:', error);
     }
     
     return [];
@@ -421,7 +397,6 @@ export class UserPostService {
         .map(([tagName]) => tagName);
 
     } catch (error) {
-      console.error('Failed to get most used tags:', error);
       return [];
     }
   }

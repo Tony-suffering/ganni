@@ -40,43 +40,26 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
 
   const handleLikeClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log('🖱️ いいねボタンクリック:', {
-      postId: post.id,
-      currentlyLiked: likedByCurrentUser,
-      action: likedByCurrentUser ? 'unlike' : 'like'
-    });
     
     try {
       if (likedByCurrentUser) {
-        console.log('👎 いいね解除実行中...');
         await unlikePost(post.id);
-        console.log('✅ いいね解除完了');
       } else {
-        console.log('👍 いいね追加実行中...');
         await likePost(post.id);
-        console.log('✅ いいね追加完了');
       }
     } catch (error) {
-      console.error('❌ いいね操作エラー:', error);
+      // Handle error silently
     }
   };
   
   const handleInspirationClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log('💡 インスピレーションボタンクリック:', {
-      postId: post.id,
-      postTitle: post.title,
-      currentUser: !!currentUser,
-      userId: currentUser?.id
-    });
     
     if (!currentUser) {
-      console.warn('⚠️ ユーザーが未ログイン - インスピレーション機能を利用できません');
       // TODO: ログインが必要な旨のメッセージを表示
       return;
     }
     
-    console.log('🔄 インスピレーションページに遷移:', `/inspiration/${post.id}`);
     navigate(`/inspiration/${post.id}`);
   };
   

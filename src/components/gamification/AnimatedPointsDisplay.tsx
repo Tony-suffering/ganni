@@ -28,18 +28,16 @@ export const AnimatedPointsDisplay: React.FC<AnimatedPointsDisplayProps> = ({
 
   // ポイント変化を検知してアニメーションを開始
   useEffect(() => {
-    console.log('🖥️ PC AnimatedPointsDisplay - ポイント変化チェック:', {
+    console.log('🖥️ AnimatedPointsDisplay - ポイント変化チェック:', {
       currentPoints,
       previousPoints,
       isIncrease: previousPoints !== undefined && previousPoints < currentPoints,
-      isDifferent: previousPoints !== currentPoints,
-      shouldAnimate: previousPoints !== undefined && previousPoints < currentPoints
+      isDifferent: previousPoints !== currentPoints
     });
     
     // 前回のポイントが設定されており、かつ現在のポイントより小さい場合（増加）
     if (previousPoints !== undefined && previousPoints < currentPoints) {
-      // ポイントが増加した場合
-      console.log('✨ PC用アニメーション開始！ 増加分:', currentPoints - previousPoints);
+      console.log('✨ デスクトップアニメーション開始！ 増加分:', currentPoints - previousPoints);
       setIsAnimating(true);
       
       // パーティクルを生成
@@ -60,6 +58,7 @@ export const AnimatedPointsDisplay: React.FC<AnimatedPointsDisplayProps> = ({
       setTimeout(() => {
         setIsAnimating(false);
         setParticles([]);
+        console.log('🎬 デスクトップアニメーション終了');
       }, 1200);
     }
     
