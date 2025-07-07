@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Heart, MessageCircle, Send, Lightbulb, MoreHorizontal, Trash2, FolderPlus } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { Post } from '../types';
@@ -139,13 +139,13 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
             </Link>
             <div className="relative">
               <button onClick={(e) => { e.stopPropagation(); setIsOptionsOpen(!isOptionsOpen); }} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-2">
-                <MoreHorizontal className="w-5 h-5" />
+                <img src="/delete.png" alt="削除" className="w-5 h-5" />
               </button>
               {isOptionsOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-700 rounded-md shadow-lg z-10" onMouseLeave={() => setIsOptionsOpen(false)}>
                   {isOwner && (
                     <button onClick={handleDeleteClick} className="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-600">
-                      <Trash2 className="w-4 h-4 mr-2" />
+                      <img src="/delete.png" alt="削除" className="w-4 h-4 mr-2" />
                       削除
                     </button>
                   )}
@@ -240,41 +240,45 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
                     </span>
                   )}
                 </button>
-                <button onClick={onClick} className="relative text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
-                  <MessageCircle className="w-6 h-6" />
+                <button onClick={onClick} className="relative hover:scale-110 transition-transform">
+                  <img src="/comment.png" alt="コメント" className="w-6 h-6" />
                   {commentCount > 0 && (
                     <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-semibold">
                       {commentCount > 9 ? '9+' : commentCount}
                     </span>
                   )}
                 </button>
-                <button onClick={handleShareClick} className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white">
-                  <Send className="w-6 h-6" />
+                <button onClick={handleShareClick} className="hover:scale-110 transition-transform">
+                  <img src="/plane.png" alt="共有" className="w-8 h-8" />
                 </button>
               </div>
               <div className="flex items-center space-x-2">
                 <button 
                   onClick={handleCollectionClick} 
-                  className={`relative transition-all duration-300 hover:scale-105 group ${
-                    bookmarkedByCurrentUser 
-                      ? 'text-yellow-500 hover:text-yellow-600' 
-                      : 'text-gray-600 hover:text-yellow-500'
-                  }`}
+                  className={`relative transition-all duration-300 hover:scale-105 group`}
                   title="コレクションに追加/削除"
                 >
-                  <FolderPlus className={`w-6 h-6 group-hover:drop-shadow-lg ${
-                    bookmarkedByCurrentUser ? 'fill-current' : ''
-                  }`} />
+                  <img 
+                    src="/bookmark.png" 
+                    alt="コレクション" 
+                    className={`w-6 h-6 group-hover:drop-shadow-lg ${
+                      bookmarkedByCurrentUser ? 'opacity-100' : 'opacity-60'
+                    }`} 
+                  />
                   <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
                     {bookmarkedByCurrentUser ? 'コレクションから削除' : 'コレクションに追加'}
                   </span>
                 </button>
                 <button 
                   onClick={handleInspirationClick} 
-                  className="relative transition-all duration-300 text-gray-600 hover:text-gray-500 hover:scale-105 group"
+                  className="relative transition-all duration-300 hover:scale-105 group"
                   title="インスピレーション・ラボを開く"
                 >
-                  <Lightbulb className="w-7 h-7 group-hover:drop-shadow-lg" />
+                  <img 
+                    src="/inspire2.png" 
+                    alt="インスピレーション" 
+                    className="w-7 h-7 group-hover:drop-shadow-lg brightness-75 contrast-125"
+                  />
                   <span className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
                     インスピレーション
                   </span>

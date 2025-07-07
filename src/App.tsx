@@ -298,21 +298,8 @@ function AppContent() {
             console.log('🔄 Updating post with new photo score...');
             updatePost(newPost.id, { photoScore: analysisResult.photoScore });
           }
-            
-          // 投稿ボーナスを計算・付与（写真スコアが利用可能になった後）
-          if (analysisResult.photoScore) {
-            try {
-              console.log('🎁 Calculating post bonus for post:', newPost.id);
-              const bonusPoints = await PostBonusService.calculateAndAwardPostBonus(
-                newPost.id,
-                newPost.author.id,
-                analysisResult.photoScore.total_score
-              );
-              console.log('✅ Post bonus calculated and awarded:', bonusPoints, 'points');
-            } catch (bonusError) {
-              console.error('❌ Failed to calculate post bonus:', bonusError);
-            }
-          }
+          
+          // 注意: 投稿ボーナスはusePosts.tsで既に計算済みのため、ここでは重複計算しない
           
         } catch (error) {
           console.error('❌ AI analysis failed for post:', newPost.id, {

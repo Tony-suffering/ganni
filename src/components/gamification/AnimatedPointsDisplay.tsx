@@ -71,16 +71,16 @@ export const AnimatedPointsDisplay: React.FC<AnimatedPointsDisplayProps> = ({
       {/* ポイント表示部分 */}
       <div className="relative flex items-center gap-2">
         {/* 星アイコン */}
-        <motion.span
-          className="text-xs text-gray-500"
+        <motion.img
+          src="/star.png"
+          alt="ポイント"
+          className="w-4 h-4"
           animate={isAnimating ? {
             rotate: [0, 360],
             scale: [1, 1.3, 1]
           } : {}}
           transition={{ duration: 0.4 }}
-        >
-          ⭐
-        </motion.span>
+        />
         
         {/* カウントアップ数値 */}
         <motion.div

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, Filter, BarChart3, Target, ArrowRight } from 'lucide-react';
+import { Search, Filter, BarChart3, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 // import { AIStatusIndicator } from './AIStatusIndicator';
 import { UserMenu } from '../auth/UserMenu';
@@ -82,14 +82,11 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center space-x-4">
               <Link to="/" onClick={handleLogoClick} className="flex items-center space-x-4 group focus:outline-none touch-manipulation hover:bg-gray-50 rounded-xl p-3 -m-3 transition-all duration-300" style={{ minHeight: '44px' }}>
                 <div className="relative">
-                  <div className="w-10 h-10 bg-gray-900 flex items-center justify-center group-hover:bg-black transition-all duration-300 shadow-sm group-hover:shadow-lg transform group-hover:rotate-180" 
-                       style={{
-                         clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)'
-                       }}>
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                  </div>
+                  <img 
+                    src="/favicon.svg" 
+                    alt="AI日記" 
+                    className="w-10 h-10 transition-all duration-300 shadow-sm group-hover:shadow-lg transform group-hover:rotate-180"
+                  />
                 </div>
                 <div className="hidden sm:block">
                   <h1 className="text-xl sm:text-2xl font-bold italic text-gray-900 group-hover:text-black transition-colors duration-300 tracking-tight transform group-hover:scale-105">
@@ -160,8 +157,8 @@ export const Header: React.FC<HeaderProps> = ({
                     whileHover={{ scale: 1.02 }}
                     className="relative overflow-hidden"
                   >
-                    {/* グレー背景 */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-gray-600 to-gray-700 rounded-lg group-hover:from-gray-700 group-hover:to-gray-800 transition-all" />
+                    {/* 白い背景 */}
+                    <div className="absolute inset-0 bg-white rounded-lg border border-gray-300 group-hover:border-gray-400 transition-all shadow-sm" />
                     
                     {/* 光るエフェクト */}
                     <motion.div
@@ -177,19 +174,19 @@ export const Header: React.FC<HeaderProps> = ({
                       className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-12"
                     />
 
-                    <div className="relative flex items-center space-x-2 px-4 py-2.5 text-white">
+                    <div className="relative flex items-center space-x-2 px-4 py-2.5 text-black">
                       <motion.div
                         animate={{ rotate: 360 }}
                         transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
                       >
-                        <Target className="w-5 h-5" />
+                        <img src="/analysis.png" alt="分析" className="w-6 h-6" />
                       </motion.div>
                       
                       <span className="font-medium text-sm whitespace-nowrap hidden sm:inline">
                         分析
                       </span>
                       
-                      <ArrowRight className="w-4 h-4" />
+                      <ArrowRight className="w-4 h-4 text-black" />
                     </div>
                   </motion.div>
                 </button>
@@ -200,9 +197,9 @@ export const Header: React.FC<HeaderProps> = ({
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleNewPost}
-                className="hidden md:flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all duration-200 text-sm font-semibold"
+                className="hidden md:flex items-center justify-center px-4 py-2.5 bg-white border border-gray-300 text-black rounded-lg hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 text-sm font-semibold shadow-sm"
               >
-                <Plus className="w-4 h-4 mr-1.5" />
+                <img src="/tokou.svg" alt="投稿" className="w-5 h-5 mr-1.5" />
                 投稿
               </motion.button>
               

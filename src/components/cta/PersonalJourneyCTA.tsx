@@ -8,10 +8,7 @@ import {
   Gift,
   ArrowRight,
   Star,
-  Zap,
-  Eye,
-  Target,
-  BarChart3
+  Zap
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { analyticsService } from '../../services/analyticsService';
@@ -114,8 +111,8 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
           whileHover={{ scale: 1.02 }}
           className="relative overflow-hidden"
         >
-          {/* グレー背景 */}
-          <div className="absolute inset-0 bg-gradient-to-r from-gray-600 to-gray-700 rounded-lg group-hover:from-gray-700 group-hover:to-gray-800 transition-all" />
+          {/* 白い背景 */}
+          <div className="absolute inset-0 bg-white rounded-lg border border-gray-300 group-hover:border-gray-400 transition-all shadow-sm" />
           
           {/* 光るエフェクト */}
           <motion.div
@@ -131,19 +128,19 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
             className="absolute inset-0 bg-gradient-to-r from-transparent via-white/40 to-transparent skew-x-12"
           />
 
-          <div className="relative flex items-center space-x-2 px-4 py-2.5 text-white">
+          <div className="relative flex items-center space-x-2 px-4 py-2.5 text-black">
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
             >
-              <Target className="w-5 h-5" />
+              <img src="/analysis.png" alt="分析" className="w-6 h-6" />
             </motion.div>
             
             <span className="font-medium text-sm whitespace-nowrap hidden sm:inline">
               分析
             </span>
             
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-4 h-4 text-black" />
           </div>
 
           {/* キラキラエフェクト */}
@@ -241,16 +238,16 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
             {userPoints && levelInfo ? (
               <>
                 <div className="flex items-center gap-1">
-                  <motion.span 
-                    className="text-xs"
+                  <motion.img 
+                    src="/star.png"
+                    alt="ポイント"
+                    className="w-4 h-4"
                     animate={isAnimating ? {
                       rotate: [0, 360],
                       scale: [1, 1.3, 1]
                     } : {}}
                     transition={{ duration: 0.6 }}
-                  >
-                    ⭐
-                  </motion.span>
+                  />
                   <motion.span 
                     className="text-xs font-bold"
                     animate={isAnimating ? {
@@ -274,7 +271,7 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
               </>
             ) : (
               <>
-                <BarChart3 className="w-4 h-4" />
+                <img src="/analysis.png" alt="分析" className="w-4 h-4 brightness-125 contrast-110" />
                 <span className="text-xs font-medium">分析</span>
               </>
             )}
@@ -318,8 +315,8 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
             whileHover={{ scale: 1.05 }}
             className="relative"
           >
-            {/* グレー背景 */}
-            <div className="absolute inset-0 bg-gradient-to-r from-gray-600 to-gray-700 rounded-full shadow-lg" />
+            {/* より明るい背景で視認性向上 */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-700 rounded-full shadow-lg" />
             
             {/* リップルエフェクト */}
             <motion.div
@@ -332,11 +329,11 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
                 repeat: Infinity,
                 ease: "easeOut"
               }}
-              className="absolute inset-0 bg-gray-600 rounded-full"
+              className="absolute inset-0 bg-blue-600 rounded-full"
             />
 
             <div className="relative flex items-center justify-center w-14 h-14 text-white">
-              <Eye className="w-7 h-7" />
+              <img src="/analysis.png" alt="分析" className="w-7 h-7 brightness-200 contrast-150 drop-shadow-lg" />
             </div>
           </motion.div>
 

@@ -158,16 +158,16 @@ export const MobilePointsDisplay: React.FC<MobilePointsDisplayProps> = ({
   if (variant === 'inline') {
     return (
       <div className="relative flex items-center gap-2">
-        <motion.span
-          className="text-xs text-gray-500"
+        <motion.img
+          src="/star.png"
+          alt="ポイント"
+          className="w-4 h-4"
           animate={isAnimating ? {
             rotate: [0, 360],
             scale: [1, 1.2, 1]
           } : {}}
           transition={{ duration: 0.5 }}
-        >
-          ⭐
-        </motion.span>
+        />
         
         <motion.div
           animate={isAnimating ? {
@@ -222,16 +222,16 @@ export const MobilePointsDisplay: React.FC<MobilePointsDisplayProps> = ({
     <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <motion.span
-            className="text-sm text-gray-500"
+          <motion.img
+            src="/star.png"
+            alt="ポイント"
+            className="w-5 h-5"
             animate={isAnimating ? {
               rotate: [0, 360],
               scale: [1, 1.3, 1]
             } : {}}
             transition={{ duration: 0.6 }}
-          >
-            ⭐
-          </motion.span>
+          />
           
           <motion.div
             animate={isAnimating ? {

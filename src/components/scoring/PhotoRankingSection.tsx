@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Medal, Award, ChevronDown, ChevronUp } from 'lucide-react';
+import { Medal, Award, ChevronDown, ChevronUp } from 'lucide-react';
 import { Post } from '../../types';
 
 interface PhotoRankingSectionProps {
@@ -100,7 +100,7 @@ export const PhotoRankingSection: React.FC<PhotoRankingSectionProps> = ({
       case 1:
         return (
           <div className="flex items-center space-x-1">
-            <Trophy className="w-4 h-4 text-gray-600" />
+            <img src="/Trophy.png" alt="Trophy" className="w-5 h-5 brightness-150 contrast-125" />
             <span className="text-sm font-bold text-gray-600">1</span>
           </div>
         );
@@ -166,7 +166,7 @@ export const PhotoRankingSection: React.FC<PhotoRankingSectionProps> = ({
           <div className="bg-gradient-to-r from-gray-600 to-gray-700 px-4 py-2.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <Trophy className="w-4 h-4 text-white" />
+                <img src="/Trophy.png" alt="Trophy" className="w-5 h-5 brightness-200 contrast-150" />
                 <h2 className="text-sm font-bold text-white">スコアランキング</h2>
               </div>
               <div className="flex space-x-1">
@@ -231,8 +231,8 @@ export const PhotoRankingSection: React.FC<PhotoRankingSectionProps> = ({
         <div className="bg-gradient-to-r from-gray-600 to-gray-700 px-4 py-2.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <Trophy className="w-4 h-4 text-white" />
-              <h2 className="text-sm font-bold text-white">🏆 スコアランキング</h2>
+              <img src="/Trophy.png" alt="Trophy" className="w-5 h-5 brightness-150 contrast-125" />
+              <h2 className="text-sm font-bold text-white">スコアランキング</h2>
             </div>
             <div className="flex space-x-1">
               <button

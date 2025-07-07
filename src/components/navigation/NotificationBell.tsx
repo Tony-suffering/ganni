@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Bell, Heart, MessageCircle, X, Lightbulb, Users, Trophy } from 'lucide-react';
+import { Heart, MessageCircle, X, Lightbulb, Users, Trophy } from 'lucide-react';
 import { supabase } from '../../supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { formatDistanceToNow } from 'date-fns';
@@ -273,7 +273,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
       case 'comment':
         return <MessageCircle className="w-3 h-3 md:w-4 md:h-4 text-gray-600 flex-shrink-0" />;
       default:
-        return <Bell className="w-3 h-3 md:w-4 md:h-4 text-gray-600 flex-shrink-0" />;
+        return <img src="/bell.png" alt="通知" className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />;
     }
   };
 
@@ -349,7 +349,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPostClick 
         className="relative p-3 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors touch-manipulation active:bg-gray-100 dark:active:bg-gray-600 rounded-full"
         style={{ minWidth: '48px', minHeight: '48px', zIndex: 10 }}
       >
-        <Bell className="w-7 h-7" />
+        <img src="/bell.png" alt="通知" className="w-7 h-7" />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center pointer-events-none z-20">
             {unreadCount > 9 ? '9+' : unreadCount}
