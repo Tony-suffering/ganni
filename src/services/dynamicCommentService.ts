@@ -3,7 +3,9 @@ import { DeepPersonalityProfile } from './personalityInsightService';
 import { Post } from '../types';
 import { PhotoScoreV2 } from '../types/photoScoreV2';
 
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+// const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+// 一時的に無効化 - API呼び出し削減のため
+const genAI = null as any;
 
 export interface CommentStyle {
   tone: 'warm' | 'analytical' | 'poetic' | 'encouraging' | 'philosophical';
@@ -370,4 +372,6 @@ export class DynamicCommentService {
   }
 }
 
-export const dynamicCommentService = new DynamicCommentService();
+// export const dynamicCommentService = new DynamicCommentService();
+// 一時的に無効化 - API呼び出し削減のため
+export const dynamicCommentService = null as any;

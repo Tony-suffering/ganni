@@ -373,4 +373,6 @@ export class AmazonService {
 }
 
 // シングルトンインスタンスをエクスポート
-export const amazonService = new AmazonService();
+// export const amazonService = new AmazonService();
+// 一時的に無効化 - API呼び出し削減のため
+export const amazonService = null as any;

@@ -485,4 +485,6 @@ interface MonetizationData {
   conversionPotential: 'low' | 'medium' | 'high';
 }
 
-export const premiumSuggestionService = new PremiumSuggestionService();
+// export const premiumSuggestionService = new PremiumSuggestionService();
+// 一時的に無効化 - API呼び出し削減のため
+export const premiumSuggestionService = null as any;

@@ -437,4 +437,6 @@ export class CulturalIntegrationService {
   }
 }
 
-export const culturalIntegrationService = new CulturalIntegrationService();
+// export const culturalIntegrationService = new CulturalIntegrationService();
+// 一時的に無効化 - API呼び出し削減のため
+export const culturalIntegrationService = null as any;

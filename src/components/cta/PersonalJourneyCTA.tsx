@@ -84,7 +84,7 @@ export const PersonalJourneyCTA: React.FC<PersonalJourneyCTAProps> = ({
 
 
   const handleClick = () => {
-    analyticsService.trackEvent('dashboard_cta_click', 'navigation', variant);
+    analyticsService?.trackEvent('dashboard_cta_click', 'navigation', variant);
   };
 
   // ダッシュボードページでは表示しない

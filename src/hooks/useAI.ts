@@ -7,7 +7,7 @@ interface UseAIReturn {
 }
 
 export const useAI = (): UseAIReturn => {
-  const apiStatus = geminiService.getApiStatus();
+  const apiStatus = geminiService?.getApiStatus() || { available: false, provider: 'Mock Data' };
 
   return {
     apiStatus

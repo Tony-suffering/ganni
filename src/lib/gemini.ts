@@ -59,6 +59,17 @@ export async function generateImageAIComments(base64Image: string): Promise<{ de
     ? await generateImageAIDescription(labels)
     : '画像の内容は特定できませんでした。';
   // その説明文を使ってAIコメント生成
+  if (!geminiService) {
+    return {
+      description,
+      comments: [
+        { id: Date.now().toString(), type: 'comment', content: 'AIコメントを生成できませんでした', createdAt: new Date().toISOString() },
+        { id: (Date.now() + 1).toString(), type: 'question', content: 'AIコメントを生成できませんでした', createdAt: new Date(Date.now() + 60000).toISOString() },
+        { id: (Date.now() + 2).toString(), type: 'observation', content: 'AIコメントを生成できませんでした', createdAt: new Date(Date.now() + 120000).toISOString() }
+      ]
+    };
+  }
+  
   try {
     const comments = await geminiService.generateAIComments('', '', description);
     return { description, comments };

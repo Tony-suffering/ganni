@@ -769,4 +769,6 @@ GROWTH_SUGGESTION_3:
   }
 }
 
-export const growthPartnerService = new GrowthPartnerService();
+// export const growthPartnerService = new GrowthPartnerService();
+// 一時的に無効化 - API呼び出し削減のため
+export const growthPartnerService = null as any;

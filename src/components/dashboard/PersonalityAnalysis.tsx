@@ -221,8 +221,8 @@ export const PersonalityAnalysis: React.FC<PersonalityAnalysisProps> = ({ posts,
   useEffect(() => {
     if (posts.length > 0 && dominantType) {
       // パーソナリティ分析完了をトラッキング
-      analyticsService.setPersonalityType(dominantType.type);
-      analyticsService.trackRecommendationShown('personality_products', [
+      analyticsService?.setPersonalityType(dominantType.type);
+      analyticsService?.trackRecommendationShown('personality_products', [
         dominantType.recommendations.products.join(', ')
       ]);
     }
@@ -231,7 +231,7 @@ export const PersonalityAnalysis: React.FC<PersonalityAnalysisProps> = ({ posts,
   const handleMonetizationClick = (category: string, item: string, url: string) => {
     const partner = url.includes('amzn.to') ? 'amazon' : 
                    url.includes('booking.com') ? 'booking' : 'custom';
-    analyticsService.trackAffiliateClick(category, item, url, partner);
+    analyticsService?.trackAffiliateClick(category, item, url, partner);
   };
 
   if (posts.length === 0) {

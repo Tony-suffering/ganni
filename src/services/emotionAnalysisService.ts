@@ -422,4 +422,6 @@ CONFIDENCE: [0.0-1.0]
   }
 }
 
-export const emotionAnalysisService = new EmotionAnalysisService();
+// export const emotionAnalysisService = new EmotionAnalysisService();
+// 一時的に無効化 - API呼び出し削減のため
+export const emotionAnalysisService = null as any;

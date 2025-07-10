@@ -191,4 +191,6 @@ class IntegratedAnalysisService {
   }
 }
 
-export const integratedAnalysisService = new IntegratedAnalysisService();
+// export const integratedAnalysisService = new IntegratedAnalysisService();
+// 一時的に無効化 - API呼び出し削減のため
+export const integratedAnalysisService = null as any;

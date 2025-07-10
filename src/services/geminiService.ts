@@ -43,5 +43,7 @@ class GeminiService {
   }
 }
 
-export const geminiService = new GeminiService();
+// export const geminiService = new GeminiService();
+// 一時的に無効化 - API呼び出し削減のため
+export const geminiService = null as any;
 

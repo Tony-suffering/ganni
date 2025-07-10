@@ -498,4 +498,5 @@ ${description ? `説明: ${description}` : ''}
 }
 
 // インスタンスをエクスポート
+// 写真判定サービスのみ有効化（投稿時のみ使用）
 export const photoScoringService = new PhotoScoringService();

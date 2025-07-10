@@ -87,7 +87,7 @@ function AppContent() {
 
   // ユーザー情報をアナリティクスサービスに設定
   useEffect(() => {
-    if (user) {
+    if (user && analyticsService) {
       analyticsService.setUser(user.id);
     }
   }, [user]);
@@ -450,6 +450,21 @@ function AppContent() {
                 {/* Floating CTA for Dashboard - Desktop only */}
                 <div className="hidden md:block">
                   <PersonalJourneyCTA variant="floating" />
+                </div>
+
+                {/* Lottie Animation - Bottom Left */}
+                <div 
+                  className="fixed bottom-20 left-4 md:bottom-8 md:left-8 z-30 cursor-pointer hover:scale-110 transition-transform duration-300"
+                  onClick={() => window.location.href = '/inspiration/explore'}
+                >
+                  <iframe
+                    src="https://cdn.lottielab.com/l/CMGxZy1ieFvBDY.html"
+                    width="360"
+                    height="360"
+                    className="w-60 h-60 md:w-96 md:h-96 pointer-events-none"
+                    style={{ border: 'none', background: 'transparent' }}
+                    title="Lottie Animation"
+                  />
                 </div>
               </>
             }

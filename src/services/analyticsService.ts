@@ -412,11 +412,13 @@ export class AnalyticsService {
 }
 
 // グローバルインスタンス
-export const analyticsService = new AnalyticsService();
+// export const analyticsService = new AnalyticsService();
+// 一時的に無効化 - API呼び出し削減のため
+export const analyticsService = null as any;
 
 // ページ離脱時の処理
-if (typeof window !== 'undefined') {
+if (typeof window !== 'undefined' && analyticsService) {
   window.addEventListener('beforeunload', () => {
-    analyticsService.endSession();
+    analyticsService?.endSession();
   });
 }

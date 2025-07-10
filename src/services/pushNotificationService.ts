@@ -220,4 +220,6 @@ class PushNotificationService {
   }
 }
 
-export const pushNotificationService = new PushNotificationService();
+// export const pushNotificationService = new PushNotificationService();
+// 一時的に無効化 - API呼び出し削減のため
+export const pushNotificationService = null as any;

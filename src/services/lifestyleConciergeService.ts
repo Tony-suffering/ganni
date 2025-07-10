@@ -682,4 +682,6 @@ ENGAGEMENT: [0.9以上の高エンゲージメントのみ]
   }
 }
 
-export const lifestyleConciergeService = new LifestyleConciergeService();
+// export const lifestyleConciergeService = new LifestyleConciergeService();
+// 一時的に無効化 - API呼び出し削減のため
+export const lifestyleConciergeService = null as any;

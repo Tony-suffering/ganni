@@ -2,7 +2,9 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { PhotoScoreV2, ImageAnalysis } from '../types/photoScoreV2';
 import { Post } from '../types';
 
-const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+// const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+// 一時的に無効化 - API呼び出し削減のため
+const genAI = null as any;
 
 export interface PersonalityDimension {
   dimension: string;
@@ -819,4 +821,6 @@ ${JSON.stringify(technicalPersonality, null, 2)}
   }
 }
 
-export const personalityInsightService = new PersonalityInsightService();
+// export const personalityInsightService = new PersonalityInsightService();
+// 一時的に無効化 - API呼び出し削減のため
+export const personalityInsightService = null as any;

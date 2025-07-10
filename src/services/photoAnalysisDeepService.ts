@@ -367,4 +367,6 @@ export interface PhotoCreativeProfile {
   lastAnalyzed: string;           // 最終分析日時
 }
 
-export const photoAnalysisDeepService = new PhotoAnalysisDeepService();
+// export const photoAnalysisDeepService = new PhotoAnalysisDeepService();
+// 一時的に無効化 - API呼び出し削減のため
+export const photoAnalysisDeepService = null as any;
