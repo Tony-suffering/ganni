@@ -108,7 +108,14 @@ const BottomNavBar = ({
         )}
         {/* New Post */}
         <button onClick={handleNewPostClick} type="button" className="inline-flex flex-col items-center justify-center px-2 hover:bg-gray-50 dark:hover:bg-gray-700 group">
-          <img src="/tokou.svg" alt="投稿" className={`${iconStyle}`} />
+          <iframe
+            src="https://cdn.lottielab.com/l/5CZdWeK17r4mJu.html"
+            width="28"
+            height="28"
+            className={`${iconStyle} pointer-events-none`}
+            style={{ border: 'none', background: 'transparent' }}
+            title="投稿"
+          />
           <span className="sr-only">New post</span>
         </button>
         

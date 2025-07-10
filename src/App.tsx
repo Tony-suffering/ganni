@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { BrowserRouter, Routes, Route, useSearchParams } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useSearchParams, useLocation } from 'react-router-dom';
 import { ErrorBoundary } from 'react-error-boundary';
 
 // Providers and Hooks
@@ -35,6 +35,7 @@ import { AnimatedPointsDisplay } from './components/gamification/AnimatedPointsD
 import { MobilePointsDisplay } from './components/gamification/MobilePointsDisplay';
 import { GlobalPointsNotifications } from './components/gamification/GlobalPointsNotifications';
 import { usePointsNotification } from './contexts/PointsNotificationContext';
+import { FullscreenVideo } from './components/video/FullscreenVideo';
 import { supabase } from './supabase';
 
 // Pages
@@ -55,7 +56,6 @@ import { Post } from './types';
  * useAuthフックを使用するため、AuthProviderの子要素である必要があります。
  */
 function AppContent() {
-  const [searchParams, setSearchParams] = useSearchParams();
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [isNewPostOpen, setIsNewPostOpen] = useState(false);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
@@ -64,6 +64,10 @@ function AppContent() {
   const [analyzingPostId, setAnalyzingPostId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  
+  // URLパラメータと現在のパスを取得
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
 
   // useAuthフックで認証状態とローディング状態を取得
   const { loading: authLoading, user } = useAuth();
@@ -362,10 +366,11 @@ function AppContent() {
     }
   };
 
+
   // ユーザーがログインしている場合の表示
   return (
     <div className="bg-neutral-50 w-full min-h-screen">
-      <Header
+        <Header
         onNewPost={() => setIsNewPostOpen(true)}
         onLoginClick={openLoginModal}
         onPostClick={handlePostClick}
@@ -425,6 +430,8 @@ function AppContent() {
             path="/"
             element={
               <>
+                {/* Fullscreen Video Background */}
+                <FullscreenVideo src="/test.mp4" show={true} />
                 
                 {/* 写真スコアランキングセクション */}
                 <PhotoRankingSection
