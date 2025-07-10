@@ -82,10 +82,15 @@ export const Header: React.FC<HeaderProps> = ({
             <div className="flex items-center space-x-4">
               <Link to="/" onClick={handleLogoClick} className="flex items-center space-x-4 group focus:outline-none touch-manipulation hover:bg-gray-50 rounded-xl p-3 -m-3 transition-all duration-300" style={{ minHeight: '44px' }}>
                 <div className="relative">
-                  <img 
-                    src="/favicon.svg" 
-                    alt="AI日記" 
-                    className="w-10 h-10 transition-all duration-300 shadow-sm group-hover:shadow-lg transform group-hover:rotate-180"
+                  <iframe
+                    src="https://www.canva.com/design/DAGswnM4-Hs/Egh-nXxCRO4ZOXF3oOGdQA/watch?embed&autoplay=true&loop=true&mute=true"
+                    width="40"
+                    height="40"
+                    className="w-10 h-10 transition-all duration-300 shadow-sm group-hover:shadow-lg transform group-hover:scale-110 rounded-lg overflow-hidden"
+                    style={{ border: 'none', background: 'transparent' }}
+                    title="AI日記ロゴ"
+                    allow="autoplay; fullscreen"
+                    allowFullScreen
                   />
                 </div>
                 <div className="hidden sm:block">

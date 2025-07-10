@@ -433,6 +433,41 @@ function AppContent() {
                 {/* Fullscreen Video Background */}
                 <FullscreenVideo src="/test.mp4" show={true} />
                 
+                {/* Lottie Animation - Top Right */}
+                <div 
+                  className="fixed top-20 right-4 md:top-24 md:right-8 z-50 cursor-pointer hover:scale-105 transition-transform duration-300"
+                  onClick={() => window.open('https://relaxed-speculoos-f9f32d.netlify.app/', '_blank')}
+                >
+                  <iframe
+                    src="https://cdn.lottielab.com/l/AYNNV9k1eQVXii.html?loop=true&autoplay=true"
+                    width="240"
+                    height="240"
+                    className="w-60 h-60 md:w-96 md:h-96 pointer-events-none"
+                    style={{ 
+                      border: 'none', 
+                      background: 'transparent',
+                      display: 'block'
+                    }}
+                    title="Top Right Lottie Animation"
+                  />
+                </div>
+
+                {/* Cat Image - Bottom Right */}
+                <div className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-30">
+                  <a
+                    href="https://www.neko-jirushi.com/nekosha/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block cursor-pointer"
+                  >
+                    <img
+                      src="/cat.png"
+                      alt="猫ちゃん - ねこじるしサイトへ"
+                      className="w-16 h-16 md:w-20 md:h-20 object-contain rounded-lg shadow-lg hover:scale-110 transition-transform duration-300"
+                    />
+                  </a>
+                </div>
+                
                 {/* 写真スコアランキングセクション */}
                 <PhotoRankingSection
                   allPosts={allPosts}
