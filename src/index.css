@@ -105,4 +105,17 @@
     scrollbar-width: thin;
     scrollbar-color: #cbd5e1 #f1f5f9;
   }
+  
+  .float-subtle {
+    animation: float-subtle 4s ease-in-out infinite;
+  }
+  
+  @keyframes float-subtle {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-3px);
+    }
+  }
 }

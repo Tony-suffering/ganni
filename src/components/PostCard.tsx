@@ -110,7 +110,7 @@ const PostCard = React.memo(({ post, onClick, likePost, unlikePost, bookmarkPost
   return (
     <>
       <div className="w-full max-w-lg mx-auto">
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden hover:shadow-lg hover:scale-[1.01] transition-all duration-300 ease-out cursor-pointer">
           {/* Card Header */}
           <div className="p-3 flex items-center justify-between">
             <Link to={`/profile/${author.id}`} className="flex items-center space-x-3 group">

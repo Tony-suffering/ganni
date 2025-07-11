@@ -64,6 +64,8 @@ function AppContent() {
   const [analyzingPostId, setAnalyzingPostId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [showVideoBeforeExplore, setShowVideoBeforeExplore] = useState(false);
+  const [showTopRightAnimation, setShowTopRightAnimation] = useState(true);
   
   // URLパラメータと現在のパスを取得
   const [searchParams, setSearchParams] = useSearchParams();
@@ -140,7 +142,19 @@ function AppContent() {
       if (subscription) {
         console.log('🔄 ポイント履歴のリアルタイム更新を停止');
         try {
-          subscription.unsubscribe();
+          // Supabaseの新しいAPIに対応
+          if (typeof subscription.unsubscribe === 'function') {
+            subscription.unsubscribe();
+          } else if (subscription && typeof supabase.removeChannel === 'function') {
+            // チャンネルを削除
+            supabase.removeChannel(subscription);
+          } else {
+            // フォールバック: チャンネル名でアンサブスクライブ
+            const channelName = subscription?.topic || subscription?.name;
+            if (channelName) {
+              supabase.channel(channelName).unsubscribe();
+            }
+          }
         } catch (error) {
           console.warn('⚠️ サブスクリプション停止エラー:', error);
         }
@@ -430,27 +444,35 @@ function AppContent() {
             path="/"
             element={
               <>
-                {/* Fullscreen Video Background */}
-                <FullscreenVideo src="/test.mp4" show={true} />
+                {/* Fullscreen Video Background - リロード時は非表示 */}
+                <FullscreenVideo src="/test.mp4" show={false} />
                 
                 {/* Lottie Animation - Top Right */}
-                <div 
-                  className="fixed top-20 right-4 md:top-24 md:right-8 z-50 cursor-pointer hover:scale-105 transition-transform duration-300"
-                  onClick={() => window.open('https://relaxed-speculoos-f9f32d.netlify.app/', '_blank')}
-                >
-                  <iframe
-                    src="https://cdn.lottielab.com/l/AYNNV9k1eQVXii.html?loop=true&autoplay=true"
-                    width="240"
-                    height="240"
-                    className="w-60 h-60 md:w-96 md:h-96 pointer-events-none"
-                    style={{ 
-                      border: 'none', 
-                      background: 'transparent',
-                      display: 'block'
-                    }}
-                    title="Top Right Lottie Animation"
-                  />
-                </div>
+                {showTopRightAnimation && (
+                  <div 
+                    className="fixed top-20 right-4 md:top-24 md:right-8 z-50 cursor-pointer hover:scale-105 transition-transform duration-300 opacity-50 hover:opacity-80"
+                    onClick={() => window.open('https://relaxed-speculoos-f9f32d.netlify.app/', '_blank')}
+                  >
+                    <iframe
+                      src="https://cdn.lottielab.com/l/AYNNV9k1eQVXii.html?loop=false&autoplay=true"
+                      width="120"
+                      height="120"
+                      className="w-30 h-30 md:w-48 md:h-48 pointer-events-none"
+                      style={{ 
+                        border: 'none', 
+                        background: 'transparent',
+                        display: 'block'
+                      }}
+                      title="Top Right Lottie Animation"
+                      onLoad={() => {
+                        // アニメーション開始から8秒後に非表示
+                        setTimeout(() => {
+                          setShowTopRightAnimation(false);
+                        }, 8000);
+                      }}
+                    />
+                  </div>
+                )}
 
                 {/* Cat Image - Bottom Right */}
                 <div className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-30">
@@ -458,7 +480,7 @@ function AppContent() {
                     href="https://www.neko-jirushi.com/nekosha/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block cursor-pointer"
+                    className="block cursor-pointer float-subtle"
                   >
                     <img
                       src="/cat.png"
@@ -488,22 +510,22 @@ function AppContent() {
                   unbookmarkPost={unbookmarkPost}
                   deletePost={deletePost}
                 />
-                
-                {/* Floating CTA for Dashboard - Desktop only */}
-                <div className="hidden md:block">
-                  <PersonalJourneyCTA variant="floating" />
-                </div>
 
                 {/* Lottie Animation - Bottom Left */}
                 <div 
-                  className="fixed bottom-20 left-4 md:bottom-8 md:left-8 z-30 cursor-pointer hover:scale-110 transition-transform duration-300"
-                  onClick={() => window.location.href = '/inspiration/explore'}
+                  className="fixed bottom-20 left-4 md:bottom-8 md:left-8 z-30 cursor-pointer hover:scale-110 transition-transform duration-300 opacity-50 hover:opacity-80"
+                  onClick={() => {
+                    setShowVideoBeforeExplore(true);
+                    setTimeout(() => {
+                      window.location.href = '/inspiration/explore';
+                    }, 5000); // 5秒後にページ遷移
+                  }}
                 >
                   <iframe
                     src="https://cdn.lottielab.com/l/CMGxZy1ieFvBDY.html"
-                    width="360"
-                    height="360"
-                    className="w-60 h-60 md:w-96 md:h-96 pointer-events-none"
+                    width="180"
+                    height="180"
+                    className="w-30 h-30 md:w-48 md:h-48 pointer-events-none"
                     style={{ border: 'none', background: 'transparent' }}
                     title="Lottie Animation"
                   />
@@ -521,6 +543,17 @@ function AppContent() {
           <Route path="/auth/spotify" element={<ProtectedRoute><SpotifyCallback /></ProtectedRoute>} />
         </Routes>
       </main>
+
+      {/* エクスペリエンスボタンクリック時の動画表示 */}
+      {showVideoBeforeExplore && (
+        <div className="fixed inset-0 z-[9999] bg-black">
+          <FullscreenVideo 
+            src="/test.mp4" 
+            show={true} 
+            onVideoEnd={() => setShowVideoBeforeExplore(false)}
+          />
+        </div>
+      )}
 
 
       <PostModal

@@ -251,7 +251,7 @@ export const AIAnalysisResultModal: React.FC<AIAnalysisResultModalProps> = ({
 
 
                   {/* パターン分析タブ */}
-                  {activeTab === 'pattern' && personalPattern && (
+                  {activeTab === 'pattern' && personalPattern && personalPattern.analysis && personalPattern.analysis.personalityInsights && (
                     <motion.div
                       key="pattern"
                       initial={{ opacity: 0, y: 20 }}
@@ -278,48 +278,48 @@ export const AIAnalysisResultModal: React.FC<AIAnalysisResultModalProps> = ({
                             <div>
                               <div className="flex justify-between text-sm mb-1">
                                 <span className="text-gray-700">創造性</span>
-                                <span className="font-medium">{personalPattern.analysis.personalityInsights.creativity}/100</span>
+                                <span className="font-medium">{personalPattern.analysis?.personalityInsights?.creativity || 0}/100</span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div 
                                   className="bg-gradient-to-r from-purple-400 to-pink-400 h-2 rounded-full transition-all"
-                                  style={{ width: `${personalPattern.analysis.personalityInsights.creativity}%` }}
+                                  style={{ width: `${personalPattern.analysis?.personalityInsights?.creativity || 0}%` }}
                                 ></div>
                               </div>
                             </div>
                             <div>
                               <div className="flex justify-between text-sm mb-1">
                                 <span className="text-gray-700">冒険心</span>
-                                <span className="font-medium">{personalPattern.analysis.personalityInsights.adventure}/100</span>
+                                <span className="font-medium">{personalPattern.analysis?.personalityInsights?.adventure || 0}/100</span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div 
                                   className="bg-gradient-to-r from-green-400 to-emerald-400 h-2 rounded-full transition-all"
-                                  style={{ width: `${personalPattern.analysis.personalityInsights.adventure}%` }}
+                                  style={{ width: `${personalPattern.analysis?.personalityInsights?.adventure || 0}%` }}
                                 ></div>
                               </div>
                             </div>
                             <div>
                               <div className="flex justify-between text-sm mb-1">
                                 <span className="text-gray-700">社交性</span>
-                                <span className="font-medium">{personalPattern.analysis.personalityInsights.social}/100</span>
+                                <span className="font-medium">{personalPattern.analysis?.personalityInsights?.social || 0}/100</span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div 
                                   className="bg-gradient-to-r from-blue-400 to-cyan-400 h-2 rounded-full transition-all"
-                                  style={{ width: `${personalPattern.analysis.personalityInsights.social}%` }}
+                                  style={{ width: `${personalPattern.analysis?.personalityInsights?.social || 0}%` }}
                                 ></div>
                               </div>
                             </div>
                             <div>
                               <div className="flex justify-between text-sm mb-1">
                                 <span className="text-gray-700">美的感受性</span>
-                                <span className="font-medium">{personalPattern.analysis.personalityInsights.aestheticSensitivity}/100</span>
+                                <span className="font-medium">{personalPattern.analysis?.personalityInsights?.aestheticSensitivity || 0}/100</span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div 
                                   className="bg-gradient-to-r from-pink-400 to-rose-400 h-2 rounded-full transition-all"
-                                  style={{ width: `${personalPattern.analysis.personalityInsights.aestheticSensitivity}%` }}
+                                  style={{ width: `${personalPattern.analysis?.personalityInsights?.aestheticSensitivity || 0}%` }}
                                 ></div>
                               </div>
                             </div>
@@ -328,48 +328,48 @@ export const AIAnalysisResultModal: React.FC<AIAnalysisResultModalProps> = ({
                             <div>
                               <div className="flex justify-between text-sm mb-1">
                                 <span className="text-gray-700">成長志向</span>
-                                <span className="font-medium">{personalPattern.analysis.personalityInsights.growthOrientation}/100</span>
+                                <span className="font-medium">{personalPattern.analysis?.personalityInsights?.growthOrientation || 0}/100</span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div 
                                   className="bg-gradient-to-r from-orange-400 to-yellow-400 h-2 rounded-full transition-all"
-                                  style={{ width: `${personalPattern.analysis.personalityInsights.growthOrientation}%` }}
+                                  style={{ width: `${personalPattern.analysis?.personalityInsights?.growthOrientation || 0}%` }}
                                 ></div>
                               </div>
                             </div>
                             <div>
                               <div className="flex justify-between text-sm mb-1">
                                 <span className="text-gray-700">ルーチン好み</span>
-                                <span className="font-medium">{personalPattern.analysis.personalityInsights.routine}/100</span>
+                                <span className="font-medium">{personalPattern.analysis?.personalityInsights?.routine || 0}/100</span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div 
                                   className="bg-gradient-to-r from-indigo-400 to-purple-400 h-2 rounded-full transition-all"
-                                  style={{ width: `${personalPattern.analysis.personalityInsights.routine}%` }}
+                                  style={{ width: `${personalPattern.analysis?.personalityInsights?.routine || 0}%` }}
                                 ></div>
                               </div>
                             </div>
                             <div>
                               <div className="flex justify-between text-sm mb-1">
                                 <span className="text-gray-700">完璧主義</span>
-                                <span className="font-medium">{personalPattern.analysis.personalityInsights.perfectionism}/100</span>
+                                <span className="font-medium">{personalPattern.analysis?.personalityInsights?.perfectionism || 0}/100</span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div 
                                   className="bg-gradient-to-r from-red-400 to-pink-400 h-2 rounded-full transition-all"
-                                  style={{ width: `${personalPattern.analysis.personalityInsights.perfectionism}%` }}
+                                  style={{ width: `${personalPattern.analysis?.personalityInsights?.perfectionism || 0}%` }}
                                 ></div>
                               </div>
                             </div>
                             <div>
                               <div className="flex justify-between text-sm mb-1">
                                 <span className="text-gray-700">マインドフルネス</span>
-                                <span className="font-medium">{personalPattern.analysis.personalityInsights.mindfulness}/100</span>
+                                <span className="font-medium">{personalPattern.analysis?.personalityInsights?.mindfulness || 0}/100</span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div 
                                   className="bg-gradient-to-r from-teal-400 to-green-400 h-2 rounded-full transition-all"
-                                  style={{ width: `${personalPattern.analysis.personalityInsights.mindfulness}%` }}
+                                  style={{ width: `${personalPattern.analysis?.personalityInsights?.mindfulness || 0}%` }}
                                 ></div>
                               </div>
                             </div>

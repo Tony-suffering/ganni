@@ -4,9 +4,10 @@ import { createPortal } from 'react-dom';
 interface FullscreenVideoProps {
   src: string;
   show: boolean;
+  onVideoEnd?: () => void;
 }
 
-export const FullscreenVideo: React.FC<FullscreenVideoProps> = ({ src, show }) => {
+export const FullscreenVideo: React.FC<FullscreenVideoProps> = ({ src, show, onVideoEnd }) => {
   const [isVisible, setIsVisible] = useState(show);
 
   useEffect(() => {
@@ -15,6 +16,7 @@ export const FullscreenVideo: React.FC<FullscreenVideoProps> = ({ src, show }) =
 
   const handleVideoEnded = () => {
     setIsVisible(false);
+    onVideoEnd?.();
   };
 
   if (!isVisible) return null;

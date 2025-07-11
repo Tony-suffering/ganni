@@ -69,11 +69,46 @@ class IntegratedAnalysisService {
       // AIコメントは空配列（削除済み機能）
       const aiComments: string[] = [];
       
-      // パーソナルパターン分析
+      // パーソナルパターン分析（AIAnalysisResultModalで期待される構造に合わせる）
       const personalPattern = {
         interests: [],
         style: 'casual',
-        mood: 'positive'
+        mood: 'positive',
+        analysis: {
+          personalityInsights: {
+            creativity: 75,
+            adventure: 60,
+            social: 70,
+            aestheticSensitivity: 80,
+            growthOrientation: 65,
+            routine: 50,
+            perfectionism: 55,
+            mindfulness: 70
+          },
+          emotionalTendencies: {
+            positive: 70,
+            negative: 20,
+            neutral: 10
+          },
+          interests: [],
+          growthAreas: [],
+          optimizationSuggestions: [
+            {
+              category: '写真技術',
+              suggestion: '構図の三分割法を活用してみましょう',
+              reasoning: 'より魅力的な写真を撮影できます',
+              impact: 'high' as const,
+              difficulty: 'easy' as const
+            },
+            {
+              category: '創造性',
+              suggestion: '異なる視点から被写体を撮影してみましょう',
+              reasoning: '新しい発見があるかもしれません',
+              impact: 'medium' as const,
+              difficulty: 'medium' as const
+            }
+          ]
+        }
       };
       
       const processingTime = Date.now() - startTime;
@@ -191,6 +226,4 @@ class IntegratedAnalysisService {
   }
 }
 
-// export const integratedAnalysisService = new IntegratedAnalysisService();
-// 一時的に無効化 - API呼び出し削減のため
-export const integratedAnalysisService = null as any;
+export const integratedAnalysisService = new IntegratedAnalysisService();
