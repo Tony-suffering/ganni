@@ -46,6 +46,13 @@ import { PersonalDashboard } from './pages/PersonalDashboard';
 import { InspirationLab } from './pages/InspirationLab';
 import { InspirationExplore } from './pages/InspirationExplore';
 import { SpotifyCallback } from './pages/SpotifyCallback';
+import CardGameExperiment from './pages/CardGameExperiment';
+import CardMakerPage from './pages/CardMakerPage';
+import { CardsShowcasePage } from './pages/CardsShowcasePage';
+import { SimpleCardGamePage } from './pages/SimpleCardGamePage';
+import { CardGamePortalPage } from './pages/CardGamePortalPage';
+import { RawDataPage } from './pages/RawDataPage';
+import AllCardsPage from './pages/AllCardsPage';
 
 // Data and Types
 import { Post } from './types';
@@ -511,24 +518,24 @@ function AppContent() {
                   deletePost={deletePost}
                 />
 
-                {/* Lottie Animation - Bottom Left */}
+                {/* Card Portal Link - Bottom Left */}
                 <div 
-                  className="fixed bottom-20 left-4 md:bottom-8 md:left-8 z-30 cursor-pointer hover:scale-110 transition-transform duration-300 opacity-50 hover:opacity-80"
+                  className="fixed bottom-20 left-4 md:bottom-8 md:left-8 z-30 cursor-pointer hover:scale-110 transition-transform duration-300 opacity-70 hover:opacity-100"
                   onClick={() => {
-                    setShowVideoBeforeExplore(true);
-                    setTimeout(() => {
-                      window.location.href = '/inspiration/explore';
-                    }, 5000); // 5秒後にページ遷移
+                    window.location.href = '/card-portal';
                   }}
                 >
-                  <iframe
-                    src="https://cdn.lottielab.com/l/CMGxZy1ieFvBDY.html"
-                    width="180"
-                    height="180"
-                    className="w-30 h-30 md:w-48 md:h-48 pointer-events-none"
-                    style={{ border: 'none', background: 'transparent' }}
-                    title="Lottie Animation"
-                  />
+                  <div className="relative">
+                    <img
+                      src="/yugiura.jpg"
+                      alt="カードゲームポータル"
+                      className="w-16 h-16 md:w-20 md:h-20 object-cover rounded-lg shadow-xl border-2 border-yellow-400 hover:border-yellow-300 transition-colors"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent rounded-lg"></div>
+                    <div className="absolute bottom-0 left-0 right-0 text-center">
+                      <span className="text-white text-xs font-bold bg-black/50 px-1 rounded-b-lg">🎴</span>
+                    </div>
+                  </div>
                 </div>
               </>
             }
@@ -541,6 +548,13 @@ function AppContent() {
           <Route path="/inspiration/:postId" element={<ProtectedRoute><InspirationLab /></ProtectedRoute>} />
           <Route path="/inspiration/explore" element={<ProtectedRoute><InspirationExplore /></ProtectedRoute>} />
           <Route path="/auth/spotify" element={<ProtectedRoute><SpotifyCallback /></ProtectedRoute>} />
+          <Route path="/card-game" element={<CardGameExperiment />} />
+          <Route path="/card-maker" element={<CardMakerPage />} />
+          <Route path="/cards-showcase" element={<CardsShowcasePage />} />
+          <Route path="/simple-card-game" element={<SimpleCardGamePage />} />
+          <Route path="/card-portal" element={<CardGamePortalPage />} />
+          <Route path="/all-cards" element={<AllCardsPage />} />
+          <Route path="/raw-data" element={<RawDataPage />} />
         </Routes>
       </main>
 

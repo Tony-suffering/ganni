@@ -15,7 +15,7 @@
   "dependencies": {
     "@google/generative-ai": "^0.17.1",
     "@modelcontextprotocol/sdk": "^1.13.0",
-    "@supabase/supabase-js": "^2.39.0",
+    "@supabase/supabase-js": "^2.50.5",
     "chart.js": "^4.5.0",
     "date-fns": "^4.1.0",
     "dotenv": "^16.5.0",

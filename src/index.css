@@ -118,4 +118,111 @@
       transform: translateY(-3px);
     }
   }
+  
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  @keyframes shine {
+    0% {
+      transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    }
+    100% {
+      transform: translateX(100%) translateY(100%) rotate(45deg);
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 3s linear infinite;
+    background-size: 200% 100%;
+  }
+
+  .animate-shine {
+    animation: shine 3s ease-in-out infinite;
+  }
+  
+  @keyframes scan {
+    0% {
+      transform: translateY(-100%);
+    }
+    100% {
+      transform: translateY(100vh);
+    }
+  }
+  
+  @keyframes glitch {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    20% {
+      transform: translateX(-2px);
+    }
+    40% {
+      transform: translateX(2px);
+    }
+    60% {
+      transform: translateX(-1px);
+    }
+    80% {
+      transform: translateX(1px);
+    }
+  }
+  
+  @keyframes ultra-shine {
+    0% {
+      transform: translateX(-100%) translateY(-100%) rotate(45deg);
+    }
+    100% {
+      transform: translateX(200%) translateY(200%) rotate(45deg);
+    }
+  }
+
+  .animate-scan {
+    animation: scan 3s linear infinite;
+  }
+
+  .animate-glitch {
+    animation: glitch 0.3s ease-in-out infinite alternate;
+  }
+
+  .animate-ultra-shine {
+    animation: ultra-shine 4s ease-in-out infinite;
+  }
+  
+  @keyframes hologram {
+    0%, 100% {
+      opacity: 0.3;
+      transform: translateX(0);
+    }
+    25% {
+      opacity: 0.5;
+      transform: translateX(2px);
+    }
+    50% {
+      opacity: 0.4;
+      transform: translateX(-1px);
+    }
+    75% {
+      opacity: 0.6;
+      transform: translateX(1px);
+    }
+  }
+  
+  @keyframes spin-slow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  .animate-spin-slow {
+    animation: spin-slow 8s linear infinite;
+  }
 }

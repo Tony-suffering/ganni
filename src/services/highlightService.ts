@@ -244,6 +244,13 @@ export class HighlightService {
    */
   static async saveHighlights(highlights: HighlightPost[]): Promise<void> {
     try {
+      // 認証チェック
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        console.warn('ハイライト保存スキップ: ユーザー未認証');
+        return;
+      }
+
       // テーブル存在確認
       const { error: checkError } = await supabase
         .from('highlight_posts')
@@ -370,6 +377,13 @@ export class HighlightService {
    */
   static async clearStoredHighlights(): Promise<void> {
     try {
+      // 認証チェック
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        console.warn('ハイライトクリアスキップ: ユーザー未認証');
+        return;
+      }
+
       // テーブル存在確認
       const { error: checkError } = await supabase
         .from('highlight_posts')
@@ -409,10 +423,18 @@ export class HighlightService {
    */
   static async updateHighlights(allPosts: Post[]): Promise<void> {
     try {
+      // 認証チェック
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        console.warn('ハイライト更新スキップ: ユーザー未認証');
+        return;
+      }
+
       await this.clearStoredHighlights();
       const highlights = await this.selectHighlightPosts(allPosts);
       await this.saveHighlights(highlights);
     } catch (error) {
+      console.warn('ハイライト更新エラー:', error);
     }
   }
 }
