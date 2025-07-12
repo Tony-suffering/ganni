@@ -12,7 +12,7 @@ export const CardRarityEffect: React.FC<CardRarityEffectProps> = ({
   rarity,
   width,
   height,
-  isActive = true
+  isActive = false // デフォルトでエフェクトを無効化
 }) => {
   const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number }>>([]);
 

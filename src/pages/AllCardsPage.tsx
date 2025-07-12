@@ -51,8 +51,8 @@ const AllCardsPage: React.FC = () => {
           else if (score.total_score >= 70) rarity = 'SR';
           else if (score.total_score >= 50) rarity = 'R';
           
-          // デバッグ用にレア度確認
-          console.log(`カード "${post.title}" (${cardIndex}): スコア${score.total_score} → レア度${rarity}`);
+          // レア度確認（デバッグ用コメントアウト）
+          // console.log(`カード "${post.title}" (${cardIndex}): スコア${score.total_score} → レア度${rarity}`);
 
           // 改善されたステータス計算
           const stats = {

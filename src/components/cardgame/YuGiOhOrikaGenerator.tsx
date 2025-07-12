@@ -362,13 +362,13 @@ export const YuGiOhOrikaGenerator: React.FC<YuGiOhOrikaProps> = ({
               borderRadius: '4px'
             }}
           />
-          {/* レア度エフェクト */}
+          {/* レア度エフェクト（無効化） */}
           {!isLoading && (
             <CardRarityEffect 
               rarity={rarity} 
               width={dim.width} 
               height={dim.height}
-              isActive={true}
+              isActive={false}
             />
           )}
         </div>
