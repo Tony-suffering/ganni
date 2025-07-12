@@ -48,7 +48,6 @@ import { InspirationExplore } from './pages/InspirationExplore';
 import { SpotifyCallback } from './pages/SpotifyCallback';
 import CardGameExperiment from './pages/CardGameExperiment';
 import CardMakerPage from './pages/CardMakerPage';
-import { CardsShowcasePage } from './pages/CardsShowcasePage';
 import { SimpleCardGamePage } from './pages/SimpleCardGamePage';
 import { CardGamePortalPage } from './pages/CardGamePortalPage';
 import { RawDataPage } from './pages/RawDataPage';
@@ -550,7 +549,6 @@ function AppContent() {
           <Route path="/auth/spotify" element={<ProtectedRoute><SpotifyCallback /></ProtectedRoute>} />
           <Route path="/card-game" element={<CardGameExperiment />} />
           <Route path="/card-maker" element={<CardMakerPage />} />
-          <Route path="/cards-showcase" element={<CardsShowcasePage />} />
           <Route path="/simple-card-game" element={<SimpleCardGamePage />} />
           <Route path="/card-portal" element={<CardGamePortalPage />} />
           <Route path="/all-cards" element={<AllCardsPage />} />
