@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { CardRarityEffect } from './CardRarityEffect';
 
 interface YuGiOhOrikaProps {
   title: string;
@@ -10,6 +11,7 @@ interface YuGiOhOrikaProps {
   effectText: string;
   imageUrl: string;
   cardType?: 'normal' | 'effect' | 'spell' | 'trap';
+  rarity?: 'N' | 'R' | 'SR' | 'UR'; // レア度を追加
   size?: 'small' | 'medium' | 'large';
   debugMode?: boolean;
 }
@@ -24,6 +26,7 @@ export const YuGiOhOrikaGenerator: React.FC<YuGiOhOrikaProps> = ({
   effectText,
   imageUrl,
   cardType = 'normal',
+  rarity = 'N',
   size = 'medium',
   debugMode = false
 }) => {
@@ -77,17 +80,33 @@ export const YuGiOhOrikaGenerator: React.FC<YuGiOhOrikaProps> = ({
       try {
         // 背景をクリア
         ctx.clearRect(0, 0, dim.width, dim.height);
-        // ベーステンプレート（orika.jpg）を読み込み
+        // レア度とカードタイプに応じたフレームを選択
+        const getFramePath = () => {
+          // 魔法・罠カードの場合は専用フレーム
+          if (cardType === 'spell') return '/cards/frame-spell.jpg';
+          if (cardType === 'trap') return '/cards/frame-trap.jpg';
+          
+          // モンスターカードはレア度に応じたフレーム
+          switch (rarity) {
+            case 'UR': return '/cards/frame-ultra-rare.jpg';
+            case 'SR': return '/cards/frame-super-rare.jpg';
+            case 'R': return '/cards/frame-rare.jpg';
+            case 'N':
+            default: return '/cards/frame-normal.jpg';
+          }
+        };
+        
+        // フレーム画像を読み込み
         const templateImage = new Image();
         templateImage.crossOrigin = 'anonymous';
         
         await new Promise((resolve, reject) => {
           templateImage.onload = () => resolve(null);
           templateImage.onerror = (error) => {
-            console.error('Failed to load orika.jpg:', error);
+            console.error('Failed to load frame:', error);
             reject(error);
           };
-          templateImage.src = '/orika.jpg';
+          templateImage.src = getFramePath();
         });
 
         // テンプレートを描画
@@ -266,7 +285,7 @@ export const YuGiOhOrikaGenerator: React.FC<YuGiOhOrikaProps> = ({
     };
 
     generateCard();
-  }, [title, level, attribute, type, attack, defense, effectText, imageUrl, cardType, size, imageAdjust, textAdjust, titleAdjust, debugMode]);
+  }, [title, level, attribute, type, attack, defense, effectText, imageUrl, cardType, rarity, size, imageAdjust, textAdjust, titleAdjust, debugMode]);
 
   // 星を描画する関数
   const drawStar = (ctx: CanvasRenderingContext2D, cx: number, cy: number, radius: number) => {
@@ -332,16 +351,27 @@ export const YuGiOhOrikaGenerator: React.FC<YuGiOhOrikaProps> = ({
             <span className="text-gray-500 text-sm">生成中...</span>
           </div>
         )}
-        <canvas
-          ref={canvasRef}
-          className={`${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300 cursor-pointer hover:scale-105 transform transition-transform`}
-          style={{
-            width: dim.width,
-            height: dim.height,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-            borderRadius: '4px'
-          }}
-        />
+        <div className="relative">
+          <canvas
+            ref={canvasRef}
+            className={`${isLoading ? 'opacity-0' : 'opacity-100'} transition-opacity duration-300 cursor-pointer hover:scale-105 transform transition-transform`}
+            style={{
+              width: dim.width,
+              height: dim.height,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              borderRadius: '4px'
+            }}
+          />
+          {/* レア度エフェクト */}
+          {!isLoading && (
+            <CardRarityEffect 
+              rarity={rarity} 
+              width={dim.width} 
+              height={dim.height}
+              isActive={true}
+            />
+          )}
+        </div>
       </div>
       
       {debugMode && (

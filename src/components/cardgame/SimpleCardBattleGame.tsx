@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { YuGiOhOrikaGenerator } from './YuGiOhOrikaGenerator';
-import { supabase } from '../../supabase';
+import { usePosts } from '../../hooks/usePosts';
 import { Post } from '../../types';
 
 // CSS アニメーション
@@ -263,324 +263,120 @@ export const SimpleCardBattleGame: React.FC = () => {
     }
   };
 
-  // 全投稿データから生成されたカードデータ
+  // 全投稿データをusePosts hookから取得
+  const { allPosts } = usePosts();
   const [allCardData, setAllCardData] = useState<CardData[]>([]);
   const [isLoadingCards, setIsLoadingCards] = useState(true);
 
-  // 投稿データをカードデータに変換する関数
-  const convertPostToCard = (post: Post): CardData => {
-    // スコアから攻撃力と守備力を計算
-    const totalScore = post.photoScore?.total_score || 50;
-    const technicalScore = post.photoScore?.technical_score || 50;
-    const compositionScore = post.photoScore?.composition_score || 50;
-    const creativityScore = post.photoScore?.creativity_score || 50;
-    
-    const attack = Math.max(1000, totalScore * 30); // 1000-3000範囲
-    const defense = Math.max(800, technicalScore * 25); // 800-2500範囲
-    
-    // 属性をスコアに基づいて決定
-    const elements: Array<'fire' | 'water' | 'earth' | 'wind' | 'light' | 'dark'> = ['fire', 'water', 'earth', 'wind', 'light', 'dark'];
-    const elementIndex = Math.floor((compositionScore / 100) * elements.length) % elements.length;
-    const element = elements[elementIndex];
-    
-    // 特殊能力を創造性スコアに基づいて決定
-    const specialAbilities = [
-      'ヒーリング：敵の攻撃力あ50ポイント減少',
-      'シールド：攻撃力が100ポイントアップ',
-      'スピード：勝利時にボーナス経験値+20',
-      'ライト：引き分け時に勝利扱い',
-      'バーサーカー：攻撃力が200ポイントアップ',
-      'クール：敵の特殊能力を無効化'
-    ];
-    
-    const abilityIndex = Math.floor((creativityScore / 100) * specialAbilities.length) % specialAbilities.length;
-    const specialAbility = creativityScore >= 70 ? specialAbilities[abilityIndex] : undefined;
-    
-    // カード名を生成（タイトルがない場合はAIコメントから）
-    let cardTitle = post.title || '神秘の存在';
-    if (!post.title && post.aiComments && post.aiComments.length > 0) {
-      const comment = post.aiComments[0].content;
-      // コメントからキーワードを抜き出してカード名に
-      const keywords = comment.match(/[あ-んア-ン一-龯]+/g) || ['神秘'];
-      cardTitle = keywords[0] + 'の' + ('謎の存在,魔法使い,守護者,戦士,賢者,詩人'.split(',')[Math.floor(Math.random() * 6)]);
-    }
-    
-    // AIコメントからエフェクトテキストを生成
-    let effectText = post.userComment || '神秘な力を秘めている。';
-    if (post.photoScore?.ai_comment) {
-      effectText = post.photoScore.ai_comment.substring(0, 50) + '...';
-    }
-    
-    return {
-      id: post.id,
-      title: cardTitle,
-      imageUrl: post.imageUrl,
-      attack,
-      defense,
-      effectText,
-      author: post.author?.name || post.author_name || '匿名',
-      score: totalScore,
-      element,
-      specialAbility
-    };
+  // AllCardsPageと同じカード生成ロジック
+  const generateCardsFromPosts = (posts: Post[]): CardData[] => {
+    return posts.map(post => {
+      // 写真スコアがない場合はデフォルト値を設定
+      const score = post.photoScore || {
+        score_level: 'C',
+        total_score: 50,
+        technical_score: 5.0,
+        composition_score: 5.0,
+        creativity_score: 5.0,
+        engagement_score: 5.0
+      };
+      
+      // AllCardsPageと同じステータス計算式
+      const stats = {
+        attack: Math.round((score.technical_score * 12 + score.creativity_score * 8) * 10),
+        defense: Math.round((score.composition_score * 15 + score.technical_score * 5) * 10),
+        speed: Math.round((score.engagement_score * 8 + score.total_score * 5) * 10),
+        special: Math.round((score.creativity_score * 10 + score.total_score * 2) * 5)
+      };
+
+      // 属性を投稿内容から自動決定
+      const determineElement = (post: Post): 'fire' | 'water' | 'earth' | 'wind' | 'light' | 'dark' => {
+        const tags = post.tags?.map((tag: any) => tag.name) || [];
+        
+        if (tags.some((tag: string) => ['料理', '食べ物', '火', 'BBQ'].includes(tag))) return 'fire';
+        if (tags.some((tag: string) => ['水', '雨', '海', '川', '湖'].includes(tag))) return 'water';
+        if (tags.some((tag: string) => ['土', '植物', '花', '庭', '農業'].includes(tag))) return 'earth';
+        if (tags.some((tag: string) => ['自然', '風景', '空', '海', '山'].includes(tag))) return 'wind';
+        if (tags.some((tag: string) => ['技術', 'IT', 'ガジェット', '機械'].includes(tag))) return 'light';
+        if (tags.some((tag: string) => ['夜', '暗い', 'ミステリー', 'ホラー'].includes(tag))) return 'dark';
+        
+        return 'light'; // デフォルト
+      };
+
+      // 特殊能力生成
+      const generateSpecialAbility = (post: Post, score: any): string | undefined => {
+        if (score.creativity_score < 7.0) return undefined;
+        
+        const abilities = [
+          'ヒーリング：敵の攻撃力を50ポイント減少',
+          'シールド：攻撃力が100ポイントアップ',
+          'スピード：勝利時にボーナス経験値+20',
+          'ライト：引き分け時に勝利扱い',
+          'バーサーカー：攻撃力が200ポイントアップ',
+          'クール：敵の特殊能力を無効化'
+        ];
+        
+        const abilityIndex = Math.floor((score.creativity_score / 10) * abilities.length) % abilities.length;
+        return abilities[abilityIndex];
+      };
+
+      // エフェクトテキスト生成
+      const generateEffectText = (post: Post, score: any): string => {
+        if (post.userComment && post.userComment.length > 10) {
+          return post.userComment.substring(0, 60) + (post.userComment.length > 60 ? '...' : '');
+        }
+        
+        if (score.ai_comment) {
+          return score.ai_comment.substring(0, 60) + (score.ai_comment.length > 60 ? '...' : '');
+        }
+        
+        return `【${post.title}の記憶】このカードが召喚に成功した時、デッキから好きなカードを1枚手札に加える。`;
+      };
+      
+      return {
+        id: post.id,
+        title: post.title,
+        imageUrl: post.imageUrl,
+        attack: stats.attack,
+        defense: stats.defense,
+        effectText: generateEffectText(post, score),
+        author: post.author?.name || post.author_name || '匿名',
+        score: score.total_score,
+        element: determineElement(post),
+        specialAbility: generateSpecialAbility(post, score)
+      };
+    });
   };
 
-  // 投稿データを取得してカード化する
-  const loadAllPosts = async () => {
-    try {
+  // usePosts hookからallPostsを取得してカード化
+  useEffect(() => {
+    console.log(`🔍 allPosts状態チェック: ${allPosts.length}件`);
+    
+    if (allPosts.length > 0) {
+      console.log(`🎴 ${allPosts.length}件の全投稿データからカードを生成中...`);
       setIsLoadingCards(true);
-      console.log('🎴 全投稿データを取得中...');
       
-      const { data: posts, error } = await supabase
-        .from('posts')
-        .select(`
-          *,
-          profiles:author_id (id, name, avatar_url),
-          post_tags ( tags ( id, name ) ),
-          ai_comments ( id, type, content, created_at ),
-          photo_scores ( 
-            id, technical_score, composition_score, creativity_score, 
-            engagement_score, total_score, score_level, level_description,
-            ai_comment, image_analysis, created_at, updated_at
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .limit(50); // 最新50件を取得
-      
-      if (error) {
-        console.error('❗ 投稿データ取得エラー:', error);
-        console.error('エラー詳細:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
-        // フォールバック用のサンプルデータを使用
-        const fallbackCards: CardData[] = [
-          {
-            id: 'fallback1',
-            title: '神秘の守護者',
-            imageUrl: '/yugiura.jpg',
-            attack: 1800,
-            defense: 1600,
-            effectText: 'データ読み込み中...',
-            author: 'システム',
-            score: 70,
-            element: 'light',
-            specialAbility: 'ライト：引き分け時に勝利扱い'
-          },
-          {
-            id: 'fallback2',
-            title: 'データの賢者',
-            imageUrl: '/yugiura.jpg',
-            attack: 1500,
-            defense: 1200,
-            effectText: '情報を収集中...',
-            author: 'システム',
-            score: 60,
-            element: 'wind',
-            specialAbility: 'スピード：勝利時にボーナス経験値+20'
-          },
-          {
-            id: 'fallback3',
-            title: 'ローディングの戦士',
-            imageUrl: '/yugiura.jpg',
-            attack: 2000,
-            defense: 1800,
-            effectText: 'データを取得中...',
-            author: 'システム',
-            score: 80,
-            element: 'fire',
-            specialAbility: 'バーサーカー：攻撃力が200ポイントアップ'
-          },
-          {
-            id: 'fallback4',
-            title: '接続の魔法使い',
-            imageUrl: '/yugiura.jpg',
-            attack: 1700,
-            defense: 1400,
-            effectText: 'サーバーと通信中...',
-            author: 'システム',
-            score: 65,
-            element: 'water',
-            specialAbility: 'クール：敵の特殊能力を無効化'
-          },
-          {
-            id: 'fallback5',
-            title: '再試行の詩人',
-            imageUrl: '/yugiura.jpg',
-            attack: 1600,
-            defense: 1300,
-            effectText: '再接続を試しています...',
-            author: 'システム',
-            score: 55,
-            element: 'earth',
-            specialAbility: 'シールド：攻撃力が100ポイントアップ'
-          },
-          {
-            id: 'fallback6',
-            title: 'エラーハンドラー',
-            imageUrl: '/yugiura.jpg',
-            attack: 1400,
-            defense: 1100,
-            effectText: '問題を解決中...',
-            author: 'システム',
-            score: 50,
-            element: 'dark',
-            specialAbility: 'ヒーリング：敵の攻撃力あ50ポイント減少'
-          }
-        ];
-        setAllCardData(fallbackCards);
-        console.log('⚠️ フォールバックデータを使用します');
-        return;
-      }
-      
-      if (posts && posts.length > 0) {
-        const transformedPosts: Post[] = posts.map(post => ({
-          id: post.id,
-          title: post.title || '',
-          userComment: post.userComment || '',
-          imageUrl: post.image_url || '',
-          author: post.profiles ? {
-            id: post.profiles.id,
-            name: post.profiles.name || '匿名',
-            avatar: post.profiles.avatar_url || ''
-          } : {
-            id: post.author_id || '',
-            name: post.author_name || '匿名',
-            avatar: ''
-          },
-          author_name: post.profiles?.name || post.author_name || '匿名',
-          createdAt: post.created_at,
-          updatedAt: post.updated_at,
-          likeCount: 0,
-          commentCount: 0,
-          likedByCurrentUser: false,
-          bookmarkedByCurrentUser: false,
-          tags: post.post_tags?.map(pt => pt.tags) || [],
-          aiComments: post.ai_comments?.map(comment => ({
-            id: comment.id,
-            type: comment.type || 'general',
-            content: comment.content,
-            createdAt: comment.created_at
-          })) || [],
-          photoScore: post.photo_scores?.[0] ? {
-            technical_score: post.photo_scores[0].technical_score || 50,
-            composition_score: post.photo_scores[0].composition_score || 50,
-            creativity_score: post.photo_scores[0].creativity_score || 50,
-            engagement_score: post.photo_scores[0].engagement_score || 50,
-            total_score: post.photo_scores[0].total_score || 50,
-            score_level: post.photo_scores[0].score_level || '3',
-            level_description: post.photo_scores[0].level_description || 'C級',
-            ai_comment: post.photo_scores[0].ai_comment || ''
-          } : {
-            technical_score: 50,
-            composition_score: 50,
-            creativity_score: 50,
-            engagement_score: 50,
-            total_score: 50,
-            score_level: '3',
-            level_description: 'C級',
-            ai_comment: ''
-          },
-          userComment: post.user_comment || ''
-        }));
-        
-        const cardData = transformedPosts
-          .filter(post => post.imageUrl) // 画像がある投稿のみ
-          .map(convertPostToCard);
-        
+      try {
+        const cardData = generateCardsFromPosts(allPosts);
         setAllCardData(cardData);
         console.log(`✅ ${cardData.length}枚のカードを生成しました！`);
-        
-        if (cardData.length === 0) {
-          console.log('⚠️ 有効な投稿データがありません。サンプルデータを使用します。');
-        }
+        console.log('📊 攻撃力範囲:', {
+          min: Math.min(...cardData.map(c => c.attack)),
+          max: Math.max(...cardData.map(c => c.attack)),
+          average: Math.round(cardData.reduce((sum, c) => sum + c.attack, 0) / cardData.length)
+        });
+        console.log('🎯 最初の3枚のカードの攻撃力:', cardData.slice(0, 3).map(c => ({ title: c.title, attack: c.attack })));
+      } catch (error) {
+        console.error('❗ カード生成エラー:', error);
+        setAllCardData([]);
+      } finally {
+        setIsLoadingCards(false);
       }
-    } catch (error) {
-      console.error('❗ カードデータ読み込みエラー:', error);
-      
-      // フォールバックデータを使用
-      const fallbackCards: CardData[] = [
-        {
-          id: 'error1',
-          title: 'ネットワークの守護者',
-          imageUrl: '/yugiura.jpg',
-          attack: 1900,
-          defense: 1700,
-          effectText: '接続の問題を解決しよう',
-          author: 'システム',
-          score: 75,
-          element: 'light',
-          specialAbility: 'ライト：引き分け時に勝利扱い'
-        },
-        {
-          id: 'error2',
-          title: 'デバッグの賢者',
-          imageUrl: '/yugiura.jpg',
-          attack: 1600,
-          defense: 1300,
-          effectText: 'エラーを修正しよう',
-          author: 'システム',
-          score: 65,
-          element: 'wind',
-          specialAbility: 'スピード：勝利時にボーナス経験値+20'
-        },
-        {
-          id: 'error3',
-          title: '再試行の戦士',
-          imageUrl: '/yugiura.jpg',
-          attack: 2100,
-          defense: 1900,
-          effectText: '再び挑戦しよう',
-          author: 'システム',
-          score: 85,
-          element: 'fire',
-          specialAbility: 'バーサーカー：攻撃力が200ポイントアップ'
-        },
-        {
-          id: 'error4',
-          title: 'サーバーの魔法使い',
-          imageUrl: '/yugiura.jpg',
-          attack: 1750,
-          defense: 1450,
-          effectText: 'サーバーとの繋がりを修復しよう',
-          author: 'システム',
-          score: 70,
-          element: 'water',
-          specialAbility: 'クール：敵の特殊能力を無効化'
-        },
-        {
-          id: 'error5',
-          title: 'バックアップの詩人',
-          imageUrl: '/yugiura.jpg',
-          attack: 1650,
-          defense: 1350,
-          effectText: 'データを守っている',
-          author: 'システム',
-          score: 60,
-          element: 'earth',
-          specialAbility: 'シールド：攻撃力が100ポイントアップ'
-        },
-        {
-          id: 'error6',
-          title: 'ローカルの守護者',
-          imageUrl: '/yugiura.jpg',
-          attack: 1500,
-          defense: 1200,
-          effectText: 'ローカルデータで動作している',
-          author: 'システム',
-          score: 55,
-          element: 'dark',
-          specialAbility: 'ヒーリング：敵の攻撃力あ50ポイント減少'
-        }
-      ];
-      setAllCardData(fallbackCards);
-      console.log('⚠️ エラー発生のためフォールバックデータを使用します');
-    } finally {
+    } else {
+      console.log('📭 allPostsが空です。usePosts hookからのデータ読み込み待ち...');
       setIsLoadingCards(false);
     }
-  };
+  }, [allPosts]);
 
   // 特殊能力の処理
   const applySpecialAbility = (card: CardData, isPlayer: boolean = true): { modifiedAttack: number; effectMessage?: string } => {
@@ -636,9 +432,6 @@ export const SimpleCardBattleGame: React.FC = () => {
   };
 
   // ゲーム初期化とカード登場アニメーション
-  useEffect(() => {
-    loadAllPosts();
-  }, []);
   
   useEffect(() => {
     if (allCardData.length > 0) {
@@ -944,10 +737,19 @@ export const SimpleCardBattleGame: React.FC = () => {
                   <div className="bg-yellow-400 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
                 </div>
               </div>
-            ) : (
+            ) : allCardData.length > 0 ? (
               <div className="mb-8">
                 <div className="text-green-400 text-lg mb-4">
                   ✅ {allCardData.length}枚のカードが準備完了！
+                </div>
+              </div>
+            ) : (
+              <div className="mb-8">
+                <div className="text-yellow-400 text-lg mb-4">
+                  ⏳ 投稿データ読み込み中... ({allPosts.length}件の投稿を検出)
+                </div>
+                <div className="text-white/60 text-sm">
+                  usePosts hookからallPostsを取得中...
                 </div>
               </div>
             )}
