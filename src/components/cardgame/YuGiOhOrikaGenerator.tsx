@@ -80,19 +80,19 @@ export const YuGiOhOrikaGenerator: React.FC<YuGiOhOrikaProps> = ({
       try {
         // 背景をクリア
         ctx.clearRect(0, 0, dim.width, dim.height);
-        // レア度とカードタイプに応じたフレームを選択
+        // レア度とカードタイプに応じたフレームを選択（5パターン）
         const getFramePath = () => {
           // 魔法・罠カードの場合は専用フレーム
           if (cardType === 'spell') return '/cards/frame-spell.jpg';
           if (cardType === 'trap') return '/cards/frame-trap.jpg';
           
-          // モンスターカードはレア度に応じたフレーム
+          // モンスターカードは5パターンで使い分け
           switch (rarity) {
-            case 'UR': return '/cards/frame-ultra-rare.jpg';
-            case 'SR': return '/cards/frame-super-rare.jpg';
-            case 'R': return '/cards/frame-rare.jpg';
-            case 'N':
-            default: return '/cards/frame-normal.jpg';
+            case 'UR': return '/cards/frame-ultra-rare.jpg';  // 紫フレーム
+            case 'SR': return '/cards/frame-normal.jpg';      // 黄色フレーム（SR用）
+            case 'R': return '/cards/frame-spell.jpg';        // 緑フレーム（R用）
+            case 'N': 
+            default: return '/orika.jpg';                     // オリジナルフレーム（N用）
           }
         };
         
