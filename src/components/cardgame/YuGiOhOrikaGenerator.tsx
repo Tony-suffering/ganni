@@ -92,7 +92,7 @@ export const YuGiOhOrikaGenerator: React.FC<YuGiOhOrikaProps> = ({
             case 'SR': return '/cards/frame-normal.jpg';      // 黄色フレーム（SR用）
             case 'R': return '/cards/frame-spell.jpg';        // 緑フレーム（R用）
             case 'N': 
-            default: return '/orika.jpg';                     // オリジナルフレーム（N用）
+            default: return '/cards/orika.jpg';               // オリジナルフレーム（N用）
           }
         };
         
